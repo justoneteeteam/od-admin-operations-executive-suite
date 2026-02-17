@@ -1,0 +1,7 @@
+{
+  "name": "COD Admin Operations & Executive Suite",
+  "description": "A high-fidelity Cash on Delivery (COD) management system featuring operations dashboards, executive performance metrics, inventory control, and customer management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
