@@ -40,10 +40,20 @@ Set these in the dashboard of your PaaS provider:
 
 ## 3. Deployment Steps
 
+
 1.  **Push Code to GitHub**: Ensure the latest changes are in your repository.
-2.  **Create New Service**: In Railway/Render, create a service and connect your GitHub repo.
-3.  **Root Directory**: 
-    - For Backend: Set the root directory to `backend`.
-    - For Frontend: Deploy as a "Static Site" from the root directory.
+2.  **Create Backend Service**: 
+    - In Railway, create a new service from your GitHub repo.
+    - Go to **Settings** > **Root Directory** and set it to `/backend`.
+    - Set the **Environment Variables** (DATABASE_URL, etc.).
+    - This will deploy your API. Note the URL (e.g., `https://api-production.up.railway.app`).
+
+3.  **Create Frontend Service**:
+    - In Railway, create *another* new service from the *same* GitHub repo.
+    - Leave **Root Directory** as `/` (default).
+    - Go to **Variables** and add `VITE_API_URL` with the value of your Backend URL.
+    - Railway will detect the Dockerfile and deploy the frontend.
+
 4.  **Connect Database**: Use the `DATABASE_URL` from your Supabase dashboard.
 5.  **Build & Launch**: The platform will automatically build and deploy your app.
+
