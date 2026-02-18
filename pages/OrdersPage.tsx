@@ -122,6 +122,9 @@ const OrdersPage: React.FC = () => {
       if (field === 'customerName') {
         const updatedCustomer = { ...editOrder.customer, name: value };
         setEditOrder({ ...editOrder, customer: updatedCustomer });
+      } else if (field === 'customerPhone') {
+        const updatedCustomer = { ...editOrder.customer, phone: value };
+        setEditOrder({ ...editOrder, customer: updatedCustomer });
       } else {
         setEditOrder({ ...editOrder, [field]: value });
       }
@@ -496,6 +499,15 @@ const OrdersPage: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
+                      <label className="text-[10px] font-black text-text-muted uppercase ml-1">Phone Number</label>
+                      <input
+                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                        value={editOrder.customer?.phone || ''}
+                        onChange={(e) => handleInputChange('customerPhone', e.target.value)}
+                        placeholder="+1 234 567 890"
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">House # / Street Address</label>
                       <input
                         className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
