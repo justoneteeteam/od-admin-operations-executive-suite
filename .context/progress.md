@@ -20,46 +20,38 @@
 - [x] Prepare for Cloud Deployment (PaaS/Docker)
 - [x] Add Health Checks & Production CORS/Port config
 
-### Phase 3: Integration (Completed)
-- [x] Backend API Development
-  - [x] Core Modules (Orders, Customers, Products)
-  - [x] Supporting Modules (Fulfillment, Suppliers, Purchases)
-  - [x] Performance & Metrics Module (In Progress)
-- [x] Frontend-Backend Connectivity
-  - [x] Unified API Client Setup
-  - [x] JWT Authentication Integration
-  - [x] Replace Mock Data with Real Database Data
-    - [x] Orders Page & Create Order Page
-      - [x] Logistics, Country, Fulfillment Center Linking
-    - [x] Products Page
-    - [x] Purchases Page
-      - [x] Supplier & Fulfillment Center Linking
-    - [x] Fulfillment Page
-    - [x] Suppliers Page
-      - [x] Performance Page (Dashboard)
-    - [x] Customers Page
-    - [x] Settings Page
-      - [x] Store Settings Page (Google Sheets Integration)
-     - [x] Google sheets sync & order sync logic
+## Project Roadmap & Status
 
-- [ ] End-to-End Testing (Data Integrity Verified via Script)
+### Version 1: Core Order Management & Sync (Current - ~90% Complete)
+**Focus**: Stable Order Operations, Google Sheets Sync, and Basic Tracking.
+- [x] **Order Tab**: Full CRUD, Status Management.
+- [x] **Delete Order**: implemented.
+- [x] **Google Sheets Sync**: Two-way sync for Orders.
+- [ ] **Fulfillment Center Sync**: Add FC data to Google Sheets.
+- [ ] **Suppliers Sync**: Add Supplier data to Google Sheets.
+- [ ] **Bulk Actions**: Select multiple orders for batch operations.
+- [ ] **Filter Tree**: Advanced filtering by status/date/country.
+- [x] **In Transit Mode**: 17Track Webhook & WhatsApp Notifications.
 
-### Phase 4: Deployment & Finalization (In Progress)
-- [ ] Dockerization
-  - [ ] Backend Dockerfile & Optimized Build
-  - [ ] Frontend Dockerfile (Nginx/Serve)
-  - [ ] Docker Compose for local production testing
-- [ ] Cloud Platform (PaaS) Execution
-  - [ ] Provision Railway/Render environment
-  - [ ] Configure Environment Variables (`DATABASE_URL`, `JWT_SECRET`, etc.)
-  - [ ] Set up Health Checks & Auto-deploy
-- [ ] Final Verification
-  - [ ] SSL/TLS Configuration
-  - [ ] Production Database Migration Check
+### Version 2: Risk Orchestration & Confirmation (Next Up)
+**Focus**: Automated verification workflow to reduce RTO (Return to Origin).
+- [ ] **Workflow Engine**: New Order -> Validate Phone -> Validate Address.
+- [ ] **Risk Scoring**: Calculate risk based on history/location.
+- [ ] **Low Risk Flow**: Wait 2h -> Auto-WhatsApp -> IVR Fallback.
+- [ ] **Medium Risk Flow**: Push to Google Sheets for Manual Review.
+- [ ] **High Risk Flow**: Push to Google Sheets for Priority Call.
+- [ ] **Status Sync**: Sync Call Center updates (Unconfirmed, Call Later) back to App.
 
-### Phase 5: Advanced Features (In Progress)
-- [x] Automated Notifications (Twilio/WhatsApp) (Phase 1: Outbound & Webhook Trigger)
-- [x] Real-time Tracking Integration (17Track) (Phase 1: Webhook Handling)
-- [ ] Real-time Tracking (Phase 2: Registration & Real-time Sync)
-- [ ] Advanced Financial Reconciliation Logic
-- [ ] Multi-store Data Aggregation
+### Version 3: Incident Management
+**Focus**: Handling operational issues (Damaged goods, Lost packages, Complaints).
+- [ ] **Incident Tab**: dedicated UI for reporting and tracking incidents.
+- [ ] **Resolution Workflow**: Assignment, Resolution types (Refund, Reship).
+
+### Version 3.5: Advanced Fulfillment
+- [ ] **FC Connection**: Direct integration with Fulfillment Centers.
+- [ ] **Tracking Sync**: Auto-sync tracking numbers from FC to App.
+
+### Version 4: Advanced Analytics
+- [ ] **Analytics Tab**: Profitability, RTO Rates, Operator Performance.
+- [ ] Whatssap real number connection --> test for in transit mode
+- [ ] 17tracks sync sample data --> test for real tracking number

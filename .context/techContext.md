@@ -44,6 +44,8 @@ To enable these features, the following credentials are required in the `.env` f
 
 ### DevOps & Tools
 - **Package Manager**: npm
+- **Hosting/PaaS**: Railway (Production)
+- **Containerization**: Docker (Frontend & Backend)
 
 ## Development Environment
 - **Local Dev Server**: Vite (Frontend), NestJS (Backend)

@@ -48,15 +48,16 @@ export class TrackingService {
             }
 
             // 2. Prepare Variables for Template
-            // Template: "Hello {{1}}, your order {{2}} is now In Transit! 🚚 Track it here: {{3}}"
-            // Variables: Customer Name, Order Number, Tracking URL (or just number)
-
+            // Variables: 1=CustomerName, 2=OrderNumber, 3=TrackingURL, 4=StoreName
             const customerName = order.customer.name;
             const safeName = customerName || 'Customer';
-
+            const storeName = order.storeName || 'Our Store'; // Fallback if storeName is missing
             const trackingUrl = `https://t.17track.net/en#nums=${trackingNumber}`;
 
-            // 3. Update Order Status
+            // 3. Determine Template based on Country
+            const templateName = this.getTemplateForCountry(order.shippingCountry);
+
+            // 4. Update Order Status
             await this.prisma.order.update({
                 where: { id: order.id },
                 data: {
@@ -66,19 +67,35 @@ export class TrackingService {
             });
             this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'In Transit'`);
 
-            // 4. Send WhatsApp
+            // 5. Send WhatsApp
             try {
                 await this.whatsappService.sendTemplateMessage(
                     order.customer.phone,
-                    'order_in_transit',
-                    [safeName, order.orderNumber, trackingUrl],
+                    templateName,
+                    [safeName, order.orderNumber, trackingUrl, storeName],
                     { orderId: order.id, customerId: order.customerId }
                 );
-                this.logger.log(`In Transit Notification sent for Order ${order.orderNumber}`);
+                this.logger.log(`In Transit Notification sent for Order ${order.orderNumber} using template ${templateName}`);
             } catch (e) {
                 this.logger.error(`Failed to send WhatsApp for Order ${order.orderNumber}: ${e.message}`, e.stack);
             }
         }
+    }
+
+    private getTemplateForCountry(country: string): string {
+        if (!country) return 'order_in_transit';
+
+        const normalizedCountry = country.toLowerCase().trim();
+
+        if (normalizedCountry === 'italy' || normalizedCountry === 'italia') {
+            return 'italian_order_in_transit';
+        }
+
+        if (normalizedCountry === 'spain' || normalizedCountry === 'españa' || normalizedCountry === 'espana') {
+            return 'spanish_order_in_transit';
+        }
+
+        return 'order_in_transit'; // Default to English
     }
 
     // Placeholder for Phase 2

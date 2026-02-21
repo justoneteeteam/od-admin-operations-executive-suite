@@ -30,8 +30,10 @@ const OrdersPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [confirmationFilter, setConfirmationFilter] = useState('All Confirmations');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('All Status');
   const [dateFilter, setDateFilter] = useState('Last 30 Days');
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   const [showDrawer, setShowDrawer] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -42,7 +44,7 @@ const OrdersPage: React.FC = () => {
     fetchProducts();
     fetchFulfillmentCenters();
     fetchStoreNames();
-  }, [statusFilter]);
+  }, [confirmationFilter, orderStatusFilter]);
 
   useEffect(() => {
     if (showDrawer && selectedOrder) {
@@ -79,9 +81,11 @@ const OrdersPage: React.FC = () => {
     setError(null);
     try {
       const data = await ordersService.getAll({
-        orderStatus: statusFilter === 'All Status' ? undefined : statusFilter.toLowerCase(),
+        orderStatus: orderStatusFilter === 'All Status' ? undefined : orderStatusFilter,
+        confirmationStatus: confirmationFilter === 'All Confirmations' ? undefined : confirmationFilter,
       });
       setOrders(data.data || []);
+      setSelectedOrderIds([]);
     } catch (err: any) {
       setError('Failed to fetch orders. Please try again later.');
       console.error('Error fetching orders:', err);
@@ -234,10 +238,61 @@ const OrdersPage: React.FC = () => {
     return cashIn - sCost - fCost;
   };
 
-  const filteredOrders = orders.filter(order =>
-  (order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedOrderIds(filteredOrders.map(o => o.id));
+    } else {
+      setSelectedOrderIds([]);
+    }
+  };
+
+  const handleSelectOrder = (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    e.stopPropagation();
+    if (e.target.checked) {
+      setSelectedOrderIds(prev => [...prev, id]);
+    } else {
+      setSelectedOrderIds(prev => prev.filter(orderId => orderId !== id));
+    }
+  };
+
+  const handleDeleteOrder = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this order?')) {
+      try {
+        await ordersService.delete(id);
+        await fetchOrders();
+      } catch (err) {
+        console.error('Failed to delete order', err);
+        alert('Failed to delete order. Please try again.');
+      }
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (window.confirm(`Are you sure you want to delete ${selectedOrderIds.length} orders?`)) {
+      try {
+        await Promise.all(selectedOrderIds.map(id => ordersService.delete(id)));
+        await fetchOrders();
+        setSelectedOrderIds([]);
+      } catch (err) {
+        console.error('Failed to delete orders', err);
+        alert('Failed to delete some orders. Please try again.');
+      }
+    }
+  };
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const confStatus = order.confirmationStatus || 'Pending';
+    const matchesConfirmation = confirmationFilter === 'All Confirmations' || confStatus === confirmationFilter || (!order.confirmationStatus && confirmationFilter === 'Pending');
+
+    const ordStatus = order.orderStatus || 'Pending';
+    const matchesStatus = orderStatusFilter === 'All Status' || ordStatus === orderStatusFilter;
+
+    return matchesSearch && matchesConfirmation && matchesStatus;
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -253,6 +308,15 @@ const OrdersPage: React.FC = () => {
             <p className="text-text-muted text-sm">Review, track and manage your COD order pipeline.</p>
           </div>
           <div className="flex gap-2 sm:gap-3">
+            {selectedOrderIds.length > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-red-500/10 text-red-500 text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-all mr-1"
+              >
+                <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>delete</span>
+                Delete ({selectedOrderIds.length})
+              </button>
+            )}
             <button className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-[#233648] text-white text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all">
               <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>cloud_download</span>
               Export XLS
@@ -268,8 +332,8 @@ const OrdersPage: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-          <div className="md:col-span-2 relative">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
+          <div className="md:col-span-2 lg:col-span-2 relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
             <input
               type="text"
@@ -282,13 +346,28 @@ const OrdersPage: React.FC = () => {
           <div className="relative">
             <select
               className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={confirmationFilter}
+              onChange={(e) => setConfirmationFilter(e.target.value)}
+            >
+              <option>All Confirmations</option>
+              <option>Pending</option>
+              <option>Confirmed</option>
+              <option>Cancelled</option>
+              <option>No Answer</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
+          </div>
+          <div className="relative">
+            <select
+              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
+              value={orderStatusFilter}
+              onChange={(e) => setOrderStatusFilter(e.target.value)}
             >
               <option>All Status</option>
               <option>Pending</option>
               <option>Processing</option>
               <option>Shipped</option>
+              <option>In Transit</option>
               <option>Delivered</option>
               <option>Returned</option>
               <option>Cancelled</option>
@@ -318,6 +397,14 @@ const OrdersPage: React.FC = () => {
           <table className="w-full text-left border-collapse min-w-[1000px] lg:min-w-[1400px]">
             <thead>
               <tr className="bg-[#17232f] border-b border-[#233648]">
+                <th className="px-4 py-5 w-[40px] text-center">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-[#2d445a] bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary align-middle"
+                    checked={filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length}
+                    onChange={handleSelectAll}
+                  />
+                </th>
                 <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order Details</th>
                 <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Confirmation</th>
                 <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order Status</th>
@@ -330,7 +417,7 @@ const OrdersPage: React.FC = () => {
             <tbody className="divide-y divide-[#233648]">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-text-muted">
+                  <td colSpan={8} className="px-6 py-12 text-center text-text-muted">
                     <div className="flex flex-col items-center gap-2">
                       <div className="animate-spin size-6 border-2 border-primary border-t-transparent rounded-full"></div>
                       <p className="text-sm">Loading orders...</p>
@@ -339,7 +426,7 @@ const OrdersPage: React.FC = () => {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-red-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-red-500">
                     <div className="flex flex-col items-center gap-2">
                       <span className="material-symbols-outlined text-3xl">error</span>
                       <p className="text-sm">{error}</p>
@@ -348,7 +435,7 @@ const OrdersPage: React.FC = () => {
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-text-muted">
+                  <td colSpan={8} className="px-6 py-12 text-center text-text-muted">
                     <div className="flex flex-col items-center gap-2">
                       <span className="material-symbols-outlined text-3xl">inbox</span>
                       <p className="text-sm">No orders found.</p>
@@ -361,9 +448,17 @@ const OrdersPage: React.FC = () => {
                   return (
                     <tr
                       key={order.id}
-                      className="hover:bg-[#1c2d3d] transition-colors cursor-pointer group"
+                      className={`hover:bg-[#1c2d3d] transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-[#1c2d3d]/50' : ''}`}
                       onClick={() => { setSelectedOrder(order); setShowDrawer(true); }}
                     >
+                      <td className="px-4 py-6 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-[#2d445a] bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary align-middle"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={(e) => handleSelectOrder(e, order.id)}
+                        />
+                      </td>
                       <td className="px-4 sm:px-6 py-6">
                         <p className="text-sm font-bold text-primary group-hover:underline underline-offset-4">#{order.orderNumber}</p>
                         <p className="text-xs text-white mt-1 font-medium">{order.customer?.name || 'Unknown User'}</p>
@@ -394,10 +489,21 @@ const OrdersPage: React.FC = () => {
                       <td className={`px-4 sm:px-6 py-6 text-sm font-black text-right whitespace-nowrap ${profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
                         {profit >= 0 ? '+' : ''}${profit.toLocaleString()}
                       </td>
-                      <td className="px-4 sm:px-6 py-6 text-center">
-                        <button className="p-2 hover:bg-primary/10 rounded-xl text-text-muted hover:text-primary transition-all">
-                          <span className="material-symbols-outlined text-[20px]">edit_square</span>
-                        </button>
+                      <td className="px-4 sm:px-6 py-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            className="p-2 hover:bg-primary/10 rounded-xl text-text-muted hover:text-primary transition-all"
+                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowDrawer(true); }}
+                          >
+                            <span className="material-symbols-outlined text-[20px]">edit_square</span>
+                          </button>
+                          <button
+                            className="p-2 hover:bg-red-500/10 rounded-xl text-text-muted hover:text-red-500 transition-all"
+                            onClick={(e) => handleDeleteOrder(e, order.id)}
+                          >
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

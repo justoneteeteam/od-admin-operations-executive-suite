@@ -34,7 +34,7 @@ Current structure places source files directly in the root or specifically:
 - **Pattern**: Webhook (Push) & Polling (Backup)
 - **Primary Flow (Push)**:
   1.  **Register**: Backend registers package with 17Track API upon creation/shipping.
-  2.  **Webhook**: 17Track pushes JSON payload to `/tracking/webhook`.
+  2.  **Webhook**: 17Track pushes JSON payload to `/tracking/webhook` (Must be Publicly Accessible).
   3.  **Process**: `TrackingService` identifies event (e.g., `InTransit_Arrival`).
   4.  **Trigger**: Updates Order Status & Sends WhatsApp Notification.
 - **Backup Flow (Poll)**:
@@ -42,6 +42,7 @@ Current structure places source files directly in the root or specifically:
 
 ### 3. WhatsApp Notification Workflow (Twilio)
 - **Pattern**: Event-Driven / State Machine
+- **Data Requirement**: `Customer.phone` must be in E.164 format (e.g., `+1234567890`) for Twilio delivery.
 - **Trigger**: Order Status changes to `In Transit`.
 - **Action**: Send WhatsApp message via Twilio.
 - **Feedback Loop**:
@@ -49,7 +50,25 @@ Current structure places source files directly in the root or specifically:
   -   **Yes**: No further action.
   -   **No Response**: Flag for manual follow-up (Phone Call).
 
-### 4. Google Sheets Integration (OD Data Sync)
+### 4. Risk Orchestration Workflow (Version 2)
+- **Pattern**: Orchestrator / SAGA
+- **Flow**:
+  1.  **New Order** arrives.
+  2.  **Validation**: Check Phone format & Address existnece (3rd party API).
+  3.  **Risk Calculation**:
+      -   **Low Risk**: Wait 2h -> Send WhatsApp Confirmation -> If no reply, trigger IVR.
+      -   **Medium Risk**: Add to "Manual Review" Sheet (Google Sheets).
+      -   **High Risk**: Add to "Priority Call" Sheet.
+  4.  **Feedback Sync**: Call Center updates status in Sheet (e.g., "Confirm", "Fake") -> Syncs back to App.
+
+### 5. Deployment Architecture
+- **Platform**: Railway (PaaS)
+- **Frontend**: Vite SPA (Static) on Nginx.
+- **Backend**: NestJS API container.
+- **Data**: Supabase (PostgreSQL).
+- **External**: Twilio (WhatsApp), 17Track (Webhooks), Google Sheets API.
+
+### 6. Google Sheets Integration (OD Data Sync)
 - **Pattern**: External Data Synchronization
 - **Credentials**: Stored in `StoreSettings` table (Encrypted).
 - **Flow**:
@@ -58,7 +77,7 @@ Current structure places source files directly in the root or specifically:
   3.  **Map**: Maps Sheet columns to `Order` entity fields.
   4.  **Upsert**: Creates new orders or updates existing ones based on Order ID.
 
-### 5. Data Schema Design (Core Entities)
+### 7. Data Schema Design (Core Entities)
 - **Users**: Admin accounts (email, password_hash, role)
 - **Orders**: Full lifecycle (Pending to Returned), tracking numbers, costs, and profits.
 - **Products**: Inventory levels, unit costs, selling prices, and return rates.
