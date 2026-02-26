@@ -42,14 +42,12 @@ export class WhatsappService {
             });
 
             // 3. Send via Twilio
-            let from = process.env.TWILIO_WHATSAPP_NUMBER;
-            if (!from) throw new Error('TWILIO_WHATSAPP_NUMBER not configured');
+            const from = process.env.TWILIO_WHATSAPP_NUMBER || process.env.TWILIO_PHONE_NUMBER;
+            if (!from) throw new Error('TWILIO_PHONE_NUMBER not configured');
 
-            // Ensure 'from' has 'whatsapp:' prefix if not present
-            from = from.startsWith('whatsapp:') ? from : `whatsapp:${from}`;
-
-            // Ensure 'to' has 'whatsapp:' prefix if not present
-            const toClean = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
+            // Ensure we use plain E.164 phone numbers for standard SMS
+            const fromClean = from.replace('whatsapp:', '');
+            const toClean = to.replace('whatsapp:', '');
 
             if (!this.client) {
                 this.logger.warn('Twilio client not initialized, skipping send');
@@ -58,7 +56,7 @@ export class WhatsappService {
 
             const message = await this.client.messages.create({
                 body,
-                from,
+                from: fromClean,
                 to: toClean,
                 statusCallback: `${process.env.BASE_URL || 'https://your-domain.com'}/api/notifications/callbacks/twilio`,
             });

@@ -11,8 +11,8 @@ const SidebarItem: React.FC<{
   <Link
     to={to}
     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${active
-        ? 'bg-primary text-white shadow-lg shadow-primary/20'
-        : 'text-[#92adc9] hover:bg-[#233648] hover:text-white'
+      ? 'bg-primary text-white shadow-lg shadow-primary/20'
+      : 'text-[#92adc9] hover:bg-[#233648] hover:text-white'
       }`}
   >
     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{icon}</span>
@@ -28,14 +28,8 @@ const DashboardLayout: React.FC = () => {
       {/* Sidebar */}
       <aside className="w-64 flex flex-col border-r border-border-dark bg-card-dark shrink-0">
         <div className="p-6 flex flex-col gap-8 h-full overflow-y-auto custom-scrollbar">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary size-10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-              <span className="material-symbols-outlined text-white">inventory_2</span>
-            </div>
-            <div>
-              <h1 className="text-white text-base font-bold leading-none tracking-tight">COD Admin</h1>
-              <p className="text-text-muted text-[10px] font-bold uppercase mt-1 tracking-widest opacity-80">Management Suite</p>
-            </div>
+          <div className="flex items-center gap-3 px-1">
+            <img src="/logo.svg" alt="JOT COD" className="h-10 w-auto" />
           </div>
 
           <nav className="flex flex-col gap-1 flex-1">

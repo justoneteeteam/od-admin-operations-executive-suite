@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -21,7 +22,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { TrackingModule } from './tracking/tracking.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule],
+  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot()],
   controllers: [AppController],
   providers: [
     AppService,

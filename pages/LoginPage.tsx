@@ -32,10 +32,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     <div className="bg-pattern text-white font-display min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-primary size-14 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 mb-4">
-            <span className="material-symbols-outlined text-white text-3xl">inventory_2</span>
-          </div>
-          <h1 className="text-white text-2xl font-black tracking-tight uppercase">COD Admin</h1>
+          <img src="/logo.svg" alt="JOT COD" className="h-16 w-auto mb-2" />
           <p className="text-text-muted text-sm mt-1">Management Operations System</p>
         </div>
 

@@ -35,6 +35,9 @@ const OrdersPage: React.FC = () => {
   const [dateFilter, setDateFilter] = useState('Last 30 Days');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+
   const [showDrawer, setShowDrawer] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
@@ -222,9 +225,12 @@ const OrdersPage: React.FC = () => {
         await ordersService.update(editOrder.id, payload);
         await fetchOrders();
         setShowDrawer(false);
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
       } catch (err) {
         console.error('Error updating order:', err);
-        alert('Failed to save changes. Please check console for details.');
+        setShowErrorToast(true);
+        setTimeout(() => setShowErrorToast(false), 3000);
       }
     }
   };
@@ -925,6 +931,41 @@ const OrdersPage: React.FC = () => {
             </div>
           </div>
         </div >
+      )}
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-[#101922]/60 backdrop-blur-sm" onClick={() => setShowSuccessToast(false)}>
+          <div className="bg-[#101922] rounded-xl px-12 py-10 shadow-[0_0_40px_rgba(34,197,94,0.15)] flex flex-col items-center gap-3 max-w-sm w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <span className="material-symbols-outlined text-green-500 text-6xl font-light mb-2" style={{ fontVariationSettings: "'wght' 200, 'FILL' 0" }}>check_circle</span>
+            <h2 className="text-white text-xl font-semibold tracking-wide text-center">
+              Changes Saved
+            </h2>
+            <p className="text-white/40 text-sm text-center">
+              Your order has been updated in the system.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {showErrorToast && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-[#101922]/60 backdrop-blur-sm" onClick={() => setShowErrorToast(false)}>
+          <div className="bg-[#101922] border border-red-500/20 rounded-xl p-12 shadow-[0_0_50px_-12px_rgba(239,68,68,0.3)] flex flex-col items-center gap-6 max-w-sm w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="size-16 rounded-full bg-red-500/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-red-500 text-4xl">cancel</span>
+            </div>
+            <div className="text-center">
+              <h2 className="text-white text-2xl font-bold tracking-tight mb-2">
+                Save Order Failed
+              </h2>
+              <p className="text-white/50 text-sm leading-relaxed">
+                Please check your connection and try again.
+              </p>
+            </div>
+            <div className="w-12 h-1 bg-red-500/20 rounded-full"></div>
+          </div>
+        </div>
       )}
     </div >
   );

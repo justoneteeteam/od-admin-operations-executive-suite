@@ -327,7 +327,7 @@ const SettingsPage: React.FC = () => {
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
                           <span className="text-sm text-white">{store.gsLastSyncAt ? timeAgo(store.gsLastSyncAt) : '--'}</span>
-                          <span className="text-xs text-text-muted">{store.gsLastSyncAt ? 'Auto-sync' : 'Never synced'}</span>
+                          <span className="text-xs text-text-muted">{isConnected ? 'Auto-syncs every 3h' : 'Never synced'}</span>
                         </div>
                       </td>
                       <td className="py-4 px-6 text-right">

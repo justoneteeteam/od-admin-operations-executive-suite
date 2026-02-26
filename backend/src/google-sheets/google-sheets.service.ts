@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 export interface SyncResult {
     success: boolean;
@@ -37,6 +38,8 @@ interface SheetRow {
     notes?: string;
     rowIndex: number;
     orderDate?: string;
+    fulfillmentCenter?: string;
+    warehouse?: string;
 }
 
 @Injectable()
@@ -49,6 +52,26 @@ export class GoogleSheetsService {
         if (!dateStr) return null;
         const date = new Date(dateStr);
         return isNaN(date.getTime()) ? null : date;
+    }
+
+    @Cron('0 */3 * * *')
+    async handleCronSync() {
+        this.logger.log('Running scheduled Google Sheets sync for all connected stores');
+        const stores = await this.prisma.storeSettings.findMany({
+            where: { gsConnected: true, gsSpreadsheetId: { not: null } }
+        });
+
+        for (const store of stores) {
+            try {
+                this.logger.log(`Syncing store: ${store.storeName} (${store.id})`);
+                const result = await this.syncFromSheet(store.id);
+                if (!result.success) {
+                    this.logger.error(`Store ${store.storeName} sync completed with errors: ${result.errors.join(', ')}`);
+                }
+            } catch (err: any) {
+                this.logger.error(`Failed to sync store ${store.storeName}: ${err.message}`);
+            }
+        }
     }
 
     async syncFromSheet(storeId: string): Promise<SyncResult> {
@@ -212,6 +235,8 @@ export class GoogleSheetsService {
                 trackingNumber: get('trackingNumber'),
                 courier: get('courier'),
                 notes: get('notes'),
+                fulfillmentCenter: get('fulfillmentCenter'),
+                warehouse: get('warehouse'),
                 rowIndex: index + 2, // +2 for header row + 0-index
             } as SheetRow;
         });
@@ -241,6 +266,8 @@ export class GoogleSheetsService {
             trackingNumber: ['tracking number', 'tracking', 'awb', 'tracking no'],
             courier: ['courier', 'carrier', 'shipping partner', 'logistics'],
             notes: ['notes', 'note', 'remarks', 'comment', 'comments'],
+            fulfillmentCenter: ['fulfillment center', 'fc', 'fulfillment', 'fc name', 'fc location'],
+            warehouse: ['warehouse', 'wh', 'warehouse location', 'wh name'],
         };
 
         for (const [field, aliasList] of Object.entries(aliases)) {
@@ -322,6 +349,26 @@ export class GoogleSheetsService {
         const taxCollected = Number(firstRow.tax) || 0; // Assuming 'tax' column exists or defaults to 0
         const totalAmount = subtotal + shippingFee + taxCollected - discountGiven;
 
+        // Find fulfillment center if provided
+        let fulfillmentCenterId: string | undefined = undefined;
+        if (firstRow.fulfillmentCenter) {
+            const fc = await this.prisma.fulfillmentCenter.findFirst({
+                where: {
+                    OR: [
+                        { name: { contains: firstRow.fulfillmentCenter, mode: 'insensitive' } },
+                        { code: { equals: firstRow.fulfillmentCenter, mode: 'insensitive' } }
+                    ]
+                }
+            });
+            if (fc) fulfillmentCenterId = fc.id;
+        }
+
+        // Handle internal notes to include warehouse if present
+        let internalNotesString = '';
+        if (firstRow.warehouse) {
+            internalNotesString = `Warehouse Extracted: ${firstRow.warehouse}`;
+        }
+
         // 5. Check if order exists
         const existingOrder = await this.prisma.order.findUnique({
             where: { orderNumber },
@@ -351,6 +398,8 @@ export class GoogleSheetsService {
                     trackingNumber: firstRow.trackingNumber || existingOrder.trackingNumber,
                     courier: firstRow.courier || existingOrder.courier,
                     notes: firstRow.notes || existingOrder.notes,
+                    internalNotes: internalNotesString ? (existingOrder.internalNotes ? `${existingOrder.internalNotes} | ${internalNotesString}` : internalNotesString) : (existingOrder.internalNotes || null),
+                    fulfillmentCenterId: fulfillmentCenterId || existingOrder.fulfillmentCenterId,
                     lastSyncedAt: new Date(),
                     syncStatus: 'synced',
                 },
@@ -400,6 +449,8 @@ export class GoogleSheetsService {
                     trackingNumber: firstRow.trackingNumber,
                     courier: firstRow.courier,
                     notes: firstRow.notes,
+                    internalNotes: internalNotesString || null,
+                    fulfillmentCenterId: fulfillmentCenterId || null,
                     lastSyncedAt: new Date(),
                     syncStatus: 'synced',
                     orderDate: orderDate || new Date(),
