@@ -27,6 +27,10 @@ class CreateOrderItemDto {
 
 export class CreateOrderDto {
     @IsString()
+    @IsOptional()
+    orderNumber?: string;
+
+    @IsString()
     @IsNotEmpty()
     customerId: string;
 

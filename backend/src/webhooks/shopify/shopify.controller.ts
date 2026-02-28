@@ -20,7 +20,26 @@ export class ShopifyController {
                 return { message: 'Order created successfully' };
             } catch (error) {
                 console.error('Shopify Webhook processing failed:', error.message);
-                // We still return 200 to Shopify so it doesn't infinitely retry unless it's a critical infrastructure failure
+                return { message: 'Webhook received, but internal processing failed' };
+            }
+        }
+        return { message: 'Ignored unsupported topic' };
+    }
+
+    @Public()
+    @Post('fulfillment-create')
+    @HttpCode(200)
+    async handleFulfillmentCreate(
+        @Body() payload: any,
+        @Headers('x-shopify-topic') topic: string,
+        @Headers('x-shopify-shop-domain') shopDomain: string
+    ) {
+        if (topic === 'fulfillments/create') {
+            try {
+                await this.shopifyService.processFulfillmentWebhook(payload, shopDomain);
+                return { message: 'Fulfillment processed successfully' };
+            } catch (error) {
+                console.error('Shopify Fulfillment Webhook processing failed:', error.message);
                 return { message: 'Webhook received, but internal processing failed' };
             }
         }

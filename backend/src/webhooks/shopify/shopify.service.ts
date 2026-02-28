@@ -84,6 +84,7 @@ export class ShopifyService {
 
             // 3. Construct CreateOrderDto
             const createOrderDto: CreateOrderDto = {
+                orderNumber: payload.name || String(payload.id),
                 customerId,
                 storeId: shopDomain,
                 storeName: shopDomain,
@@ -101,7 +102,7 @@ export class ShopifyService {
                 totalAmount: Number(payload.total_price) || 0,
 
                 orderStatus: payload.fulfillment_status === 'fulfilled' ? 'Shipped' : 'Pending',
-                notes: payload.note || undefined,
+                notes: payload.note ? `${payload.note}\n[SHOPIFY_ORDER_ID:${payload.id}]` : `[SHOPIFY_ORDER_ID:${payload.id}]`,
                 items: orderItems,
             };
 
@@ -111,6 +112,67 @@ export class ShopifyService {
 
         } catch (error) {
             this.logger.error(`Error processing webhook payload for Order #${payload.order_number}`, error.stack);
+            throw error;
+        }
+    }
+
+    async processFulfillmentWebhook(payload: any, shopDomain: string) {
+        this.logger.log(`Processing Shopify Fulfillment Webhook for Order ID: ${payload.order_id}`);
+
+        try {
+            const shopifyOrderId = payload.order_id;
+            if (!shopifyOrderId) {
+                this.logger.warn('Fulfillment payload missing order_id. Skipping.');
+                return;
+            }
+
+            // Find order by matching the appended hidden ID in notes
+            const order = await this.prisma.order.findFirst({
+                where: {
+                    notes: {
+                        contains: `[SHOPIFY_ORDER_ID:${shopifyOrderId}]`
+                    }
+                }
+            });
+
+            if (!order) {
+                this.logger.warn(`Internal Order not found for Shopify Order ID: ${shopifyOrderId}. Cannot attach tracking.`);
+                return;
+            }
+
+            // Extract tracking info
+            const trackingNumber = payload.tracking_numbers?.[0] || payload.tracking_number;
+            const trackingCompany = payload.tracking_companies?.[0] || payload.tracking_company;
+
+            if (trackingNumber) {
+                // Update order status and tracking details
+                await this.prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        orderStatus: 'Shipped',
+                        trackingNumber: trackingNumber,
+                        courier: trackingCompany || order.courier,
+                        shippedDate: new Date(),
+                    }
+                });
+
+                // Also append to TrackingHistory table so it tracks properly for UI
+                await this.prisma.trackingHistory.create({
+                    data: {
+                        orderId: order.id,
+                        trackingNumber: trackingNumber,
+                        carrierName: trackingCompany || 'Unknown',
+                        status: 'Shipped',
+                    }
+                });
+
+                this.logger.log(`Successfully attached Tracking Number ${trackingNumber} to Internal Order ${order.orderNumber}`);
+            } else {
+                this.logger.log(`Fulfillment received for Order ${order.orderNumber} but no tracking number was included. Status untouched.`);
+            }
+
+        } catch (error) {
+            this.logger.error(`Error processing fulfillment webhook for Order ID ${payload.order_id}`, error.stack);
             throw error;
         }
     }

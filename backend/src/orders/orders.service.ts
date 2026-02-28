@@ -16,10 +16,10 @@ export class OrdersService {
     ) { }
 
     async create(createOrderDto: CreateOrderDto) {
-        const { items, ...orderData } = createOrderDto;
+        const { items, orderNumber: providedOrderNumber, ...orderData } = createOrderDto;
 
-        // Generate unique order number
-        const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+        // Generate unique order number or use provided one
+        const orderNumber = providedOrderNumber || `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
 
         // UUID regex for validation
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
