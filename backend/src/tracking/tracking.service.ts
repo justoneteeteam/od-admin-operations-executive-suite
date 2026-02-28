@@ -104,7 +104,7 @@ export class TrackingService {
                 await this.whatsappService.sendTemplateMessage(
                     order.customer.phone,
                     templateName,
-                    [safeName, order.orderNumber, trackingUrl, storeName],
+                    [safeName, order.orderNumber],
                     { orderId: order.id, customerId: order.customerId }
                 );
                 this.logger.log(`In Transit Notification sent for Order ${order.orderNumber} using template ${templateName}`);

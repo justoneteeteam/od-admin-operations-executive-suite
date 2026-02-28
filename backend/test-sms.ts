@@ -45,7 +45,7 @@ async function main() {
         const result = await whatsappService.sendTemplateMessage(
             order.customer.phone,
             templateName,
-            [order.customer.name || 'Customer', order.orderNumber, order.storeName || 'Your Store'],
+            [order.customer.name || 'Customer', order.orderNumber],
             { orderId: order.id, customerId: order.customerId }
         );
         console.log('Result:', result);
