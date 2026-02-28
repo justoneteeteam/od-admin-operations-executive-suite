@@ -111,6 +111,18 @@ export class TrackingService {
             } catch (e) {
                 this.logger.error(`Failed to send WhatsApp for Order ${order.orderNumber}: ${e.message}`, e.stack);
             }
+
+        } else if (subStatus && subStatus.startsWith('Delivered')) {
+            // Package was delivered - update order to Delivered
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: {
+                    shippingStatus: 'Delivered',
+                    orderStatus: 'Delivered',
+                    deliveredDate: statusDate,
+                },
+            });
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Delivered' (17Track sub_status: ${subStatus})`);
         }
     }
 
