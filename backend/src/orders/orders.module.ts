@@ -10,5 +10,6 @@ import { InventoryModule } from '../inventory/inventory.module';
   imports: [PrismaModule, ProfitsModule, InventoryModule],
   controllers: [OrdersController],
   providers: [OrdersService],
+  exports: [OrdersService],
 })
 export class OrdersModule { }
