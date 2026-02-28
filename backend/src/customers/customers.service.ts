@@ -55,11 +55,56 @@ export class CustomersService {
       }
       : {};
 
-    return this.prisma.customer.findMany({
+    const customers = await this.prisma.customer.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 200,
+      include: {
+        orders: {
+          select: { totalAmount: true },
+        },
+        _count: {
+          select: { orders: true },
+        },
+      },
     });
+
+    return customers.map(c => ({
+      ...c,
+      ordersCount: c._count.orders,
+      totalSpent: c.orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0),
+      orders: undefined,
+      _count: undefined,
+    }));
+  }
+
+  async bulkBlock(phones: string[], emails: string[]) {
+    const conditions: any[] = [];
+
+    if (phones?.length) {
+      const normalizedPhones = phones.map(p => this.normalizePhone(p)).filter(Boolean);
+      if (normalizedPhones.length) {
+        conditions.push(...normalizedPhones.map(p => ({ phone: { contains: p } })));
+      }
+    }
+
+    if (emails?.length) {
+      const cleanEmails = emails.map(e => e.trim().toLowerCase()).filter(Boolean);
+      if (cleanEmails.length) {
+        conditions.push(...cleanEmails.map(e => ({ email: { equals: e, mode: 'insensitive' as const } })));
+      }
+    }
+
+    if (conditions.length === 0) {
+      return { blocked: 0 };
+    }
+
+    const result = await this.prisma.customer.updateMany({
+      where: { OR: conditions, status: { not: 'Blocked' } },
+      data: { status: 'Blocked' },
+    });
+
+    return { blocked: result.count };
   }
 
   async findOne(id: string) {

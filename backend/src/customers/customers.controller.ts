@@ -12,6 +12,11 @@ export class CustomersController {
     return this.customersService.create(createCustomerDto);
   }
 
+  @Post('bulk-block')
+  bulkBlock(@Body() body: { phones?: string[]; emails?: string[] }) {
+    return this.customersService.bulkBlock(body.phones || [], body.emails || []);
+  }
+
   @Get()
   findAll() {
     return this.customersService.findAll();

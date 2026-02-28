@@ -45,4 +45,9 @@ export const customersService = {
         const response = await apiClient.delete(`/customers/${id}`);
         return response.data;
     },
+
+    async bulkBlock(phones: string[], emails: string[]) {
+        const response = await apiClient.post('/customers/bulk-block', { phones, emails });
+        return response.data;
+    },
 };
