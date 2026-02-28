@@ -53,24 +53,29 @@ export class ShopifyService {
             const lineItems = payload.line_items || [];
 
             for (const item of lineItems) {
-                // Find product by SKU
-                const product = await this.prisma.product.findUnique({
+                let product = await this.prisma.product.findUnique({
                     where: { sku: item.sku }
                 });
 
-                if (product) {
-                    orderItems.push({
-                        productId: product.id,
-                        productName: item.name || product.name,
-                        sku: item.sku,
-                        quantity: item.quantity,
-                        unitPrice: Number(item.price) || Number(product.sellingPrice),
+                if (!product) {
+                    this.logger.log(`Product SKU ${item.sku} not found. Auto-creating product...`);
+                    product = await this.prisma.product.create({
+                        data: {
+                            name: item.name || `Unknown Product (${item.sku})`,
+                            sku: item.sku,
+                            unitCost: 0,
+                            sellingPrice: Number(item.price) || 0,
+                        }
                     });
-                } else {
-                    // Log warning, optionally we could still ingest it or throw an error based on strictness.
-                    // For now, we will map it without a productId if possible, but our CreateOrderDto requires it strictly based on the previous error log logic.
-                    this.logger.warn(`Product SKU ${item.sku} not found in internal system. Skipping item...`);
                 }
+
+                orderItems.push({
+                    productId: product.id,
+                    productName: item.name || product.name,
+                    sku: item.sku,
+                    quantity: item.quantity,
+                    unitPrice: Number(item.price) || Number(product.sellingPrice),
+                });
             }
 
             if (orderItems.length === 0) {
@@ -81,7 +86,7 @@ export class ShopifyService {
             const createOrderDto: CreateOrderDto = {
                 customerId,
                 storeId: shopDomain,
-                storeName: payload.source_name || shopDomain,
+                storeName: shopDomain,
                 shippingAddressLine1: payload.shipping_address?.address1 || 'N/A',
                 shippingAddressLine2: payload.shipping_address?.address2,
                 shippingCity: payload.shipping_address?.city || 'N/A',
