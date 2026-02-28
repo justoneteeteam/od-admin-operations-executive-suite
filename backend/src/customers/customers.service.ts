@@ -59,22 +59,25 @@ export class CustomersService {
       where,
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: {
-        orders: {
-          select: { totalAmount: true },
-        },
-        _count: {
-          select: { orders: true },
-        },
-      },
     });
+
+    // Aggregate order stats per customer via raw SQL
+    const customerIds = customers.map(c => c.id);
+    if (customerIds.length === 0) return customers;
+
+    const stats: any[] = await this.prisma.$queryRaw`
+      SELECT customer_id, COUNT(*)::int as orders_count, COALESCE(SUM(total_amount), 0)::float as total_spent
+      FROM orders
+      WHERE customer_id = ANY(${customerIds}::uuid[])
+      GROUP BY customer_id
+    `;
+
+    const statsMap = new Map(stats.map(s => [s.customer_id, s]));
 
     return customers.map(c => ({
       ...c,
-      ordersCount: c._count.orders,
-      totalSpent: c.orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0),
-      orders: undefined,
-      _count: undefined,
+      ordersCount: statsMap.get(c.id)?.orders_count || 0,
+      totalSpent: statsMap.get(c.id)?.total_spent || 0,
     }));
   }
 
