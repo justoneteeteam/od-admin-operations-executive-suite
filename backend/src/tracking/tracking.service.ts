@@ -158,19 +158,19 @@ export class TrackingService {
     }
 
     private getTemplateForCountry(country: string): string {
-        if (!country) return 'order_in_transit';
+        if (!country) return 'sms_in_transit_en';
 
         const normalizedCountry = country.toLowerCase().trim();
 
         if (normalizedCountry === 'italy' || normalizedCountry === 'italia') {
-            return 'italian_order_in_transit';
+            return 'sms_in_transit_it';
         }
 
         if (normalizedCountry === 'spain' || normalizedCountry === 'españa' || normalizedCountry === 'espana') {
-            return 'spanish_order_in_transit';
+            return 'sms_in_transit_es';
         }
 
-        return 'order_in_transit'; // Default to English
+        return 'sms_in_transit_en'; // Default to English
     }
 
     // Placeholder for Phase 2

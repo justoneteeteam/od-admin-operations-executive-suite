@@ -42,7 +42,8 @@ export class WhatsappService {
             });
 
             // 3. Send via Twilio
-            const from = process.env.TWILIO_WHATSAPP_NUMBER || process.env.TWILIO_PHONE_NUMBER;
+            // For SMS, we strictly prioritize TWILIO_PHONE_NUMBER.
+            const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_WHATSAPP_NUMBER || '+12765311327';
             if (!from) throw new Error('TWILIO_PHONE_NUMBER not configured');
 
             // Ensure we use plain E.164 phone numbers for standard SMS

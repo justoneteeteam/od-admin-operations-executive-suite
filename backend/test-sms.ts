@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { PrismaService } from './src/prisma/prisma.service';
-import { Twilio } from 'twilio';
+import { WhatsappService } from './src/notifications/whatsapp.service';
 
 const prisma = new PrismaService();
 
@@ -36,29 +36,21 @@ async function main() {
         return;
     }
 
-    const client = new Twilio(accountSid, authToken);
+    const whatsappService = new WhatsappService(prisma);
+    const templateName = 'sms_in_transit_es';
 
-    let toPhone = order.customer?.phone;
-    if (!toPhone) {
-        console.log('Please specify a phone number to test with (customer has no phone in DB):');
-        return;
-    }
-
-    // Ensure we use plain E.164 phone numbers for standard SMS
-    const fromClean = fromNumber.replace('whatsapp:', '');
-    const toClean = toPhone.replace('whatsapp:', '');
-
-    console.log(`Sending SMS from ${fromClean} to ${toClean}...`);
+    console.log(`Sending SMS using template '${templateName}' from ${fromNumber} to ${order.customer.phone}...`);
 
     try {
-        const message = await client.messages.create({
-            body: `Hi ${order.customer?.name || 'Customer'}! Your order ${order.orderNumber} is confirmed and being processed.`,
-            from: fromClean,
-            to: toClean,
-        });
-        console.log('Sent successfully! Message SID:', message.sid);
+        const result = await whatsappService.sendTemplateMessage(
+            order.customer.phone,
+            templateName,
+            [order.customer.name || 'Customer', order.orderNumber, order.storeName || 'Your Store'],
+            { orderId: order.id, customerId: order.customerId }
+        );
+        console.log('Result:', result);
     } catch (err) {
-        console.error('Error sending SMS:', err.message);
+        console.error('Error sending SMS via Service:', err.message);
     }
 }
 
