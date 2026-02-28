@@ -123,6 +123,37 @@ export class TrackingService {
                 },
             });
             this.logger.log(`Updated Order ${order.orderNumber} to 'Delivered' (17Track sub_status: ${subStatus})`);
+        } else if (mainStatus === 'Returned') {
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: {
+                    shippingStatus: 'Returned',
+                    orderStatus: 'Returned',
+                    returnInitiatedDate: statusDate,
+                    returnReason: description || 'Returned to sender by carrier',
+                },
+            });
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Returned'`);
+        } else if (mainStatus === 'Undelivered' || mainStatus === 'DeliveryFailure') {
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: {
+                    shippingStatus: 'Undelivered',
+                    orderStatus: 'Exception', // Flag as exception internally
+                    notes: order.notes ? `${order.notes}\n[Tracking] Undelivered: ${description}` : `[Tracking] Undelivered: ${description}`
+                },
+            });
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Undelivered'`);
+        } else if (mainStatus === 'Exception') {
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: {
+                    shippingStatus: 'Exception',
+                    orderStatus: 'Exception',
+                    notes: order.notes ? `${order.notes}\n[Tracking] Exception: ${description}` : `[Tracking] Exception: ${description}`
+                },
+            });
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Exception'`);
         }
     }
 
