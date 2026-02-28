@@ -1,10 +1,12 @@
 import { Controller, Post, Body, Headers, HttpCode } from '@nestjs/common';
 import { ShopifyService } from './shopify.service';
+import { Public } from '../../auth/public.decorator';
 
 @Controller('webhooks/shopify')
 export class ShopifyController {
     constructor(private readonly shopifyService: ShopifyService) { }
 
+    @Public()
     @Post('order-create')
     @HttpCode(200)
     async handleOrderCreate(
