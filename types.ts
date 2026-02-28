@@ -31,6 +31,8 @@ export interface Order {
   notes?: string;
   returnReason?: string;
   returnDate?: string;
+  trackingNumber?: string;
+  trackingHistory?: any[];
 }
 
 export interface Product {

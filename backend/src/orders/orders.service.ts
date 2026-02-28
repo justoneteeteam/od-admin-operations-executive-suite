@@ -156,6 +156,11 @@ export class OrdersService {
                     },
                 },
                 fulfillmentCenter: true,
+                trackingHistory: {
+                    orderBy: {
+                        statusDate: 'desc'
+                    }
+                }
             },
         });
 

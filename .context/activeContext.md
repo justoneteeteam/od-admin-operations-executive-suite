@@ -8,7 +8,7 @@
 
 ## Recent Accomplishments
 - **Roadmap Defined**: Established clear V1 -> V4 roadmap.
-- **Deployment**: Production Live on Railway.
+- **Deployment**: Production Live on Railway, custom domain `erp.justonetee.org` connected and routing correctly on port 80.
 - **WhatsApp**: Multi-language support (English/Italian/Spanish) & Templates configured.
 - **17Track**: Webhook fully verified and auto-updating orders.
 
@@ -25,4 +25,4 @@
 
 ## Active Tasks
 - Monitoring Railway logs for any runtime anomalies.
-- Awaiting user confirmation of successful WhatsApp delivery.
+- Awaiting next task/objective from the user.

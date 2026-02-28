@@ -20,9 +20,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { ShopifyModule } from './webhooks/shopify/shopify.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot()],
+  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule],
   controllers: [AppController],
   providers: [
     AppService,

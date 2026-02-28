@@ -30,18 +30,50 @@ export class TrackingService {
 
         this.logger.log(`Processing ${trackingNumber}, Status: ${subStatus}`);
 
-        if (subStatus === 'InTransit_Arrival') {
-            // 1. Find Order by Tracking Number
-            const order = await this.prisma.order.findFirst({
-                where: { trackingNumber: trackingNumber },
-                include: { customer: true },
-            });
+        // 1. Find Order by Tracking Number
+        const order = await this.prisma.order.findFirst({
+            where: { trackingNumber: trackingNumber },
+            include: { customer: true },
+        });
 
-            if (!order) {
-                this.logger.warn(`Order not found for tracking number: ${trackingNumber}`);
-                return;
+        if (!order) {
+            this.logger.warn(`Order not found for tracking number: ${trackingNumber}`);
+            return;
+        }
+
+        // Save Tracking History Log
+        const carrierName = item.track_info?.latest_provider?.provider?.name || item.track_info?.provider?.provider?.name || item.track_info?.latest_provider?.provider?.alias || null;
+        const carrierCode = item.track_info?.latest_provider?.provider?.key?.toString() || item.track_info?.provider?.provider?.key?.toString() || null;
+        const mainStatus = item.track_info?.latest_status?.status || 'Unknown';
+        const description = item.track_info?.latest_event?.description || null;
+        const location = item.track_info?.latest_event?.location || null;
+        const timeUtcStr = item.track_info?.latest_event?.time_utc;
+        const statusDate = timeUtcStr ? new Date(timeUtcStr) : new Date();
+
+        await this.prisma.trackingHistory.create({
+            data: {
+                orderId: order.id,
+                trackingNumber: trackingNumber,
+                carrierCode: carrierCode,
+                carrierName: carrierName,
+                status: mainStatus,
+                substatus: subStatus || null,
+                description: description,
+                location: location,
+                statusDate: statusDate,
+                rawData: item as any
             }
+        });
 
+        // Update Courier if missing on the Order
+        if (!order.courier && carrierName) {
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: { courier: carrierName }
+            });
+        }
+
+        if (subStatus === 'InTransit_Arrival') {
             if (!order.customer) {
                 this.logger.warn(`Customer not found for order: ${order.orderNumber}`);
                 return;

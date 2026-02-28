@@ -761,7 +761,21 @@ const OrdersPage: React.FC = () => {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-muted uppercase ml-1">Tracking Number</label>
+                      <div className="flex justify-between items-center ml-1 mb-1">
+                        <label className="text-[10px] font-black text-text-muted uppercase">Tracking Number</label>
+                        {editOrder.trackingNumber && (
+                          <a
+                            href={`https://t.17track.net/en#nums=${editOrder.trackingNumber}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] text-primary hover:text-white flex items-center gap-1 transition-colors font-semibold"
+                            title="Track package on 17Track"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                            Track Package
+                          </a>
+                        )}
+                      </div>
                       <input
                         className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 font-mono"
                         placeholder="AWB-XXXXX"
@@ -823,22 +837,25 @@ const OrdersPage: React.FC = () => {
                         <option value="No Answer">No Answer</option>
                       </select>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order (Shipping) Status</label>
-                      <select
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
-                        value={editOrder.orderStatus}
-                        onChange={(e) => handleInputChange('orderStatus', e.target.value)}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="In Transit">In Transit</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Returned">Returned</option>
-                        <option value="Cancelled">Cancelled</option>
-                      </select>
-                    </div>
+                    {editOrder.confirmationStatus !== 'Cancelled' && (
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order (Shipping) Status</label>
+                        <select
+                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          value={editOrder.orderStatus}
+                          onChange={(e) => handleInputChange('orderStatus', e.target.value)}
+                          disabled={editOrder.confirmationStatus !== 'Confirmed'}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Processing">Processing</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="In Transit">In Transit</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Returned">Returned</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   {/* Revenue Breakdown */}
@@ -891,26 +908,38 @@ const OrdersPage: React.FC = () => {
                 </div>
               </section>
 
-              {/* Order History Logs Section (Mocked for now) */}
+              {/* Order History Logs Section */}
               <section className="space-y-4">
                 <h3 className="text-xs font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm">history</span>
-                  Order History Logs
+                  Tracking History Logs
                 </h3>
                 <div className="bg-[#17232f] rounded-2xl p-6 border border-border-dark space-y-8">
-                  {MOCK_LOGS.map((log, i) => (
-                    <div key={i} className="relative flex gap-6 pl-2 group">
-                      {i !== MOCK_LOGS.length - 1 && (
-                        <div className="absolute left-[13px] top-6 bottom-[-32px] w-px bg-border-dark"></div>
-                      )}
-                      <div className="z-10 mt-1.5 size-2.5 rounded-full bg-primary ring-4 ring-primary/10 shrink-0"></div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-text-muted tracking-widest uppercase">{log.date}</span>
-                        <span className="text-sm font-black text-white">{log.status}</span>
-                        <span className="text-xs text-text-muted italic opacity-80">{log.note}</span>
-                      </div>
+                  {editOrder.trackingHistory && editOrder.trackingHistory.length > 0 ? (
+                    editOrder.trackingHistory.map((log: any, i: number) => {
+                      const dateObj = new Date(log.statusDate);
+                      const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                      return (
+                        <div key={log.id || i} className="relative flex gap-6 pl-2 group">
+                          {i !== editOrder.trackingHistory.length - 1 && (
+                            <div className="absolute left-[13px] top-6 bottom-[-32px] w-px bg-border-dark"></div>
+                          )}
+                          <div className="z-10 mt-1.5 size-2.5 rounded-full bg-primary ring-4 ring-primary/10 shrink-0"></div>
+                          <div className="flex flex-col gap-1 w-full relative">
+                            <span className="text-[10px] font-black text-text-muted tracking-widest uppercase">{formattedDate}</span>
+                            <span className="text-sm font-black text-white">{log.status} <span className="text-text-muted">{log.substatus ? `- ${log.substatus}` : ''}</span></span>
+                            {log.description && <span className="text-xs text-text-muted italic opacity-80 mt-1">{log.description}</span>}
+                            {log.carrierName && <span className="text-[10px] text-primary mt-0.5">{log.carrierName} {log.location ? `— ${log.location}` : ''}</span>}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-4">
+                      <span className="text-xs text-text-muted italic">No tracking logs available for this order.</span>
                     </div>
-                  ))}
+                  )}
                 </div>
               </section>
 

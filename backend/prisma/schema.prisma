@@ -214,6 +214,7 @@ model Order {
   fulfillmentCenter    FulfillmentCenter? @relation(fields: [fulfillmentCenterId], references: [id])
   items                OrderItem[]
   profitCalculations   ProfitCalculation[]
+  trackingHistory      TrackingHistory[]
 
   @@map("orders")
 }
@@ -255,6 +256,8 @@ model TrackingHistory {
   syncedAt       DateTime  @default(now()) @map("synced_at") @db.Timestamptz(6)
   rawData        Json?     @map("raw_data")
   createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order          Order     @relation(fields: [orderId], references: [id])
 
   @@map("tracking_history")
 }
