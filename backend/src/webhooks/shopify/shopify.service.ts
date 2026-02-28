@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrdersService } from '../../orders/orders.service';
+import { StoreSettingsService } from '../../store-settings/store-settings.service';
 import { CreateOrderDto } from '../../orders/dto/create-order.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class ShopifyService {
     constructor(
         private prisma: PrismaService,
         private ordersService: OrdersService,
+        private storeSettingsService: StoreSettingsService,
     ) { }
 
     async processOrderWebhook(payload: any, shopDomain: string) {
@@ -84,12 +86,30 @@ export class ShopifyService {
                 throw new Error(`Order #${payload.order_number} has no valid line items mapped to internal products.`);
             }
 
-            // 3. Construct CreateOrderDto
+            // 3. Resolve Store from StoreSettings by domain
+            let store = await this.prisma.storeSettings.findFirst({
+                where: {
+                    OR: [
+                        { storeUrl: { contains: shopDomain } },
+                        { storeName: shopDomain },
+                    ]
+                }
+            });
+
+            if (!store) {
+                this.logger.log(`Store not found for domain '${shopDomain}'. Auto-creating store...`);
+                store = await this.storeSettingsService.create({
+                    storeName: shopDomain,
+                    storeUrl: `https://${shopDomain}`,
+                });
+            }
+
+            // 4. Construct CreateOrderDto
             const createOrderDto: CreateOrderDto = {
                 orderNumber: payload.name || String(payload.id),
                 customerId,
-                storeId: shopDomain,
-                storeName: shopDomain,
+                storeId: store.id,
+                storeName: store.storeName,
                 shippingAddressLine1: payload.shipping_address?.address1 || 'N/A',
                 shippingAddressLine2: payload.shipping_address?.address2,
                 shippingCity: payload.shipping_address?.city || 'N/A',
