@@ -53,16 +53,18 @@ export class ShopifyService {
             const lineItems = payload.line_items || [];
 
             for (const item of lineItems) {
+                const itemSku = item.sku || `NO-SKU-${item.variant_id || item.product_id || item.id || Math.random().toString(36).substring(7).toUpperCase()}`;
+
                 let product = await this.prisma.product.findUnique({
-                    where: { sku: item.sku }
+                    where: { sku: itemSku }
                 });
 
                 if (!product) {
-                    this.logger.log(`Product SKU ${item.sku} not found. Auto-creating product...`);
+                    this.logger.log(`Product SKU ${itemSku} not found. Auto-creating product...`);
                     product = await this.prisma.product.create({
                         data: {
-                            name: item.name || `Unknown Product (${item.sku})`,
-                            sku: item.sku,
+                            name: item.name || `Unknown Product (${itemSku})`,
+                            sku: itemSku,
                             unitCost: 0,
                             sellingPrice: Number(item.price) || 0,
                         }
@@ -72,7 +74,7 @@ export class ShopifyService {
                 orderItems.push({
                     productId: product.id,
                     productName: item.name || product.name,
-                    sku: item.sku,
+                    sku: itemSku,
                     quantity: item.quantity,
                     unitPrice: Number(item.price) || Number(product.sellingPrice),
                 });
