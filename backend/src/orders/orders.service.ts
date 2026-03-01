@@ -174,6 +174,11 @@ export class OrdersService {
                     orderBy: {
                         statusDate: 'desc'
                     }
+                },
+                customerResponses: {
+                    orderBy: {
+                        sentAt: 'desc'
+                    }
                 }
             },
         });

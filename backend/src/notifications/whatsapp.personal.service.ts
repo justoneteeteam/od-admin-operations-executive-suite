@@ -1,0 +1,168 @@
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import * as QRCode from 'qrcode';
+
+@Injectable()
+export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
+    private client: Client;
+    private readonly logger = new Logger(WhatsappPersonalService.name);
+
+    // State 
+    private currentQrCode: string | null = null;
+    public isConnected: boolean = false;
+    public clientPhone: string | null = null;
+
+    constructor(@Inject(PrismaService) private prisma: PrismaService) { }
+
+    async onModuleInit() {
+        this.logger.log('Initializing Personal WhatsApp Client...');
+        this.initializeClient();
+    }
+
+    async onModuleDestroy() {
+        if (this.client) {
+            await this.client.destroy();
+        }
+    }
+
+    private initializeClient() {
+        // Use LocalAuth to persist session data (avoids re-scanning QR every restart)
+        this.client = new Client({
+            authStrategy: new LocalAuth({
+                clientId: 'admin-erp-whatsapp'
+            }),
+            puppeteer: {
+                // Must run without sandbox on Linux/Docker environments like Railway
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            }
+        });
+
+        // 1. QR Code generated
+        this.client.on('qr', async (qr) => {
+            this.logger.log('WhatsApp QR Code received. Awaiting scan...');
+            this.isConnected = false;
+            // Generate standard data URL for frontend
+            this.currentQrCode = await QRCode.toDataURL(qr, { margin: 2, width: 300 });
+        });
+
+        // 2. Client is authenticated
+        this.client.on('authenticated', () => {
+            this.logger.log('WhatsApp Personal Client Authenticated!');
+            this.currentQrCode = null; // Clear QR code
+        });
+
+        // 3. Client is ready (fully loaded chats, etc)
+        this.client.on('ready', () => {
+            this.logger.log('WhatsApp Personal Client Ready to send messages!');
+            this.isConnected = true;
+            this.clientPhone = this.client.info?.wid?.user || null;
+            this.currentQrCode = null;
+        });
+
+        // 4. Client disconnected or logged out
+        this.client.on('disconnected', (reason) => {
+            this.logger.warn(`WhatsApp disconnected: ${reason}`);
+            this.isConnected = false;
+            this.clientPhone = null;
+
+            // Reinitialize client to get a new QR code automatically
+            this.logger.log('Re-initializing WhatsApp client...');
+            this.client.destroy().then(() => {
+                this.initializeClient();
+            }).catch(err => {
+                this.logger.error('Failed to destroy client during restart', err);
+            });
+        });
+
+        // 5. Catch initialization errors (e.g., missing chromium)
+        this.client.initialize().catch(err => {
+            this.logger.error('Failed to initialize WhatsApp client: ', err);
+            this.isConnected = false;
+        });
+    }
+
+    public getStatus() {
+        return {
+            connected: this.isConnected,
+            phone: this.clientPhone,
+            hasQr: !!this.currentQrCode
+        };
+    }
+
+    public getQrCode() {
+        return this.currentQrCode;
+    }
+
+    public async disconnect() {
+        if (this.client && this.isConnected) {
+            this.logger.log('Logging out of WhatsApp web session manually.');
+            await this.client.logout(); // Triggers the 'disconnected' event
+            return { success: true };
+        }
+        return { success: false, message: 'Not connected' };
+    }
+
+    /**
+     * Compose and send a message using a template from the database
+     */
+    async sendTemplateMessage(
+        toE164: string, // e.g. +1234567890
+        templateName: string,
+        variables: string[],
+        context: { orderId?: string; customerId?: string }
+    ) {
+        try {
+            if (!this.isConnected) {
+                throw new Error('Personal WhatsApp client is not connected. Please scan QR code in Settings.');
+            }
+
+            // 1. Get Template
+            const template = await this.prisma.notificationTemplate.findUnique({
+                where: { templateName },
+            });
+
+            if (!template) {
+                throw new Error(`Template ${templateName} not found`);
+            }
+
+            // 2. Replace Variables
+            let body = template.bodyTemplate;
+            variables.forEach((val, index) => {
+                body = body.replace(`{{${index + 1}}}`, val);
+            });
+
+            // 3. Send via WhatsApp Web JS
+            // Format phone number to WhatsApp ID format (remove +, add @c.us)
+            const chatId = `${toE164.replace('+', '')}@c.us`;
+
+            this.logger.log(`Attempting to send Personal WhatsApp to ${chatId}`);
+
+            // Using a simple delay to mimic human speed slightly (optional, but good practice)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const message = await this.client.sendMessage(chatId, body);
+
+            // 4. Log to CustomerResponse
+            await this.prisma.customerResponse.create({
+                data: {
+                    orderId: context.orderId || '00000000-0000-0000-0000-000000000000',
+                    customerId: context.customerId,
+                    notificationType: 'whatsapp_personal',
+                    messageContent: body,
+                    messageTemplate: templateName,
+                    sentAt: new Date(),
+                    externalMessageId: message.id.id,
+                    externalStatus: 'sent',
+                    status: 'sent',
+                },
+            });
+
+            this.logger.log(`Personal WhatsApp sent to ${toE164}: ${message.id.id}`);
+            return { success: true, messageId: message.id.id };
+        } catch (error) {
+            this.logger.error(`Failed to send Personal WhatsApp: ${error.message}`, error.stack);
+            throw error;
+        }
+    }
+}

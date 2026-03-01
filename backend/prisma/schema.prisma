@@ -215,6 +215,7 @@ model Order {
   items                OrderItem[]
   profitCalculations   ProfitCalculation[]
   trackingHistory      TrackingHistory[]
+  customerResponses    CustomerResponse[]
 
   @@map("orders")
 }
@@ -282,9 +283,10 @@ model CustomerResponse {
   status            String?   @default("sent")
   externalMessageId String?   @map("external_message_id")
   externalStatus    String?   @map("external_status")
-  attemptNumber     Int?      @default(1) @map("attempt_number")
   errorMessage      String?   @map("error_message")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order             Order     @relation(fields: [orderId], references: [id])
 
   @@map("customer_responses")
 }

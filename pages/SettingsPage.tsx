@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import storeSettingsService, { StoreSettings } from '../src/services/settings.service';
 
-type ActiveTab = 'connection' | 'create';
+type ActiveTab = 'connection' | 'create' | 'whatsapp';
 
 const STORE_COLORS = [
   { bg: 'bg-indigo-100', text: 'text-indigo-600' },
@@ -48,6 +48,12 @@ const SettingsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  // WhatsApp State
+  const [waConnected, setWaConnected] = useState(false);
+  const [waPhone, setWaPhone] = useState<string | null>(null);
+  const [waQrCode, setWaQrCode] = useState<string | null>(null);
+  const [waLoading, setWaLoading] = useState(false);
+
   const emptyForm: Partial<StoreSettings> = {
     storeName: '',
     storeUrl: '',
@@ -72,6 +78,61 @@ const SettingsPage: React.FC = () => {
     if (openMenuId) window.addEventListener('click', handler);
     return () => window.removeEventListener('click', handler);
   }, [openMenuId]);
+
+  // WhatsApp Auto Polling
+  useEffect(() => {
+    let interval: any;
+    if (activeTab === 'whatsapp') {
+      fetchWaStatus();
+      interval = setInterval(fetchWaStatus, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeTab]);
+
+  const fetchWaStatus = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/notifications/whatsapp/status`);
+      const data = await res.json();
+      setWaConnected(data.connected);
+      setWaPhone(data.phone);
+
+      if (!data.connected && data.hasQr && !waQrCode) {
+        fetchWaQr();
+      } else if (data.connected && waQrCode) {
+        setWaQrCode(null);
+      }
+    } catch (err) {
+      console.error('Failed to fetch WA status:', err);
+    }
+  };
+
+  const fetchWaQr = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/notifications/whatsapp/qr`);
+      const data = await res.json();
+      if (data.success) {
+        setWaQrCode(data.qrCode);
+      }
+    } catch (err) {
+      console.error('Failed to fetch WA QR:', err);
+    }
+  };
+
+  const disconnectWa = async () => {
+    try {
+      setWaLoading(true);
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/notifications/whatsapp/disconnect`, { method: 'POST' });
+      setWaConnected(false);
+      setWaPhone(null);
+      setWaQrCode(null);
+    } catch (err) {
+      console.error('Failed to disconnect WA:', err);
+    } finally {
+      setWaLoading(false);
+    }
+  };
 
   const fetchStores = async () => {
     setIsLoading(true);
@@ -617,6 +678,107 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 
+  // ─── WHATSAPP PERSONAL TAB ───────────────────────────────────────────
+  const renderWhatsappTab = () => (
+    <div className="flex flex-col gap-6">
+      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-border-dark flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="size-5" />
+              Personal WhatsApp Connection
+            </h3>
+            <p className="text-text-muted text-xs">Connect your personal phone number via QR code to automatically send tracking updates (1 hour after "In Transit Arrival").</p>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${waConnected ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'}`}>
+            <span className={`size-2 rounded-full ${waConnected ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`}></span>
+            {waConnected ? 'Connected' : 'Awaiting Details'}
+          </span>
+        </div>
+
+        <div className="p-8 flex flex-col md:flex-row gap-8 items-center justify-center">
+          {waConnected ? (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="size-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-green-400 text-3xl">task_alt</span>
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-lg leading-none">WhatsApp Connected!</h4>
+                <p className="text-text-muted text-sm mt-2">Any 17Track Arrival notifications will be sent from <span className="font-bold text-white">+{waPhone?.replace('@c.us', '')}</span></p>
+              </div>
+              <button
+                onClick={disconnectWa}
+                disabled={waLoading}
+                className="mt-4 px-6 py-2 bg-red-500/10 text-red-500 font-bold text-sm rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-colors"
+              >
+                {waLoading ? 'Disconnecting...' : 'Disconnect Number'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-6">
+              <div className="flex flex-col items-center gap-2 text-center max-w-sm">
+                <h4 className="text-white font-bold text-lg">Scan to Connect</h4>
+                <p className="text-text-muted text-sm text-balance">1. Open WhatsApp on your phone<br />2. Tap Menu or Settings and select Linked Devices<br />3. Tap on Link a Device<br />4. Point your phone to this screen to capture the code.</p>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl shadow-xl">
+                {waQrCode ? (
+                  <img src={waQrCode} alt="WhatsApp QR Code" className="size-64" />
+                ) : (
+                  <div className="size-64 bg-gray-100 animate-pulse rounded-xl flex items-center justify-center">
+                    <span className="text-gray-400 font-bold text-sm">Loading QR...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-border-dark">
+          <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>assignment</span>
+            Message Templates
+          </h3>
+          <p className="text-text-muted text-xs mt-1">These default templates trigger exactly 1 hour after "In Transit Arrival" in the language matching the shipping country.</p>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
+            <span className="inline-flex px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase rounded border border-blue-500/20 w-fit">English Default</span>
+            <p className="text-text-muted text-xs whitespace-pre-wrap leading-relaxed opacity-80 pointer-events-none">
+              📦 Hi {'{Customer Name}'}! Your order from {'{Store Name}'} is arriving soon!<br />
+              💰 COD Amount: {'{COD Amount}'}<br />
+              📋 Items: {'{Items}'}<br />
+              🚚 The delivery driver will arrive in approximately 3-4 hours and will only attempt delivery once, so please be available!<br />
+              Thank you for shopping with us! 😊
+            </p>
+          </div>
+          <div className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
+            <span className="inline-flex px-2 py-0.5 bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase rounded border border-yellow-500/20 w-fit">Spanish Default</span>
+            <p className="text-text-muted text-xs whitespace-pre-wrap leading-relaxed opacity-80 pointer-events-none">
+              📦 ¡Hola {'{Customer Name}'}! Tu pedido de {'{Store Name}'} está llegando pronto.<br />
+              💰 Importe COD: €{'{COD Amount}'}<br />
+              📋 Artículos: {'{Items}'}<br />
+              🚚 El repartidor llegará en aproximadamente 3-4 horas y solo pasará una vez. ¡Por favor, estate disponible!<br />
+              ¡Gracias por tu compra! 😊
+            </p>
+          </div>
+          <div className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
+            <span className="inline-flex px-2 py-0.5 bg-green-500/10 text-green-400 text-[10px] font-bold uppercase rounded border border-green-500/20 w-fit">Italian Default</span>
+            <p className="text-text-muted text-xs whitespace-pre-wrap leading-relaxed opacity-80 pointer-events-none">
+              📦 Ciao {'{Customer Name}'}! Il tuo ordine da {'{Store Name}'} sta per arrivare!<br />
+              💰 Importo COD: €{'{COD Amount}'}<br />
+              📋 Articoli: {'{Items}'}<br />
+              🚚 Il corriere arriverà tra circa 3-4 ore e passerà una sola volta, assicurati di essere disponibile!<br />
+              Grazie per il tuo acquisto! 😊
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // ─── MAIN RENDER ─────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6 max-w-6xl">
@@ -679,10 +841,20 @@ const SettingsPage: React.FC = () => {
           </div>
           {activeTab === 'create' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
         </button>
+        <button
+          onClick={() => setActiveTab('whatsapp')}
+          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'whatsapp' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+        >
+          <div className="flex items-center gap-2">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="size-4" style={{ filter: activeTab !== 'whatsapp' ? 'grayscale(100%) opacity(60%)' : 'none' }} />
+            WhatsApp
+          </div>
+          {activeTab === 'whatsapp' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
+        </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'connection' ? renderConnectionTab() : renderCreateTab()}
+      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : renderCreateTab()}
     </div>
   );
 };

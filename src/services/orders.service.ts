@@ -46,6 +46,8 @@ export interface Order {
     trackingNumber?: string;
     courier?: string;
     notes?: string;
+    trackingHistory?: any[];
+    customerResponses?: any[];
 }
 
 export const ordersService = {

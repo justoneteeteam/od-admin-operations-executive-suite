@@ -578,8 +578,8 @@ const OrdersPage: React.FC = () => {
                     <button
                       onClick={() => setPage(p as number)}
                       className={`min-w-[42px] h-[42px] flex items-center justify-center rounded-xl border transition-all text-sm font-bold ${page === p
-                          ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                          : 'border-primary text-text-muted hover:bg-primary/10 hover:text-white'
+                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                        : 'border-primary text-text-muted hover:bg-primary/10 hover:text-white'
                         }`}
                     >
                       {p}
@@ -993,17 +993,63 @@ const OrdersPage: React.FC = () => {
                 <section className="space-y-4">
                   <h3 className="text-xs font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-sm">history</span>
-                    Tracking History Logs
+                    Tracking & Communication History
                   </h3>
                   <div className="bg-[#17232f] rounded-2xl p-6 border border-border-dark space-y-8">
-                    {editOrder.trackingHistory && editOrder.trackingHistory.length > 0 ? (
-                      editOrder.trackingHistory.map((log: any, i: number) => {
-                        const dateObj = new Date(log.statusDate);
+                    {(() => {
+                      // Merge Tracking Logs + Customer Responses
+                      const historyItems = [...(editOrder.trackingHistory || [])].map(t => ({ ...t, _type: 'tracking', _date: t.statusDate }));
+                      const msgItems = [...(editOrder.customerResponses || [])].map(m => ({ ...m, _type: 'message', _date: m.sentAt }));
+                      const merged = [...historyItems, ...msgItems].sort((a, b) => new Date(b._date).getTime() - new Date(a._date).getTime());
+
+                      if (merged.length === 0) {
+                        return (
+                          <div className="text-center py-4">
+                            <span className="text-xs text-text-muted italic">No tracking or message logs available for this order.</span>
+                          </div>
+                        );
+                      }
+
+                      return merged.map((log: any, i: number) => {
+                        const dateObj = new Date(log._date);
                         const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+                        if (log._type === 'message') {
+                          // Render a sent message log
+                          const isWa = log.notificationType === 'whatsapp_personal';
+                          return (
+                            <div key={`msg-${log.id || i}`} className="relative flex gap-6 pl-2 group">
+                              {i !== merged.length - 1 && (
+                                <div className="absolute left-[13px] top-6 bottom-[-32px] w-px bg-border-dark"></div>
+                              )}
+                              <div className={`z-10 mt-1.5 size-[11px] rounded flex items-center justify-center shrink-0 ${isWa ? 'bg-green-500 ring-4 ring-green-500/10' : 'bg-blue-500 ring-4 ring-blue-500/10'}`}>
+                              </div>
+                              <div className="flex flex-col gap-1 w-full relative">
+                                <span className="text-[10px] font-black text-text-muted tracking-widest uppercase">{formattedDate}</span>
+                                <div className="flex items-center gap-2">
+                                  {isWa ? (
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="size-3" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-blue-400" style={{ fontSize: 14 }}>chat</span>
+                                  )}
+                                  <span className="text-sm font-black text-white">Sent {isWa ? 'WhatsApp' : 'SMS'}</span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${log.status === 'sent' || log.status === 'delivered' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>
+                                    {log.status}
+                                  </span>
+                                </div>
+                                <div className="bg-[#1a2332] border border-border-dark p-3 rounded-xl mt-1 text-xs text-text-muted opacity-90 relative">
+                                  <span className="absolute -top-1.5 -left-1.5 size-3 bg-[#1a2332] border-l border-t border-border-dark rotate-45 transform"></span>
+                                  {log.messageContent}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Render a normal tracking status log
                         return (
-                          <div key={log.id || i} className="relative flex gap-6 pl-2 group">
-                            {i !== editOrder.trackingHistory.length - 1 && (
+                          <div key={`trk-${log.id || i}`} className="relative flex gap-6 pl-2 group">
+                            {i !== merged.length - 1 && (
                               <div className="absolute left-[13px] top-6 bottom-[-32px] w-px bg-border-dark"></div>
                             )}
                             <div className="z-10 mt-1.5 size-2.5 rounded-full bg-primary ring-4 ring-primary/10 shrink-0"></div>
@@ -1015,12 +1061,8 @@ const OrdersPage: React.FC = () => {
                             </div>
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="text-center py-4">
-                        <span className="text-xs text-text-muted italic">No tracking logs available for this order.</span>
-                      </div>
-                    )}
+                      });
+                    })()}
                   </div>
                 </section>
 
