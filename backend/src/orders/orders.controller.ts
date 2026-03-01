@@ -23,14 +23,18 @@ export class OrdersController {
 
     @Get()
     findAll(
-        @Query('status') status?: string,
+        @Query('orderStatus') orderStatus?: string,
+        @Query('confirmationStatus') confirmationStatus?: string,
         @Query('customerId') customerId?: string,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
+        @Query('search') search?: string,
     ) {
         return this.ordersService.findAll({
-            status,
+            orderStatus,
+            confirmationStatus,
             customerId,
+            search,
             page: page ? parseInt(page) : undefined,
             limit: limit ? parseInt(limit) : undefined,
         });

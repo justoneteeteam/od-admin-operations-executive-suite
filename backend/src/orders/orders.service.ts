@@ -100,7 +100,9 @@ export class OrdersService {
     }
 
     async findAll(filters?: {
-        status?: string;
+        orderStatus?: string;
+        confirmationStatus?: string;
+        search?: string;
         customerId?: string;
         startDate?: Date;
         endDate?: Date;
@@ -112,8 +114,20 @@ export class OrdersService {
 
         const whereClause: any = {};
 
-        if (where.status) whereClause.status = where.status;
+        if (where.orderStatus) whereClause.orderStatus = where.orderStatus;
+        if (where.confirmationStatus) whereClause.confirmationStatus = where.confirmationStatus;
         if (where.customerId) whereClause.customerId = where.customerId;
+
+        if (where.search) {
+            whereClause.OR = [
+                { orderNumber: { contains: where.search, mode: 'insensitive' } },
+                {
+                    customer: {
+                        name: { contains: where.search, mode: 'insensitive' }
+                    }
+                }
+            ];
+        }
         if (where.startDate || where.endDate) {
             whereClause.orderDate = {};
             if (where.startDate) whereClause.orderDate.gte = where.startDate;
