@@ -22,9 +22,10 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { ShopifyModule } from './webhooks/shopify/shopify.module';
 import { RiskScoringModule } from './risk-scoring/risk-scoring.module';
+import { TwilioVoiceModule } from './twilio-voice/twilio-voice.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule],
+  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule],
   controllers: [AppController],
   providers: [
     AppService,

@@ -550,11 +550,16 @@ const OrdersPage: React.FC = () => {
                         />
                       </td>
                       <td className="px-4 sm:px-6 py-6 text-center">
-                        {order.riskLevel === 'LOW' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="LOW Risk"><span className="material-symbols-outlined text-sm">shield</span></span>}
-                        {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="MEDIUM Risk"><span className="material-symbols-outlined text-sm">warning</span></span>}
-                        {order.riskLevel === 'HIGH' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30" title="HIGH Risk"><span className="material-symbols-outlined text-sm">front_hand</span></span>}
-                        {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 border border-red-500/30" title="BLOCKED"><span className="material-symbols-outlined text-sm">block</span></span>}
-                        {!order.riskLevel && <span className="inline-flex size-6 items-center justify-center rounded-full bg-[#1c2d3d] text-text-muted border border-border-dark" title="Unassessed"><span className="material-symbols-outlined text-sm">help</span></span>}
+                        <div className="flex flex-col items-center gap-1">
+                          {order.riskLevel === 'LOW' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="LOW Risk"><span className="material-symbols-outlined text-sm">shield</span></span>}
+                          {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="MEDIUM Risk"><span className="material-symbols-outlined text-sm">warning</span></span>}
+                          {order.riskLevel === 'HIGH' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30" title="HIGH Risk"><span className="material-symbols-outlined text-sm">front_hand</span></span>}
+                          {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 border border-red-500/30" title="BLOCKED"><span className="material-symbols-outlined text-sm">block</span></span>}
+                          {!order.riskLevel && <span className="inline-flex size-6 items-center justify-center rounded-full bg-[#1c2d3d] text-text-muted border border-border-dark" title="Unassessed"><span className="material-symbols-outlined text-sm">help</span></span>}
+                          <span className={`text-[10px] font-bold ${order.riskLevel === 'LOW' ? 'text-emerald-400' : order.riskLevel === 'MEDIUM' ? 'text-yellow-400' : order.riskLevel === 'HIGH' ? 'text-orange-400' : order.riskLevel === 'BLOCKED' ? 'text-red-400' : 'text-text-muted'}`}>
+                            {order.riskScore != null ? order.riskScore : '—'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 sm:px-6 py-6">
                         <p className="text-sm font-bold text-primary group-hover:underline underline-offset-4">#{order.orderNumber}</p>
@@ -732,9 +737,9 @@ const OrdersPage: React.FC = () => {
                         Fraud & Risk Assessment
                       </h3>
                       <div className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${editOrder.riskLevel === 'LOW' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                          editOrder.riskLevel === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                            editOrder.riskLevel === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                              'bg-red-500/20 text-red-400 border-red-500/30'
+                        editOrder.riskLevel === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                          editOrder.riskLevel === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                            'bg-red-500/20 text-red-400 border-red-500/30'
                         }`}>
                         {editOrder.riskLevel} RISK (Score: {editOrder.riskScore})
                       </div>

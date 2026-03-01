@@ -222,6 +222,7 @@ model Order {
   trackingHistory    TrackingHistory[]
   customerResponses  CustomerResponse[]
   riskAssessments    RiskAssessment[]
+  callLogs           CallLog[]
 
   @@map("orders")
 }
@@ -756,10 +757,43 @@ model RiskAssessment {
   forwardedToCallCenter Boolean? @default(false) @map("forwarded_to_call_center")
   callCenterSheetRow    Int?     @map("call_center_sheet_row")
 
+  callAttempts       Int?      @default(0) @map("call_attempts")
+  lastCallAttempt    DateTime? @map("last_call_attempt") @db.Timestamptz(6)
+  callSids           Json?     @map("call_sids")
+  callTranscription  String?   @map("call_transcription")
+  callConfidence     Decimal?  @map("call_confidence") @db.Decimal(3, 2)
+  callIntentDetected String?   @map("call_intent_detected") @db.VarChar(50)
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   order    Order     @relation(fields: [orderId], references: [id])
   customer Customer? @relation(fields: [customerId], references: [id])
 
   @@map("risk_assessments")
+}
+
+model CallLog {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  orderId         String    @map("order_id") @db.Uuid
+  callSid         String    @map("call_sid") @db.VarChar(50)
+  attemptNumber   Int       @map("attempt_number")
+
+  callStatus      String    @map("call_status") @db.VarChar(20)
+  callDuration    Int?      @map("call_duration")
+
+  scriptType      String    @map("script_type") @db.VarChar(20)
+  scriptLanguage  String?   @map("script_language") @db.VarChar(10)
+
+  speechResult    String?   @map("speech_result")
+  speechConfidence Decimal? @map("speech_confidence") @db.Decimal(3, 2)
+  dtmfInput       String?   @map("dtmf_input") @db.VarChar(10)
+
+  intentDetected  String?   @map("intent_detected") @db.VarChar(50)
+
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  order           Order     @relation(fields: [orderId], references: [id])
+
+  @@map("call_logs")
 }

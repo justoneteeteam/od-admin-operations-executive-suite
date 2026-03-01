@@ -1,11 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { TwilioVoiceService } from '../twilio-voice/twilio-voice.service';
+import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 
 @Injectable()
 export class RiskScoringService {
     private readonly logger = new Logger(RiskScoringService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        @Inject(forwardRef(() => TwilioVoiceService)) private readonly twilioVoiceService: TwilioVoiceService,
+        @Inject(forwardRef(() => GoogleSheetsService)) private readonly googleSheetsService: GoogleSheetsService,
+    ) { }
 
     /**
      * Main entry point to assess an order.
@@ -68,6 +74,9 @@ export class RiskScoringService {
         });
 
         this.logger.log(`Order ${orderId} assessed as ${riskLevel} (${assessment.totalScore} pts). Action: ${action}`);
+
+        // 5. Trigger automated action based on risk level
+        await this.triggerAction(riskLevel, action, order);
 
         return savedAssessment;
     }
@@ -209,5 +218,52 @@ export class RiskScoringService {
         }
 
         return { riskLevel: 'LOW', action: 'twilio_short' };
+    }
+
+    /**
+     * Trigger the appropriate action based on risk level.
+     */
+    private async triggerAction(riskLevel: string, action: string, order: any) {
+        try {
+            if (riskLevel === 'BLOCKED') {
+                this.logger.log(`Order ${order.id}: BLOCKED — auto-rejected.`);
+                return;
+            }
+
+            if (riskLevel === 'LOW') {
+                this.logger.log(`Order ${order.id}: LOW risk — initiating short Twilio call.`);
+                await this.twilioVoiceService.initiateConfirmationCall(order.id, 'short');
+                return;
+            }
+
+            if (riskLevel === 'MEDIUM') {
+                this.logger.log(`Order ${order.id}: MEDIUM risk — initiating long Twilio call.`);
+                await this.twilioVoiceService.initiateConfirmationCall(order.id, 'long');
+                return;
+            }
+
+            if (riskLevel === 'HIGH') {
+                this.logger.log(`Order ${order.id}: HIGH risk — forwarding to call center.`);
+                const totalItems = order.items?.reduce((sum: number, i: any) => sum + i.quantity, 0) || 0;
+                const address = [order.shippingAddressLine1, order.shippingCity, order.shippingProvince, order.shippingPostalCode].filter(Boolean).join(', ');
+
+                await this.googleSheetsService.addToCallCenterQueue({
+                    orderId: order.id,
+                    orderNumber: order.orderNumber,
+                    customerName: order.customer?.name || 'Unknown',
+                    customerPhone: order.customer?.phone || '',
+                    address,
+                    totalAmount: Number(order.totalAmount || 0),
+                    itemCount: totalItems,
+                    riskLevel,
+                    riskScore: order.riskScore || 0,
+                    reason: 'High risk order',
+                    priority: 'URGENT',
+                });
+                return;
+            }
+        } catch (error) {
+            this.logger.error(`Order ${order.id}: Failed to trigger action "${action}": ${error.message}`, error.stack);
+        }
     }
 }

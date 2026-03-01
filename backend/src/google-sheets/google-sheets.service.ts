@@ -493,4 +493,97 @@ export class GoogleSheetsService {
 
         result.itemsProcessed += items.length;
     }
+
+    /**
+     * Append an order to the Call Center Queue Google Sheet.
+     * Used for HIGH risk orders and escalated call failures.
+     */
+    async addToCallCenterQueue(data: {
+        orderId: string;
+        orderNumber: string;
+        customerName: string;
+        customerPhone: string;
+        address: string;
+        totalAmount: number;
+        itemCount: number;
+        riskLevel: string;
+        riskScore: number;
+        reason: string;
+        transcription?: string | null;
+        priority: string;
+    }): Promise<number | null> {
+        try {
+            // Get the first store settings with a call center sheet configured
+            const store = await this.prisma.storeSettings.findFirst({
+                where: {
+                    callCenterSheetId: { not: null },
+                },
+            });
+
+            if (!store?.callCenterSheetId) {
+                this.logger.warn('No Call Center Sheet configured. Skipping queue.');
+                return null;
+            }
+
+            // Authenticate
+            const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+            const privateKey = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+            if (!clientEmail || !privateKey) {
+                this.logger.error('Google Sheets credentials not configured.');
+                return null;
+            }
+
+            const auth = new JWT({
+                email: clientEmail,
+                key: privateKey,
+                scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+            });
+
+            const doc = new GoogleSpreadsheet(store.callCenterSheetId, auth);
+            await doc.loadInfo();
+
+            const sheetName = store.callCenterSheetName || 'Call Center Queue';
+            let sheet = doc.sheetsByTitle[sheetName];
+
+            if (!sheet) {
+                // Create the sheet with headers if it doesn't exist
+                sheet = await doc.addSheet({
+                    title: sheetName,
+                    headerValues: [
+                        'Timestamp', 'Priority', 'Order #', 'Customer',
+                        'Phone', 'Address', 'Total (€)', 'Items',
+                        'Risk Level', 'Risk Score', 'Reason',
+                        'Transcription', 'Status', 'Agent Notes',
+                    ],
+                });
+                this.logger.log(`Created new sheet "${sheetName}" in Call Center spreadsheet.`);
+            }
+
+            // Append the row
+            const row = await sheet.addRow({
+                'Timestamp': new Date().toISOString(),
+                'Priority': data.priority,
+                'Order #': data.orderNumber,
+                'Customer': data.customerName,
+                'Phone': data.customerPhone,
+                'Address': data.address,
+                'Total (€)': data.totalAmount,
+                'Items': data.itemCount,
+                'Risk Level': data.riskLevel,
+                'Risk Score': data.riskScore,
+                'Reason': data.reason,
+                'Transcription': data.transcription || '',
+                'Status': 'PENDING',
+                'Agent Notes': '',
+            });
+
+            const rowNumber = row.rowNumber;
+            this.logger.log(`Order ${data.orderNumber} added to Call Center Queue (row ${rowNumber})`);
+            return rowNumber;
+        } catch (error) {
+            this.logger.error(`Failed to add to Call Center Queue: ${error.message}`, error.stack);
+            return null;
+        }
+    }
 }
