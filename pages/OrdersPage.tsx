@@ -262,7 +262,7 @@ const OrdersPage: React.FC = () => {
   const saveChanges = async () => {
     if (editOrder) {
       try {
-        const { customer, items, ...orderData } = editOrder;
+        const { customer, items, trackingHistory, customerResponses, ...orderData } = editOrder;
 
         const cleanItems = items?.map(item => ({
           productId: item.productId,
