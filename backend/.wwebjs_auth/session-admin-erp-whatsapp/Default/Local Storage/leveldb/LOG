@@ -1,3 +1,6 @@
-2026/03/01-09:17:52.465 3013f3 Reusing MANIFEST /Users/lukepham/Downloads/od-admin-operations-executive-suite/backend/.wwebjs_auth/session-admin-erp-whatsapp/Default/Local Storage/leveldb/MANIFEST-000001
-2026/03/01-09:17:52.472 3013f3 Recovering log #3
-2026/03/01-09:17:52.473 3013f3 Reusing old log /Users/lukepham/Downloads/od-admin-operations-executive-suite/backend/.wwebjs_auth/session-admin-erp-whatsapp/Default/Local Storage/leveldb/000003.log 
+2026/03/01-09:54:43.988 30b636 Reusing MANIFEST /Users/lukepham/Downloads/od-admin-operations-executive-suite/backend/.wwebjs_auth/session-admin-erp-whatsapp/Default/Local Storage/leveldb/MANIFEST-000001
+2026/03/01-09:54:43.990 30b636 Recovering log #3
+2026/03/01-09:54:43.991 30b636 Reusing old log /Users/lukepham/Downloads/od-admin-operations-executive-suite/backend/.wwebjs_auth/session-admin-erp-whatsapp/Default/Local Storage/leveldb/000003.log 
+2026/03/01-09:55:44.005 30b639 Level-0 table #5: started
+2026/03/01-09:55:44.025 30b639 Level-0 table #5: 19995 bytes OK
+2026/03/01-09:55:44.031 30b639 Delete type=0 #3

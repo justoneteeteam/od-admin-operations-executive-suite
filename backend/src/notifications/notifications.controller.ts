@@ -31,6 +31,17 @@ export class NotificationsController {
         );
     }
 
+    @Public()
+    @Post('whatsapp/test')
+    async sendPersonalTestMessage(@Body() body: { to: string; templateName: string; variables: string[] }) {
+        return await this.whatsappPersonalService.sendTemplateMessage(
+            body.to,
+            body.templateName,
+            body.variables,
+            { orderId: undefined }
+        );
+    }
+
     // --- Personal WhatsApp Endpoints ---
 
     @Public()

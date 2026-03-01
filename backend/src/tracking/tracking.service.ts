@@ -114,7 +114,6 @@ export class TrackingService {
 
             // 5b. Schedule 1 HOUR DELAY Personal WhatsApp
             const delayMs = 60 * 60 * 1000; // 1 hour
-            // const delayMs = 15 * 1000; // 15 seconds for testing purposes if needed
             this.logger.log(`[WhatsApp] Scheduling Personal WhatsApp for Order ${order.orderNumber} in 1 hour.`);
 
             setTimeout(async () => {
