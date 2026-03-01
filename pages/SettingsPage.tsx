@@ -53,6 +53,13 @@ const SettingsPage: React.FC = () => {
   const [waPhone, setWaPhone] = useState<string | null>(null);
   const [waQrCode, setWaQrCode] = useState<string | null>(null);
   const [waLoading, setWaLoading] = useState(false);
+  const [waPhoneInput, setWaPhoneInput] = useState('');
+  const [waPairingCode, setWaPairingCode] = useState<string | null>(null);
+  const [waPairingLoading, setWaPairingLoading] = useState(false);
+  const [waShowQr, setWaShowQr] = useState(false);
+  const [waTemplates, setWaTemplates] = useState<any[]>([]);
+  const [waTemplateSaving, setWaTemplateSaving] = useState<string | null>(null);
+  const [waMessage, setWaMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const emptyForm: Partial<StoreSettings> = {
     storeName: '',
@@ -84,6 +91,7 @@ const SettingsPage: React.FC = () => {
     let interval: any;
     if (activeTab === 'whatsapp') {
       fetchWaStatus();
+      fetchWaTemplates();
       interval = setInterval(fetchWaStatus, 3000);
     }
     return () => {
@@ -91,17 +99,20 @@ const SettingsPage: React.FC = () => {
     };
   }, [activeTab]);
 
+  const API = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+
   const fetchWaStatus = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/notifications/whatsapp/status`);
+      const res = await fetch(`${API}/notifications/whatsapp/status`);
       const data = await res.json();
       setWaConnected(data.connected);
       setWaPhone(data.phone);
-
-      if (!data.connected && data.hasQr && !waQrCode) {
-        fetchWaQr();
-      } else if (data.connected && waQrCode) {
+      if (data.connected) {
+        setWaPairingCode(null);
         setWaQrCode(null);
+      }
+      if (!data.connected && data.hasQr && waShowQr && !waQrCode) {
+        fetchWaQr();
       }
     } catch (err) {
       console.error('Failed to fetch WA status:', err);
@@ -110,27 +121,80 @@ const SettingsPage: React.FC = () => {
 
   const fetchWaQr = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/notifications/whatsapp/qr`);
+      const res = await fetch(`${API}/notifications/whatsapp/qr`);
       const data = await res.json();
-      if (data.success) {
-        setWaQrCode(data.qrCode);
-      }
+      if (data.success) setWaQrCode(data.qrCode);
     } catch (err) {
       console.error('Failed to fetch WA QR:', err);
+    }
+  };
+
+  const fetchWaTemplates = async () => {
+    try {
+      const res = await fetch(`${API}/notifications/templates?type=whatsapp_personal`);
+      const data = await res.json();
+      setWaTemplates(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to fetch WA templates:', err);
     }
   };
 
   const disconnectWa = async () => {
     try {
       setWaLoading(true);
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/notifications/whatsapp/disconnect`, { method: 'POST' });
+      await fetch(`${API}/notifications/whatsapp/disconnect`, { method: 'POST' });
       setWaConnected(false);
       setWaPhone(null);
       setWaQrCode(null);
+      setWaPairingCode(null);
     } catch (err) {
       console.error('Failed to disconnect WA:', err);
     } finally {
       setWaLoading(false);
+    }
+  };
+
+  const requestPairingCode = async () => {
+    if (!waPhoneInput.trim()) {
+      setWaMessage({ type: 'error', text: 'Please enter a valid phone number with country code (e.g. +393331234567)' });
+      return;
+    }
+    try {
+      setWaPairingLoading(true);
+      setWaMessage(null);
+      const res = await fetch(`${API}/notifications/whatsapp/pair`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: waPhoneInput }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setWaPairingCode(data.pairingCode);
+        setWaMessage({ type: 'success', text: 'Code generated! Enter it on your WhatsApp app → Linked Devices → Link a Device → Link with phone number.' });
+      } else {
+        setWaMessage({ type: 'error', text: data.message || 'Failed to generate pairing code.' });
+      }
+    } catch (err) {
+      setWaMessage({ type: 'error', text: 'Failed to connect to backend.' });
+    } finally {
+      setWaPairingLoading(false);
+    }
+  };
+
+  const saveTemplate = async (id: string, bodyTemplate: string) => {
+    try {
+      setWaTemplateSaving(id);
+      await fetch(`${API}/notifications/templates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bodyTemplate }),
+      });
+      setWaMessage({ type: 'success', text: 'Template saved successfully!' });
+      setTimeout(() => setWaMessage(null), 3000);
+    } catch (err) {
+      setWaMessage({ type: 'error', text: 'Failed to save template.' });
+    } finally {
+      setWaTemplateSaving(null);
     }
   };
 
@@ -679,105 +743,176 @@ const SettingsPage: React.FC = () => {
   );
 
   // ─── WHATSAPP PERSONAL TAB ───────────────────────────────────────────
-  const renderWhatsappTab = () => (
-    <div className="flex flex-col gap-6">
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-border-dark flex items-center justify-between">
-          <div className="flex flex-col gap-1">
+  const renderWhatsappTab = () => {
+    const LANG_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+      wa_arrival_en: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'English' },
+      wa_arrival_es: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', label: 'Spanish' },
+      wa_arrival_it: { bg: 'bg-green-500/10', text: 'text-green-400', label: 'Italian' },
+    };
+
+    return (
+      <div className="flex flex-col gap-6">
+        {/* WhatsApp Message Banner */}
+        {waMessage && (
+          <div className={`px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2 ${waMessage.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{waMessage.type === 'success' ? 'check_circle' : 'error'}</span>
+            {waMessage.text}
+          </div>
+        )}
+
+        {/* ── Section 1: Account Management ── */}
+        <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-border-dark flex items-center justify-between">
             <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="size-5" />
-              Personal WhatsApp Connection
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="size-5" />
+              WhatsApp Account
             </h3>
-            <p className="text-text-muted text-xs">Connect your personal phone number via QR code to automatically send tracking updates (1 hour after "In Transit Arrival").</p>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${waConnected ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'}`}>
+              <span className={`size-2 rounded-full ${waConnected ? 'bg-green-400' : 'bg-red-400'}`}></span>
+              {waConnected ? 'Connected' : 'Not Connected'}
+            </span>
           </div>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${waConnected ? 'bg-green-500/10 text-green-400 border-green-500/30' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30'}`}>
-            <span className={`size-2 rounded-full ${waConnected ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}`}></span>
-            {waConnected ? 'Connected' : 'Awaiting Details'}
-          </span>
-        </div>
-
-        <div className="p-8 flex flex-col md:flex-row gap-8 items-center justify-center">
-          {waConnected ? (
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="size-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-green-400 text-3xl">task_alt</span>
-              </div>
-              <div>
-                <h4 className="text-white font-bold text-lg leading-none">WhatsApp Connected!</h4>
-                <p className="text-text-muted text-sm mt-2">Any 17Track Arrival notifications will be sent from <span className="font-bold text-white">+{waPhone?.replace('@c.us', '')}</span></p>
-              </div>
-              <button
-                onClick={disconnectWa}
-                disabled={waLoading}
-                className="mt-4 px-6 py-2 bg-red-500/10 text-red-500 font-bold text-sm rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-colors"
-              >
-                {waLoading ? 'Disconnecting...' : 'Disconnect Number'}
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-6">
-              <div className="flex flex-col items-center gap-2 text-center max-w-sm">
-                <h4 className="text-white font-bold text-lg">Scan to Connect</h4>
-                <p className="text-text-muted text-sm text-balance">1. Open WhatsApp on your phone<br />2. Tap Menu or Settings and select Linked Devices<br />3. Tap on Link a Device<br />4. Point your phone to this screen to capture the code.</p>
-              </div>
-
-              <div className="bg-white p-4 rounded-2xl shadow-xl">
-                {waQrCode ? (
-                  <img src={waQrCode} alt="WhatsApp QR Code" className="size-64" />
-                ) : (
-                  <div className="size-64 bg-gray-100 animate-pulse rounded-xl flex items-center justify-center">
-                    <span className="text-gray-400 font-bold text-sm">Loading QR...</span>
+          <div className="p-6">
+            {waConnected ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-green-400" style={{ fontSize: 24 }}>phone_iphone</span>
                   </div>
-                )}
+                  <div>
+                    <p className="text-white font-bold text-sm">+{waPhone?.replace('@c.us', '')}</p>
+                    <p className="text-text-muted text-xs">17Track Arrival messages will be sent from this number (1hr after In Transit).</p>
+                  </div>
+                </div>
+                <button
+                  onClick={disconnectWa}
+                  disabled={waLoading}
+                  className="px-5 py-2 bg-red-500/10 text-red-400 font-bold text-xs rounded-xl border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                >
+                  {waLoading ? 'Disconnecting...' : 'Disconnect'}
+                </button>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {/* Phone Number Pairing (Primary) */}
+                <div className="flex flex-col gap-3">
+                  <h4 className="text-white font-bold text-sm">Link with Phone Number</h4>
+                  <p className="text-text-muted text-xs">Enter your WhatsApp number with country code. You'll get an 8-digit code to type into your WhatsApp app.</p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="tel"
+                      value={waPhoneInput}
+                      onChange={e => setWaPhoneInput(e.target.value)}
+                      placeholder="+393331234567"
+                      className="flex-1 max-w-xs bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-mono"
+                    />
+                    <button
+                      onClick={requestPairingCode}
+                      disabled={waPairingLoading}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{waPairingLoading ? 'hourglass_empty' : 'link'}</span>
+                      {waPairingLoading ? 'Generating...' : 'Get Pairing Code'}
+                    </button>
+                  </div>
 
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-border-dark">
-          <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>assignment</span>
-            Message Templates
-          </h3>
-          <p className="text-text-muted text-xs mt-1">These default templates trigger exactly 1 hour after "In Transit Arrival" in the language matching the shipping country.</p>
+                  {/* Pairing Code Display */}
+                  {waPairingCode && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl px-6 py-4 flex flex-col items-center gap-2 max-w-sm">
+                      <p className="text-text-muted text-xs">Enter this code on your phone:</p>
+                      <p className="text-white font-black text-3xl tracking-[0.4em] font-mono">{waPairingCode}</p>
+                      <p className="text-primary text-[10px] font-bold uppercase mt-1">WhatsApp → Linked Devices → Link a Device → Link with phone number</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-border-dark"></div>
+                  <span className="text-text-muted text-[10px] font-bold uppercase">or</span>
+                  <div className="flex-1 h-px bg-border-dark"></div>
+                </div>
+
+                {/* QR Code Fallback */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => { setWaShowQr(!waShowQr); if (!waShowQr) fetchWaQr(); }}
+                    className="text-text-muted text-xs font-bold hover:text-white transition-colors flex items-center gap-1 w-fit"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{waShowQr ? 'expand_less' : 'qr_code_2'}</span>
+                    {waShowQr ? 'Hide QR Code' : 'Scan QR Code instead'}
+                  </button>
+                  {waShowQr && (
+                    <div className="flex items-center gap-6">
+                      <div className="bg-white p-3 rounded-2xl shadow-xl">
+                        {waQrCode ? (
+                          <img src={waQrCode} alt="WhatsApp QR Code" className="size-48" />
+                        ) : (
+                          <div className="size-48 bg-gray-100 animate-pulse rounded-xl flex items-center justify-center">
+                            <span className="text-gray-400 font-bold text-xs">Loading QR...</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-text-muted text-xs leading-relaxed">
+                        <p>1. Open WhatsApp on your phone</p>
+                        <p>2. Tap <strong className="text-white">Linked Devices</strong></p>
+                        <p>3. Tap <strong className="text-white">Link a Device</strong></p>
+                        <p>4. Point your phone at this QR code</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
-            <span className="inline-flex px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase rounded border border-blue-500/20 w-fit">English Default</span>
-            <p className="text-text-muted text-xs whitespace-pre-wrap leading-relaxed opacity-80 pointer-events-none">
-              📦 Hi {'{Customer Name}'}! Your order from {'{Store Name}'} is arriving soon!<br />
-              💰 COD Amount: {'{COD Amount}'}<br />
-              📋 Items: {'{Items}'}<br />
-              🚚 The delivery driver will arrive in approximately 3-4 hours and will only attempt delivery once, so please be available!<br />
-              Thank you for shopping with us! 😊
-            </p>
+
+        {/* ── Section 2: Editable Message Templates ── */}
+        <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-border-dark">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>edit_note</span>
+              Message Templates
+            </h3>
+            <p className="text-text-muted text-xs mt-1">Edit templates below and save. Variables: <code className="text-primary/80">{`{{1}}`}</code> = Customer Name, <code className="text-primary/80">{`{{2}}`}</code> = Store Name, <code className="text-primary/80">{`{{3}}`}</code> = COD Amount, <code className="text-primary/80">{`{{4}}`}</code> = Items</p>
           </div>
-          <div className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
-            <span className="inline-flex px-2 py-0.5 bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase rounded border border-yellow-500/20 w-fit">Spanish Default</span>
-            <p className="text-text-muted text-xs whitespace-pre-wrap leading-relaxed opacity-80 pointer-events-none">
-              📦 ¡Hola {'{Customer Name}'}! Tu pedido de {'{Store Name}'} está llegando pronto.<br />
-              💰 Importe COD: €{'{COD Amount}'}<br />
-              📋 Artículos: {'{Items}'}<br />
-              🚚 El repartidor llegará en aproximadamente 3-4 horas y solo pasará una vez. ¡Por favor, estate disponible!<br />
-              ¡Gracias por tu compra! 😊
-            </p>
-          </div>
-          <div className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
-            <span className="inline-flex px-2 py-0.5 bg-green-500/10 text-green-400 text-[10px] font-bold uppercase rounded border border-green-500/20 w-fit">Italian Default</span>
-            <p className="text-text-muted text-xs whitespace-pre-wrap leading-relaxed opacity-80 pointer-events-none">
-              📦 Ciao {'{Customer Name}'}! Il tuo ordine da {'{Store Name}'} sta per arrivare!<br />
-              💰 Importo COD: €{'{COD Amount}'}<br />
-              📋 Articoli: {'{Items}'}<br />
-              🚚 Il corriere arriverà tra circa 3-4 ore e passerà una sola volta, assicurati di essere disponibile!<br />
-              Grazie per il tuo acquisto! 😊
-            </p>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {waTemplates.length === 0 ? (
+              <div className="col-span-3 text-center py-8">
+                <span className="text-text-muted text-xs italic">No templates found. Run the seed script to add default templates.</span>
+              </div>
+            ) : (
+              waTemplates.map((tpl: any) => {
+                const colors = LANG_COLORS[tpl.templateName] || { bg: 'bg-white/5', text: 'text-text-muted', label: tpl.templateName };
+                return (
+                  <div key={tpl.id} className="bg-[#1a2332] rounded-xl border border-border-dark p-4 flex flex-col gap-3">
+                    <span className={`inline-flex px-2 py-0.5 ${colors.bg} ${colors.text} text-[10px] font-bold uppercase rounded border border-current/20 w-fit`}>
+                      {colors.label}
+                    </span>
+                    <textarea
+                      value={tpl.bodyTemplate}
+                      onChange={e => {
+                        setWaTemplates(prev => prev.map(t => t.id === tpl.id ? { ...t, bodyTemplate: e.target.value } : t));
+                      }}
+                      rows={8}
+                      className="bg-[#0f1923] border border-border-dark rounded-lg px-3 py-2 text-xs text-white/80 font-mono leading-relaxed focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
+                    />
+                    <button
+                      onClick={() => saveTemplate(tpl.id, tpl.bodyTemplate)}
+                      disabled={waTemplateSaving === tpl.id}
+                      className="self-end px-4 py-1.5 bg-primary/10 text-primary text-[10px] font-bold rounded-lg border border-primary/20 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                    >
+                      {waTemplateSaving === tpl.id ? 'Saving...' : 'Save Template'}
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ─── MAIN RENDER ─────────────────────────────────────────────────────
   return (

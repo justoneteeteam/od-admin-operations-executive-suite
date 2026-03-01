@@ -1,21 +1,21 @@
-import { Controller, Post, Body, Res, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Res, Get, Query, Patch, Param } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappPersonalService } from './whatsapp.personal.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { Response } from 'express';
 
 @Controller('notifications')
 export class NotificationsController {
     constructor(
         private readonly whatsappService: WhatsappService,
-        private readonly whatsappPersonalService: WhatsappPersonalService
+        private readonly whatsappPersonalService: WhatsappPersonalService,
+        private readonly prisma: PrismaService
     ) { }
 
     @Post('callbacks/twilio')
     async handleTwilioCallback(@Body() body: any) {
-        // Twilio sends form-urlencoded usually, but NestJS might parse it if configured.
-        // Body usually contains MessageSid, MessageStatus, To, From.
         await this.whatsappService.handleStatusCallback(body);
-        return { status: 'ok' }; // Twilio expects 200 OK
+        return { status: 'ok' };
     }
 
     // Temporary SMS Test Endpoint
@@ -48,5 +48,31 @@ export class NotificationsController {
     @Post('whatsapp/disconnect')
     async disconnectWhatsapp() {
         return await this.whatsappPersonalService.disconnect();
+    }
+
+    @Post('whatsapp/pair')
+    async requestPairingCode(@Body() body: { phoneNumber: string }) {
+        return await this.whatsappPersonalService.requestPairingCode(body.phoneNumber);
+    }
+
+    // --- Template Management Endpoints ---
+
+    @Get('templates')
+    async getTemplates(@Query('type') type?: string) {
+        const where: any = {};
+        if (type) {
+            where.templateType = type;
+        }
+        const templates = await this.prisma.notificationTemplate.findMany({ where, orderBy: { templateName: 'asc' } });
+        return templates;
+    }
+
+    @Patch('templates/:id')
+    async updateTemplate(@Param('id') id: string, @Body() body: { bodyTemplate: string }) {
+        const updated = await this.prisma.notificationTemplate.update({
+            where: { id },
+            data: { bodyTemplate: body.bodyTemplate },
+        });
+        return updated;
     }
 }

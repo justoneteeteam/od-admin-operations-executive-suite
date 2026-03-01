@@ -12,6 +12,7 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
     private currentQrCode: string | null = null;
     public isConnected: boolean = false;
     public clientPhone: string | null = null;
+    public pairingCode: string | null = null;
 
     constructor(@Inject(PrismaService) private prisma: PrismaService) { }
 
@@ -101,6 +102,33 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
             return { success: true };
         }
         return { success: false, message: 'Not connected' };
+    }
+
+    /**
+     * Request a pairing code for phone number linking (alternative to QR)
+     * User enters this 8-digit code in their WhatsApp app under Linked Devices
+     */
+    public async requestPairingCode(phoneNumber: string) {
+        try {
+            if (this.isConnected) {
+                return { success: false, message: 'Already connected' };
+            }
+
+            // Strip all non-digit characters
+            const cleanNumber = phoneNumber.replace(/\D/g, '');
+            this.logger.log(`Requesting pairing code for: ${cleanNumber}`);
+
+            // Wait a moment for the client to be initialized
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            const code = await (this.client as any).requestPairingCode(cleanNumber);
+            this.pairingCode = code;
+            this.logger.log(`Pairing code generated: ${code}`);
+            return { success: true, pairingCode: code };
+        } catch (error) {
+            this.logger.error(`Failed to request pairing code: ${error.message}`, error.stack);
+            return { success: false, message: error.message };
+        }
     }
 
     /**
