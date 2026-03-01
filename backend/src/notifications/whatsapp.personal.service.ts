@@ -27,36 +27,46 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
+    private clientInitialized = false;
+
     private initializeClient() {
-        // Use LocalAuth to persist session data (avoids re-scanning QR every restart)
+        const puppeteerConfig: any = {
+            headless: process.env.NODE_ENV === 'production',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        };
+
+        // On Railway/Docker, use the system-installed Chromium
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            puppeteerConfig.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+            this.logger.log(`Using Chromium at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+        }
+
         this.client = new Client({
             authStrategy: new LocalAuth({
                 clientId: 'admin-erp-whatsapp'
             }),
-            puppeteer: {
-                headless: process.env.NODE_ENV === 'production',
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            }
+            puppeteer: puppeteerConfig
         });
 
         // 1. QR Code generated
         this.client.on('qr', async (qr) => {
             this.logger.log('WhatsApp QR Code received. Awaiting scan...');
             this.isConnected = false;
-            // Generate standard data URL for frontend
+            this.clientInitialized = true;
             this.currentQrCode = await QRCode.toDataURL(qr, { margin: 2, width: 300 });
         });
 
         // 2. Client is authenticated
         this.client.on('authenticated', () => {
             this.logger.log('WhatsApp Personal Client Authenticated!');
-            this.currentQrCode = null; // Clear QR code
+            this.currentQrCode = null;
         });
 
         // 3. Client is ready (fully loaded chats, etc)
         this.client.on('ready', () => {
             this.logger.log('WhatsApp Personal Client Ready to send messages!');
             this.isConnected = true;
+            this.clientInitialized = true;
             this.clientPhone = this.client.info?.wid?.user || null;
             this.currentQrCode = null;
         });
@@ -66,8 +76,8 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
             this.logger.warn(`WhatsApp disconnected: ${reason}`);
             this.isConnected = false;
             this.clientPhone = null;
+            this.clientInitialized = false;
 
-            // Reinitialize client to get a new QR code automatically
             this.logger.log('Re-initializing WhatsApp client...');
             this.client.destroy().then(() => {
                 this.initializeClient();
@@ -78,8 +88,9 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
 
         // 5. Catch initialization errors (e.g., missing chromium)
         this.client.initialize().catch(err => {
-            this.logger.error('Failed to initialize WhatsApp client: ', err);
+            this.logger.error('Failed to initialize WhatsApp client: ', err?.message || err);
             this.isConnected = false;
+            this.clientInitialized = false;
         });
     }
 
@@ -114,12 +125,13 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
                 return { success: false, message: 'Already connected' };
             }
 
+            if (!this.clientInitialized || !this.client) {
+                return { success: false, message: 'WhatsApp client is still initializing. Please wait a few seconds and try again, or check if Chromium is installed on the server.' };
+            }
+
             // Strip all non-digit characters
             const cleanNumber = phoneNumber.replace(/\D/g, '');
             this.logger.log(`Requesting pairing code for: ${cleanNumber}`);
-
-            // Wait a moment for the client to be initialized
-            await new Promise(resolve => setTimeout(resolve, 2000));
 
             const code = await (this.client as any).requestPairingCode(cleanNumber);
             this.pairingCode = code;
