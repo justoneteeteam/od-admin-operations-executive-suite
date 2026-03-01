@@ -35,8 +35,6 @@ export class RiskScoringService {
 
         // 2. Assign Risk Level & Action
         const { riskLevel, action } = this.determineRiskLevel(assessment.totalScore, assessment.isBlocked);
-        assessment.riskLevel = riskLevel;
-        assessment.action = action;
 
         // 3. Save to Database
         const savedAssessment = await this.prisma.riskAssessment.create({
@@ -44,8 +42,8 @@ export class RiskScoringService {
                 orderId: order.id,
                 customerId: customer.id,
                 totalScore: assessment.totalScore,
-                riskLevel: assessment.riskLevel,
-                action: assessment.action,
+                riskLevel: riskLevel,
+                action: action,
                 factors: assessment.factors as any,
                 cityZipMatch: assessment.cityZipMatch,
                 hasHouseNumber: assessment.hasHouseNumber,
@@ -61,8 +59,8 @@ export class RiskScoringService {
             where: { id: order.id },
             data: {
                 riskScore: assessment.totalScore,
-                riskLevel: assessment.riskLevel,
-                riskAction: assessment.action,
+                riskLevel: riskLevel,
+                riskAction: action,
                 riskAssessedAt: new Date(),
                 // Auto-reject if blocked
                 ...(assessment.isBlocked ? { orderStatus: 'Cancelled', internalNotes: 'Auto-rejected due to BLOCKED customer/risk policy.' } : {})

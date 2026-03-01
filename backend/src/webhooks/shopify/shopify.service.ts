@@ -130,7 +130,11 @@ export class ShopifyService {
 
             // 4. Save using OrdersService
             const newOrder = await this.ordersService.create(createOrderDto);
-            this.logger.log(`Successfully created internal order: ${newOrder.id}`);
+            if (newOrder) {
+                this.logger.log(`Successfully created internal order: ${newOrder.id}`);
+            } else {
+                this.logger.log(`Failed to create internal order for Shopify Order #${payload.order_number}`);
+            }
 
         } catch (error) {
             this.logger.error(`Error processing webhook payload for Order #${payload.order_number}`, error.stack);
