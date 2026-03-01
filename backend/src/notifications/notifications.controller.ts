@@ -2,6 +2,7 @@ import { Controller, Post, Body, Res, Get, Query, Patch, Param } from '@nestjs/c
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappPersonalService } from './whatsapp.personal.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Public } from '../auth/public.decorator';
 import { Response } from 'express';
 
 @Controller('notifications')
@@ -12,6 +13,7 @@ export class NotificationsController {
         private readonly prisma: PrismaService
     ) { }
 
+    @Public()
     @Post('callbacks/twilio')
     async handleTwilioCallback(@Body() body: any) {
         await this.whatsappService.handleStatusCallback(body);
@@ -31,11 +33,13 @@ export class NotificationsController {
 
     // --- Personal WhatsApp Endpoints ---
 
+    @Public()
     @Get('whatsapp/status')
     async getWhatsappStatus() {
         return this.whatsappPersonalService.getStatus();
     }
 
+    @Public()
     @Get('whatsapp/qr')
     async getWhatsappQr() {
         const qr = this.whatsappPersonalService.getQrCode();
@@ -45,11 +49,13 @@ export class NotificationsController {
         return { success: true, qrCode: qr };
     }
 
+    @Public()
     @Post('whatsapp/disconnect')
     async disconnectWhatsapp() {
         return await this.whatsappPersonalService.disconnect();
     }
 
+    @Public()
     @Post('whatsapp/pair')
     async requestPairingCode(@Body() body: { phoneNumber: string }) {
         return await this.whatsappPersonalService.requestPairingCode(body.phoneNumber);
@@ -57,6 +63,7 @@ export class NotificationsController {
 
     // --- Template Management Endpoints ---
 
+    @Public()
     @Get('templates')
     async getTemplates(@Query('type') type?: string) {
         const where: any = {};
@@ -67,6 +74,7 @@ export class NotificationsController {
         return templates;
     }
 
+    @Public()
     @Patch('templates/:id')
     async updateTemplate(@Param('id') id: string, @Body() body: { bodyTemplate: string }) {
         const updated = await this.prisma.notificationTemplate.update({

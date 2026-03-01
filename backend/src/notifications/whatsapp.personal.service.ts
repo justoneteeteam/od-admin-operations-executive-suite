@@ -34,7 +34,7 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
                 clientId: 'admin-erp-whatsapp'
             }),
             puppeteer: {
-                // Must run without sandbox on Linux/Docker environments like Railway
+                headless: process.env.NODE_ENV === 'production',
                 args: ['--no-sandbox', '--disable-setuid-sandbox']
             }
         });
