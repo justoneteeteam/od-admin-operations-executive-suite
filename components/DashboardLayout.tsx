@@ -22,11 +22,25 @@ const SidebarItem: React.FC<{
 
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Close sidebar on route change for mobile
+  React.useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background-dark text-white">
+    <div className="flex h-screen overflow-hidden bg-background-dark text-white relative">
+      {/* Mobile Backdrop */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 flex flex-col border-r border-border-dark bg-card-dark shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col border-r border-border-dark bg-card-dark shrink-0 transform transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex flex-col gap-8 h-full overflow-y-auto custom-scrollbar">
           <div className="flex items-center gap-3 px-1">
             <img src="/logo.svg" alt="JOT COD" className="h-10 w-auto" />
@@ -53,11 +67,17 @@ const DashboardLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-0">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-border-dark bg-card-dark px-8 py-3 shrink-0">
-          <div className="flex items-center gap-8">
-            <h2 className="text-white text-lg font-bold tracking-tight">
+        <header className="flex items-center justify-between border-b border-border-dark bg-card-dark px-4 sm:px-8 py-3 shrink-0">
+          <div className="flex items-center gap-4 sm:gap-8">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden flex items-center justify-center text-text-muted hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-[24px]">menu</span>
+            </button>
+            <h2 className="text-white text-base sm:text-lg font-bold tracking-tight truncate max-w-[150px] sm:max-w-none">
               {location.pathname === '/performance' && 'Executive Performance'}
               {location.pathname === '/orders' && 'Orders Console'}
               {location.pathname === '/products' && 'Product Management'}
@@ -68,7 +88,7 @@ const DashboardLayout: React.FC = () => {
               {location.pathname === '/suppliers' && 'Supply Chain Manager'}
               {location.pathname === '/settings' && 'Platform Settings'}
             </h2>
-            <div className="flex h-10 items-stretch rounded-lg bg-border-dark min-w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
+            <div className="hidden lg:flex h-10 items-stretch rounded-lg bg-border-dark min-w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
               <div className="text-text-muted flex items-center justify-center pl-4">
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>search</span>
               </div>
@@ -108,7 +128,7 @@ const DashboardLayout: React.FC = () => {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 bg-pattern">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-pattern">
           <div className="max-w-[1600px] mx-auto">
             <Outlet />
           </div>

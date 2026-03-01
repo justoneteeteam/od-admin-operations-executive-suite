@@ -190,34 +190,34 @@ const CustomersPage: React.FC = () => {
           <span className="text-text-muted text-sm">/</span>
           <span className="text-white text-sm font-medium">Customer Intelligence</span>
         </div>
-        <div className="flex flex-wrap justify-between items-end gap-4 mt-2">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-white text-4xl font-black tracking-tight">Customers</h1>
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 mt-2">
+          <div className="flex flex-col gap-1 w-full lg:w-auto">
+            <h1 className="text-white text-3xl sm:text-4xl font-black tracking-tight">Customers</h1>
             <p className="text-text-muted text-sm max-w-xl leading-relaxed">
               Monitor buyer history and manage blocklists for COD fulfillment.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-auto">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
               <input
                 type="text"
                 placeholder="Search customers..."
-                className="bg-[#111a22] border border-border-dark text-white text-sm rounded-xl h-12 pl-10 pr-4 focus:ring-primary/40 focus:border-primary transition-all w-64"
+                className="bg-[#111a22] border border-border-dark text-white text-sm rounded-xl h-12 pl-10 pr-4 focus:ring-primary/40 focus:border-primary transition-all w-full sm:w-64"
                 value={searchTerm}
                 onChange={handleSearch}
               />
             </div>
             <button
               onClick={() => setShowBlockModal(true)}
-              className="flex items-center justify-center rounded-xl h-12 px-6 bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-bold hover:bg-red-500/20 transition-all"
+              className="flex flex-1 sm:flex-none items-center justify-center rounded-xl h-12 px-6 bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-bold hover:bg-red-500/20 transition-all whitespace-nowrap"
             >
               <span className="material-symbols-outlined mr-2" style={{ fontSize: '20px' }}>block</span>
               Block List
             </button>
             <button
               onClick={handleAddNew}
-              className="flex items-center justify-center rounded-xl h-12 px-6 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+              className="flex flex-1 sm:flex-none items-center justify-center rounded-xl h-12 px-6 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
             >
               <span className="material-symbols-outlined mr-2" style={{ fontSize: '20px' }}>person_add</span>
               Add Customer
@@ -393,7 +393,7 @@ const CustomersPage: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                       <div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Phone</p>
                         <p className="text-sm text-white font-medium">{detailCustomer.phone || '—'}</p>
