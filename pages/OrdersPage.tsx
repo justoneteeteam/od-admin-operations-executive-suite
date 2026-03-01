@@ -97,6 +97,24 @@ const OrdersPage: React.FC = () => {
     editOrder?.discountGiven
   ]);
 
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 12) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (page <= 10) {
+        pages.push(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '...', totalPages - 1, totalPages);
+      } else if (page >= totalPages - 4) {
+        pages.push(1, 2, '...', totalPages - 5, totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, 2, '...', page - 1, page, page + 1, '...', totalPages - 1, totalPages);
+      }
+    }
+    return pages;
+  };
+
   const fetchOrders = async () => {
     setIsLoading(true);
     setError(null);
@@ -536,28 +554,47 @@ const OrdersPage: React.FC = () => {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="bg-[#17232f]/80 px-4 sm:px-6 py-4 border-t border-[#233648] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-text-muted text-xs font-medium">
-            Showing page <span className="text-white font-bold">{page}</span> of <span className="text-white font-bold">{totalPages}</span>
+        <div className="bg-[#17232f]/80 px-4 sm:px-6 py-6 border-t border-[#233648] flex flex-col xl:flex-row items-center justify-between gap-6">
+          <span className="text-text-muted text-sm font-medium whitespace-nowrap">
+            Showing <span className="text-white font-bold">{page}</span> of <span className="text-white font-bold">{totalPages}</span> pages
             <span className="mx-2 opacity-30">|</span>
             {totalOrders} total orders
           </span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 xl:pb-0 w-full xl:w-auto scrollbar-hide">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex items-center gap-1 px-4 py-2 rounded-lg bg-[#1c2d3d] text-white text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#2d445a] transition-colors border border-transparent hover:border-[#3e5b77]"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
             >
-              <span className="material-symbols-outlined text-[14px]">chevron_left</span>
-              Previous
+              &larr; Previous
             </button>
+
+            <div className="flex items-center gap-2">
+              {getPageNumbers().map((p, i) => (
+                <React.Fragment key={i}>
+                  {p === '...' ? (
+                    <span className="text-text-muted px-1">...</span>
+                  ) : (
+                    <button
+                      onClick={() => setPage(p as number)}
+                      className={`min-w-[42px] h-[42px] flex items-center justify-center rounded-xl border transition-all text-sm font-bold ${page === p
+                          ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
+                          : 'border-primary text-text-muted hover:bg-primary/10 hover:text-white'
+                        }`}
+                    >
+                      {p}
+                    </button>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex items-center gap-1 px-4 py-2 rounded-lg bg-[#1c2d3d] text-white text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#2d445a] transition-colors border border-transparent hover:border-[#3e5b77]"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
             >
-              Next
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+              Next &rarr;
             </button>
           </div>
         </div>
