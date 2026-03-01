@@ -3,6 +3,7 @@ import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { RiskScoringService } from '../risk-scoring/risk-scoring.service';
 
 export interface SyncResult {
     success: boolean;
@@ -46,7 +47,10 @@ interface SheetRow {
 export class GoogleSheetsService {
     private readonly logger = new Logger(GoogleSheetsService.name);
 
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private riskScoringService: RiskScoringService
+    ) { }
 
     private parseDate(dateStr?: string): Date | null {
         if (!dateStr) return null;
@@ -476,6 +480,14 @@ export class GoogleSheetsService {
                     data: itemsToCreate,
                 });
             }
+
+            // Trigger Risk Assessment
+            try {
+                await this.riskScoringService.assessOrder(newOrder.id);
+            } catch (riskError) {
+                this.logger.error(`Risk assessment failed for order ${newOrder.id}:`, riskError);
+            }
+
             result.ordersCreated++;
         }
 

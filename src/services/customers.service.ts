@@ -13,6 +13,7 @@ export interface Customer {
     status?: string;
     ordersCount?: number;
     totalSpent?: number;
+    avgRiskScore?: number;
 }
 
 export const customersService = {

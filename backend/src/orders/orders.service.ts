@@ -6,13 +6,15 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 
 import { ProfitsService } from '../profits/profits.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { RiskScoringService } from '../risk-scoring/risk-scoring.service';
 
 @Injectable()
 export class OrdersService {
     constructor(
         private prisma: PrismaService,
         private profitsService: ProfitsService,
-        private inventoryService: InventoryService
+        private inventoryService: InventoryService,
+        private riskScoringService: RiskScoringService
     ) { }
 
     async create(createOrderDto: CreateOrderDto) {
@@ -90,7 +92,18 @@ export class OrdersService {
             // Reserve Stock
             await this.inventoryService.reserveStock(newOrder.id);
 
-            return newOrder;
+            // Risk Assessment
+            try {
+                await this.riskScoringService.assessOrder(newOrder.id);
+                // Return fresh order object with risk fields
+                return await this.prisma.order.findUnique({
+                    where: { id: newOrder.id },
+                    include: { items: true, customer: true, fulfillmentCenter: true }
+                });
+            } catch (riskError) {
+                console.error(`Risk assessment failed for order ${newOrder.id}:`, riskError);
+                return newOrder;
+            }
         } catch (error) {
             const fs = require('fs');
             fs.appendFileSync('error.log', new Date().toISOString() + ': ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2) + '\n');

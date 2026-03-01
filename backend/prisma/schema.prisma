@@ -23,32 +23,33 @@ model User {
 }
 
 model Customer {
-  id                   String    @id @default(uuid())
+  id                   String           @id @default(uuid())
   name                 String
-  email                String?   @unique
+  email                String?          @unique
   phone                String
-  whatsappNumber       String?   @map("whatsapp_number")
-  addressLine1         String?   @map("address_line1")
-  addressLine2         String?   @map("address_line2")
+  whatsappNumber       String?          @map("whatsapp_number")
+  addressLine1         String?          @map("address_line1")
+  addressLine2         String?          @map("address_line2")
   city                 String?
   province             String?
   country              String
-  postalCode           String?   @map("postal_code")
-  status               String?   @default("Standard")
-  isBlocked            Boolean?  @default(false) @map("is_blocked")
-  blockedReason        String?   @map("blocked_reason")
-  blockedDate          DateTime? @map("blocked_date") @db.Timestamptz(6)
-  ordersCount          Int?      @default(0) @map("orders_count")
-  totalSpent           Decimal?  @default(0) @map("total_spent") @db.Decimal(12, 2)
-  successfulDeliveries Int?      @default(0) @map("successful_deliveries")
-  returnsCount         Int?      @default(0) @map("returns_count")
-  lastOrderDate        DateTime? @map("last_order_date") @db.Timestamptz(6)
-  prefersWhatsapp      Boolean?  @default(true) @map("prefers_whatsapp")
-  prefersCalls         Boolean?  @default(true) @map("prefers_calls")
-  language             String?   @default("en")
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  postalCode           String?          @map("postal_code")
+  status               String?          @default("Standard")
+  isBlocked            Boolean?         @default(false) @map("is_blocked")
+  blockedReason        String?          @map("blocked_reason")
+  blockedDate          DateTime?        @map("blocked_date") @db.Timestamptz(6)
+  ordersCount          Int?             @default(0) @map("orders_count")
+  totalSpent           Decimal?         @default(0) @map("total_spent") @db.Decimal(12, 2)
+  successfulDeliveries Int?             @default(0) @map("successful_deliveries")
+  returnsCount         Int?             @default(0) @map("returns_count")
+  lastOrderDate        DateTime?        @map("last_order_date") @db.Timestamptz(6)
+  prefersWhatsapp      Boolean?         @default(true) @map("prefers_whatsapp")
+  prefersCalls         Boolean?         @default(true) @map("prefers_calls")
+  language             String?          @default("en")
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   orders               Order[]
+  riskAssessments      RiskAssessment[]
 
   @@map("customers")
 }
@@ -83,31 +84,31 @@ model FulfillmentCenter {
 }
 
 model Supplier {
-  id                 String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name               String    @db.VarChar(255)
-  companyName        String?   @map("company_name") @db.VarChar(255)
-  supplierCode       String?   @unique @map("supplier_code") @db.VarChar(50)
-  contactPerson      String    @map("contact_person") @db.VarChar(255)
-  email              String?   @db.VarChar(255)
-  phone              String?   @db.VarChar(50)
-  addressLine1       String?   @map("address_line1")
-  addressLine2       String?   @map("address_line2")
-  city               String?   @db.VarChar(100)
-  country            String    @db.VarChar(100)
-  postalCode         String?   @map("postal_code") @db.VarChar(20)
-  paymentTerms       String?   @map("payment_terms") @db.VarChar(50)
-  currency           String?   @default("USD") @db.VarChar(10)
-  taxId              String?   @map("tax_id") @db.VarChar(50)
-  bankName           String?   @map("bank_name") @db.VarChar(255)
-  bankAccount        String?   @map("bank_account") @db.VarChar(100)
-  rating             Decimal?  @db.Decimal(3, 2)
-  totalOrders        Int?      @default(0) @map("total_orders")
-  onTimeDeliveryRate Decimal?  @map("on_time_delivery_rate") @db.Decimal(5, 2)
-  qualityRating      Decimal?  @map("quality_rating") @db.Decimal(3, 2)
-  status             String?   @default("Active") @db.VarChar(20)
+  id                 String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name               String     @db.VarChar(255)
+  companyName        String?    @map("company_name") @db.VarChar(255)
+  supplierCode       String?    @unique @map("supplier_code") @db.VarChar(50)
+  contactPerson      String     @map("contact_person") @db.VarChar(255)
+  email              String?    @db.VarChar(255)
+  phone              String?    @db.VarChar(50)
+  addressLine1       String?    @map("address_line1")
+  addressLine2       String?    @map("address_line2")
+  city               String?    @db.VarChar(100)
+  country            String     @db.VarChar(100)
+  postalCode         String?    @map("postal_code") @db.VarChar(20)
+  paymentTerms       String?    @map("payment_terms") @db.VarChar(50)
+  currency           String?    @default("USD") @db.VarChar(10)
+  taxId              String?    @map("tax_id") @db.VarChar(50)
+  bankName           String?    @map("bank_name") @db.VarChar(255)
+  bankAccount        String?    @map("bank_account") @db.VarChar(100)
+  rating             Decimal?   @db.Decimal(3, 2)
+  totalOrders        Int?       @default(0) @map("total_orders")
+  onTimeDeliveryRate Decimal?   @map("on_time_delivery_rate") @db.Decimal(5, 2)
+  qualityRating      Decimal?   @map("quality_rating") @db.Decimal(3, 2)
+  status             String?    @default("Active") @db.VarChar(20)
   notes              String?
-  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt          DateTime?  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime?  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   products           Product[]
   purchases          Purchase[]
 
@@ -146,11 +147,11 @@ model Product {
   weightedAverageCost   Decimal?               @map("weighted_average_cost") @db.Decimal(10, 2)
   inventoryLevels       InventoryLevel[]
   inventoryTransactions InventoryTransaction[]
-  
-  fulfillmentCenter     FulfillmentCenter?     @relation(fields: [fulfillmentCenterId], references: [id])
-  supplier              Supplier?              @relation(fields: [supplierId], references: [id])
-  purchaseItems         PurchaseItem[]
-  orderItems            OrderItem[]
+
+  fulfillmentCenter FulfillmentCenter? @relation(fields: [fulfillmentCenterId], references: [id])
+  supplier          Supplier?          @relation(fields: [supplierId], references: [id])
+  purchaseItems     PurchaseItem[]
+  orderItems        OrderItem[]
 
   @@map("products")
 }
@@ -207,15 +208,20 @@ model Order {
   syncStatus           String?   @default("synced") @map("sync_status") @db.VarChar(20)
   notes                String?
   internalNotes        String?   @map("internal_notes")
+  riskScore            Int?      @default(0) @map("risk_score")
+  riskLevel            String?   @map("risk_level") @db.VarChar(20)
+  riskAction           String?   @map("risk_action") @db.VarChar(50)
+  riskAssessedAt       DateTime? @map("risk_assessed_at") @db.Timestamptz(6)
   createdAt            DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  
-  customer             Customer  @relation(fields: [customerId], references: [id])
-  fulfillmentCenter    FulfillmentCenter? @relation(fields: [fulfillmentCenterId], references: [id])
-  items                OrderItem[]
-  profitCalculations   ProfitCalculation[]
-  trackingHistory      TrackingHistory[]
-  customerResponses    CustomerResponse[]
+
+  customer           Customer            @relation(fields: [customerId], references: [id])
+  fulfillmentCenter  FulfillmentCenter?  @relation(fields: [fulfillmentCenterId], references: [id])
+  items              OrderItem[]
+  profitCalculations ProfitCalculation[]
+  trackingHistory    TrackingHistory[]
+  customerResponses  CustomerResponse[]
+  riskAssessments    RiskAssessment[]
 
   @@map("orders")
 }
@@ -236,8 +242,8 @@ model OrderItem {
   refundAmount   Decimal?  @map("refund_amount") @db.Decimal(10, 2)
   createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  order          Order     @relation(fields: [orderId], references: [id])
-  product        Product   @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
@@ -258,7 +264,7 @@ model TrackingHistory {
   rawData        Json?     @map("raw_data")
   createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  order          Order     @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 
   @@map("tracking_history")
 }
@@ -286,7 +292,7 @@ model CustomerResponse {
   errorMessage      String?   @map("error_message")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  order             Order     @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 
   @@map("customer_responses")
 }
@@ -324,7 +330,6 @@ model CodCollection {
   @@map("cod_collections")
 }
 
-
 model ProfitCalculation {
   id                    String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   orderId               String   @map("order_id") @db.Uuid
@@ -349,11 +354,10 @@ model ProfitCalculation {
   calculationVersion    Int?     @default(1) @map("calculation_version")
   notes                 String?
 
-  order                 Order    @relation(fields: [orderId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 
   @@map("profit_calculations")
 }
-
 
 model Return {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
@@ -413,60 +417,60 @@ model ReturnItem {
 }
 
 model Purchase {
-  id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  purchaseOrderNumber  String    @unique @map("purchase_order_number") @db.VarChar(50)
-  supplierId           String    @map("supplier_id") @db.Uuid
-  fulfillmentCenterId  String    @map("fulfillment_center_id") @db.Uuid
-  warehouseId          String?   @map("warehouse_id") @db.Uuid
+  id                  String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  purchaseOrderNumber String  @unique @map("purchase_order_number") @db.VarChar(50)
+  supplierId          String  @map("supplier_id") @db.Uuid
+  fulfillmentCenterId String  @map("fulfillment_center_id") @db.Uuid
+  warehouseId         String? @map("warehouse_id") @db.Uuid
 
-  purchaseStatus       String    @default("Draft") @map("status") @db.VarChar(50)
-  subtotal             Decimal   @db.Decimal(12, 2)
+  purchaseStatus String  @default("Draft") @map("status") @db.VarChar(50)
+  subtotal       Decimal @db.Decimal(12, 2)
 
-  purchaseShippingCost Decimal?  @default(0) @map("shipping_cost") @db.Decimal(10, 2)
-  totalAmount          Decimal   @map("total_amount") @db.Decimal(12, 2)
-  paymentStatus        String?   @default("Pending") @map("payment_status") @db.VarChar(50)
+  purchaseShippingCost   Decimal?  @default(0) @map("shipping_cost") @db.Decimal(10, 2)
+  totalAmount            Decimal   @map("total_amount") @db.Decimal(12, 2)
+  paymentStatus          String?   @default("Pending") @map("payment_status") @db.VarChar(50)
   // ...
-  purchaseTaxAmount    Decimal?  @default(0) @map("tax_amount") @db.Decimal(10, 2)
-  purchaseDiscountAmount Decimal? @default(0) @map("discount_amount") @db.Decimal(10, 2)
-  paidAmount           Decimal?  @default(0) @map("paid_amount") @db.Decimal(12, 2)
-  dueAmount            Decimal?  @map("due_amount") @db.Decimal(12, 2)
-  paymentTerms         String?   @map("payment_terms") @db.VarChar(255)
-  orderDate            DateTime  @default(now()) @map("order_date") @db.Timestamptz(6)
-  expectedDeliveryDate DateTime? @map("expected_delivery_date") @db.Timestamptz(6)
-  receivedDate         DateTime? @map("received_date") @db.Timestamptz(6)
-  trackingNumber       String?   @map("tracking_number") @db.VarChar(100)
-  createdBy            String?   @map("created_by") @db.Uuid
-  approvedBy           String?   @map("approved_by") @db.Uuid
-  receivedBy           String?   @map("received_by") @db.Uuid
-  notes                String?
-  createdAt            DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  otherCosts           Decimal?  @default(0) @map("other_costs") @db.Decimal(10, 2)
+  purchaseTaxAmount      Decimal?  @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  purchaseDiscountAmount Decimal?  @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  paidAmount             Decimal?  @default(0) @map("paid_amount") @db.Decimal(12, 2)
+  dueAmount              Decimal?  @map("due_amount") @db.Decimal(12, 2)
+  paymentTerms           String?   @map("payment_terms") @db.VarChar(255)
+  orderDate              DateTime  @default(now()) @map("order_date") @db.Timestamptz(6)
+  expectedDeliveryDate   DateTime? @map("expected_delivery_date") @db.Timestamptz(6)
+  receivedDate           DateTime? @map("received_date") @db.Timestamptz(6)
+  trackingNumber         String?   @map("tracking_number") @db.VarChar(100)
+  createdBy              String?   @map("created_by") @db.Uuid
+  approvedBy             String?   @map("approved_by") @db.Uuid
+  receivedBy             String?   @map("received_by") @db.Uuid
+  notes                  String?
+  createdAt              DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  otherCosts             Decimal?  @default(0) @map("other_costs") @db.Decimal(10, 2)
 
-  warehouse            Warehouse? @relation(fields: [warehouseId], references: [id])
-  supplier             Supplier   @relation(fields: [supplierId], references: [id])
-  fulfillmentCenter    FulfillmentCenter @relation(fields: [fulfillmentCenterId], references: [id])
-  items                PurchaseItem[]
+  warehouse         Warehouse?        @relation(fields: [warehouseId], references: [id])
+  supplier          Supplier          @relation(fields: [supplierId], references: [id])
+  fulfillmentCenter FulfillmentCenter @relation(fields: [fulfillmentCenterId], references: [id])
+  items             PurchaseItem[]
 
   @@map("purchases")
 }
 
 model PurchaseItem {
-  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  purchaseId       String    @map("purchase_id") @db.Uuid
-  productId        String    @map("product_id") @db.Uuid
-  quantity         Int
-  receivedQuantity Int       @default(0) @map("received_quantity")
-  unitCost         Decimal   @map("unit_cost") @db.Decimal(10, 2)
-  taxPercent       Decimal?  @default(0) @map("tax_percent") @db.Decimal(5, 2)
-  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  purchasePrice    Decimal   @default(0) @map("purchase_price") @db.Decimal(10, 2)
-  purchaseTaxAmount Decimal?  @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  purchaseId             String    @map("purchase_id") @db.Uuid
+  productId              String    @map("product_id") @db.Uuid
+  quantity               Int
+  receivedQuantity       Int       @default(0) @map("received_quantity")
+  unitCost               Decimal   @map("unit_cost") @db.Decimal(10, 2)
+  taxPercent             Decimal?  @default(0) @map("tax_percent") @db.Decimal(5, 2)
+  createdAt              DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  purchasePrice          Decimal   @default(0) @map("purchase_price") @db.Decimal(10, 2)
+  purchaseTaxAmount      Decimal?  @default(0) @map("tax_amount") @db.Decimal(10, 2)
   purchaseDiscountAmount Decimal?  @default(0) @map("discount_amount") @db.Decimal(10, 2)
-  landedCost       Decimal?  @map("landed_cost") @db.Decimal(10, 2)
+  landedCost             Decimal?  @map("landed_cost") @db.Decimal(10, 2)
 
-  purchase         Purchase  @relation(fields: [purchaseId], references: [id])
-  product          Product   @relation(fields: [productId], references: [id])
+  purchase Purchase @relation(fields: [purchaseId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
 
   @@map("purchase_items")
 }
@@ -664,6 +668,11 @@ model StoreSettings {
   gsSheetName     String?   @default("Sheet1") @map("gs_sheet_name")
   gsConnected     Boolean?  @default(false) @map("gs_connected")
   gsLastSyncAt    DateTime? @map("gs_last_sync_at") @db.Timestamptz(6)
+
+  // Call Center Queue Integration
+  callCenterSheetId   String?   @map("call_center_sheet_id") @db.VarChar(255)
+  callCenterSheetName String?   @map("call_center_sheet_name") @db.VarChar(255)
+
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -717,4 +726,40 @@ model InventoryTransaction {
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
 
   @@map("inventory_transactions")
+}
+
+model RiskAssessment {
+  id         String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  orderId    String  @map("order_id") @db.Uuid
+  customerId String? @map("customer_id") @db.Uuid
+
+  totalScore Int    @map("total_score")
+  riskLevel  String @map("risk_level") @db.VarChar(20)
+  action     String @db.VarChar(50)
+
+  factors Json
+
+  cityZipMatch    Boolean? @map("city_zip_match")
+  hasHouseNumber  Boolean? @map("has_house_number")
+  addressVerified Boolean? @map("address_verified")
+
+  isFirstOrder     Boolean? @map("is_first_order")
+  isBlocked        Boolean? @map("is_blocked")
+  recentOrderCount Int?     @map("recent_order_count")
+
+  actionTaken  String?   @map("action_taken") @db.VarChar(50)
+  actionResult String?   @map("action_result") @db.VarChar(50)
+  reviewedBy   String?   @map("reviewed_by") @db.Uuid
+  reviewedAt   DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  reviewNotes  String?   @map("review_notes")
+
+  forwardedToCallCenter Boolean? @default(false) @map("forwarded_to_call_center")
+  callCenterSheetRow    Int?     @map("call_center_sheet_row")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order    Order     @relation(fields: [orderId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("risk_assessments")
 }

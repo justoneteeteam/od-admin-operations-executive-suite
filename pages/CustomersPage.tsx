@@ -286,13 +286,18 @@ const CustomersPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Stats Column */}
                       <td className="px-8 py-6 text-center">
                         <div className="flex flex-col items-center">
                           <p className="text-base font-black text-white">{customer.ordersCount || 0} Orders</p>
                           <p className="text-[10px] text-text-muted font-medium mt-1">
                             ${(customer.totalSpent || 0).toLocaleString()} Spent
                           </p>
+                          <div className={`mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${customer.avgRiskScore! >= 4 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                              customer.avgRiskScore! >= 2 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                                'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            }`}>
+                            Avg Risk: {customer.avgRiskScore?.toFixed(1) || '0.0'}
+                          </div>
                         </div>
                       </td>
 
@@ -435,7 +440,18 @@ const CustomersPage: React.FC = () => {
                         {detailCustomer.orders.map((order: any) => (
                           <div key={order.id} className="bg-[#14202c] rounded-xl border border-border-dark p-4 hover:border-primary/20 transition-all">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-bold text-white">{order.orderNumber}</span>
+                              <span className="text-sm font-bold text-white flex items-center gap-2">
+                                #{order.orderNumber}
+                                {order.riskLevel && (
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${order.riskLevel === 'LOW' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                      order.riskLevel === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                                        order.riskLevel === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                                          'bg-red-500/20 text-red-400 border-red-500/30'
+                                    }`}>
+                                    {order.riskLevel}
+                                  </span>
+                                )}
+                              </span>
                               <span className={`text-xs font-bold ${getOrderStatusColor(order.orderStatus || order.status)}`}>
                                 {order.orderStatus || order.status || 'Pending'}
                               </span>

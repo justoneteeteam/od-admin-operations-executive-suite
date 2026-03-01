@@ -16,6 +16,10 @@ export interface StoreSettings {
     gsConnected?: boolean;
     gsLastSyncAt?: string;
 
+    // Call Center Queue Integration
+    callCenterSheetId?: string;
+    callCenterSheetName?: string;
+
     createdAt?: string;
     updatedAt?: string;
 }

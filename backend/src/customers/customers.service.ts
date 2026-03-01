@@ -66,7 +66,11 @@ export class CustomersService {
     if (customerIds.length === 0) return customers;
 
     const stats: any[] = await this.prisma.$queryRaw`
-      SELECT customer_id, COUNT(*)::int as orders_count, COALESCE(SUM(total_amount), 0)::float as total_spent
+      SELECT 
+        customer_id, 
+        COUNT(*)::int as orders_count, 
+        COALESCE(SUM(total_amount), 0)::float as total_spent,
+        COALESCE(AVG(risk_score), 0)::float as avg_risk_score
       FROM orders
       WHERE customer_id = ANY(${customerIds}::uuid[])
       GROUP BY customer_id
@@ -78,6 +82,7 @@ export class CustomersService {
       ...c,
       ordersCount: statsMap.get(c.id)?.orders_count || 0,
       totalSpent: statsMap.get(c.id)?.total_spent || 0,
+      avgRiskScore: statsMap.get(c.id)?.avg_risk_score || 0,
     }));
   }
 

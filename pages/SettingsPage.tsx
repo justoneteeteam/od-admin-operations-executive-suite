@@ -71,6 +71,8 @@ const SettingsPage: React.FC = () => {
     gsPrivateKey: '',
     gsSpreadsheetId: '',
     gsSheetName: 'Sheet1',
+    callCenterSheetId: '',
+    callCenterSheetName: '',
   };
 
   const [formData, setFormData] = useState<Partial<StoreSettings>>(emptyForm);
@@ -717,6 +719,50 @@ const SettingsPage: React.FC = () => {
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>wifi_tethering</span>
               {isTesting ? 'Testing...' : 'Test Connection'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Call Center Queue Integration */}
+      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-border-dark flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-orange-400" style={{ fontSize: 18 }}>assignment_ind</span>
+              Call Center Queue Integration
+            </h3>
+            <p className="text-text-muted text-xs mt-1">Configure where high-risk orders are forwarded for manual calling.</p>
+          </div>
+        </div>
+        <div className="p-6 flex flex-col gap-6">
+          <div className="bg-orange-500/5 border border-orange-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+            <span className="material-symbols-outlined text-orange-400" style={{ fontSize: 16 }}>info</span>
+            <p className="text-xs text-orange-400/80 font-medium">Orders scored as HIGH risk will automatically be appended to this Google Sheet.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-2">
+              <label className="text-text-muted text-xs font-bold uppercase tracking-wider">Spreadsheet ID</label>
+              <input
+                type="text"
+                value={formData.callCenterSheetId || ''}
+                onChange={e => handleChange('callCenterSheetId', e.target.value)}
+                placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjGMUWqTGk..."
+                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              />
+              <p className="text-[10px] text-text-muted">The ID of the Call Center Google Sheet.</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-text-muted text-xs font-bold uppercase tracking-wider">Sheet / Tab Name</label>
+              <input
+                type="text"
+                value={formData.callCenterSheetName || ''}
+                onChange={e => handleChange('callCenterSheetName', e.target.value)}
+                placeholder="e.g., Queue1"
+                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              />
+              <p className="text-[10px] text-text-muted">Name of the tracking tab.</p>
+            </div>
           </div>
         </div>
       </div>

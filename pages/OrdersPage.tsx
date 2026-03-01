@@ -33,6 +33,7 @@ const OrdersPage: React.FC = () => {
   const [confirmationFilter, setConfirmationFilter] = useState('All Confirmations');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All Status');
   const [dateFilter, setDateFilter] = useState('Last 30 Days');
+  const [riskFilter, setRiskFilter] = useState('All Risk Levels');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   // Pagination State
@@ -50,7 +51,7 @@ const OrdersPage: React.FC = () => {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, confirmationFilter, orderStatusFilter, dateFilter]);
+  }, [searchTerm, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
 
   // Debounced fetch for orders
   useEffect(() => {
@@ -58,7 +59,7 @@ const OrdersPage: React.FC = () => {
       fetchOrders();
     }, 300);
     return () => clearTimeout(timer);
-  }, [page, searchTerm, confirmationFilter, orderStatusFilter, dateFilter]);
+  }, [page, searchTerm, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
 
   // Initial fetch for static data
   useEffect(() => {
@@ -359,7 +360,13 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  const filteredOrders = orders;
+  const filteredOrders = orders.filter(order => {
+    if (riskFilter !== 'All Risk Levels') {
+      if (riskFilter === 'Unassessed') return !order.riskLevel;
+      return order.riskLevel === riskFilter;
+    }
+    return true;
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -455,6 +462,21 @@ const OrdersPage: React.FC = () => {
             </select>
             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">calendar_today</span>
           </div>
+          <div className="relative">
+            <select
+              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm appearance-none cursor-pointer"
+              value={riskFilter}
+              onChange={(e) => setRiskFilter(e.target.value)}
+            >
+              <option>All Risk Levels</option>
+              <option value="LOW">Low Risk</option>
+              <option value="MEDIUM">Medium Risk</option>
+              <option value="HIGH">High Risk</option>
+              <option value="BLOCKED">Blocked</option>
+              <option value="Unassessed">Unassessed</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">shield</span>
+          </div>
         </div>
       </div>
 
@@ -472,6 +494,7 @@ const OrdersPage: React.FC = () => {
                     onChange={handleSelectAll}
                   />
                 </th>
+                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Risk</th>
                 <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order Details</th>
                 <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Confirmation</th>
                 <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order Status</th>
@@ -525,6 +548,13 @@ const OrdersPage: React.FC = () => {
                           checked={selectedOrderIds.includes(order.id)}
                           onChange={(e) => handleSelectOrder(e, order.id)}
                         />
+                      </td>
+                      <td className="px-4 sm:px-6 py-6 text-center">
+                        {order.riskLevel === 'LOW' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="LOW Risk"><span className="material-symbols-outlined text-sm">shield</span></span>}
+                        {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="MEDIUM Risk"><span className="material-symbols-outlined text-sm">warning</span></span>}
+                        {order.riskLevel === 'HIGH' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30" title="HIGH Risk"><span className="material-symbols-outlined text-sm">front_hand</span></span>}
+                        {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 border border-red-500/30" title="BLOCKED"><span className="material-symbols-outlined text-sm">block</span></span>}
+                        {!order.riskLevel && <span className="inline-flex size-6 items-center justify-center rounded-full bg-[#1c2d3d] text-text-muted border border-border-dark" title="Unassessed"><span className="material-symbols-outlined text-sm">help</span></span>}
                       </td>
                       <td className="px-4 sm:px-6 py-6">
                         <p className="text-sm font-bold text-primary group-hover:underline underline-offset-4">#{order.orderNumber}</p>
@@ -692,6 +722,45 @@ const OrdersPage: React.FC = () => {
                     </div>
                   </div>
                 </section>
+
+                {/* Risk Assessment Section */}
+                {editOrder.riskLevel && (
+                  <section className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">shield</span>
+                        Fraud & Risk Assessment
+                      </h3>
+                      <div className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${editOrder.riskLevel === 'LOW' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                          editOrder.riskLevel === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                            editOrder.riskLevel === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                              'bg-red-500/20 text-red-400 border-red-500/30'
+                        }`}>
+                        {editOrder.riskLevel} RISK (Score: {editOrder.riskScore})
+                      </div>
+                    </div>
+                    <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-amber-500/20 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-[#1c2d3d] p-4 rounded-xl border border-border-dark space-y-2">
+                          <span className="text-[10px] font-black text-text-muted uppercase">Recommended Action</span>
+                          <p className="text-sm font-black text-white">{
+                            editOrder.riskAction === 'twilio_short' ? 'Short Voice Confirmation' :
+                              editOrder.riskAction === 'twilio_long' ? 'Full Voice Confirmation' :
+                                editOrder.riskAction === 'call_center' ? 'Manual Call Center Review' :
+                                  editOrder.riskAction === 'auto_reject' ? 'Auto-Reject (Blocked)' :
+                                    (editOrder.riskAction || 'None')
+                          }</p>
+                        </div>
+                        <div className="bg-[#1c2d3d] p-4 rounded-xl border border-border-dark space-y-2">
+                          <span className="text-[10px] font-black text-text-muted uppercase">Address Analysis</span>
+                          <div className="flex gap-2 text-xs font-medium">
+                            <span className="text-text-muted">Requires further implementation. Check raw log.</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                )}
 
                 {/* Customer Information Section */}
                 <section className="space-y-4">
