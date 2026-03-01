@@ -262,18 +262,35 @@ const OrdersPage: React.FC = () => {
   const saveChanges = async () => {
     if (editOrder) {
       try {
-        const { customer, items, trackingHistory, customerResponses, ...orderData } = editOrder;
-
-        const cleanItems = items?.map(item => ({
+        // Clean up the items payload for the backend
+        const cleanItems = editOrder.items?.map(item => ({
           productId: item.productId,
           productName: item.productName || 'Unknown Product',
           sku: item.sku || 'N/A',
           quantity: Number(item.quantity) || 1,
           unitPrice: Number(item.unitPrice) || 0,
-        }));
+        })) || [];
 
+        // Explicitly extract ONLY the scalar fields allowed to be updated.
+        // This prevents Prisma errors caused by accidentally sending relational objects 
+        // (like fulfillmentCenter, profitCalculations) or read-only timestamps.
         const payload = {
-          ...orderData,
+          shippingAddressLine1: editOrder.shippingAddressLine1,
+          shippingAddressLine2: editOrder.shippingAddressLine2,
+          shippingCity: editOrder.shippingCity,
+          shippingProvince: editOrder.shippingProvince,
+          shippingPostalCode: editOrder.shippingPostalCode,
+          shippingCountry: editOrder.shippingCountry,
+          fulfillmentCenterId: editOrder.fulfillmentCenterId,
+          trackingNumber: editOrder.trackingNumber,
+          courier: editOrder.courier,
+          notes: editOrder.notes,
+          confirmationStatus: editOrder.confirmationStatus,
+          orderStatus: editOrder.orderStatus,
+          shippingFee: editOrder.shippingFee,
+          taxCollected: editOrder.taxCollected,
+          discountGiven: editOrder.discountGiven,
+          paymentStatus: editOrder.paymentStatus,
           items: cleanItems
         };
 
