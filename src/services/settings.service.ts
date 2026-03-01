@@ -20,6 +20,9 @@ export interface StoreSettings {
     callCenterSheetId?: string;
     callCenterSheetName?: string;
 
+    // Twilio Settings
+    enableTwilioCalls?: boolean;
+
     createdAt?: string;
     updatedAt?: string;
 }

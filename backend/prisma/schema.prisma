@@ -674,6 +674,9 @@ model StoreSettings {
   callCenterSheetId   String?   @map("call_center_sheet_id") @db.VarChar(255)
   callCenterSheetName String?   @map("call_center_sheet_name") @db.VarChar(255)
 
+  // Twilio Settings
+  enableTwilioCalls   Boolean   @default(false) @map("enable_twilio_calls")
+
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

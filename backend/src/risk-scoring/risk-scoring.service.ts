@@ -230,15 +230,33 @@ export class RiskScoringService {
                 return;
             }
 
+            // Fetch store settings to check if Twilio calls are enabled
+            const storeSettings = await this.prisma.storeSettings.findFirst({
+                where: {
+                    storeName: order.storeName // Assuming order has storeName
+                }
+            });
+
+            // If store is not found or calls are disabled, don't initiate automation for LOW/MEDIUM
+            const isTwilioEnabled = storeSettings?.enableTwilioCalls === true;
+
             if (riskLevel === 'LOW') {
-                this.logger.log(`Order ${order.id}: LOW risk — initiating short Twilio call.`);
-                await this.twilioVoiceService.initiateConfirmationCall(order.id, 'short');
+                if (isTwilioEnabled) {
+                    this.logger.log(`Order ${order.id}: LOW risk — initiating short Twilio call.`);
+                    await this.twilioVoiceService.initiateConfirmationCall(order.id, 'short');
+                } else {
+                    this.logger.log(`Order ${order.id}: LOW risk — Twilio calls disabled for store ${order.storeName}. Skipping call.`);
+                }
                 return;
             }
 
             if (riskLevel === 'MEDIUM') {
-                this.logger.log(`Order ${order.id}: MEDIUM risk — initiating long Twilio call.`);
-                await this.twilioVoiceService.initiateConfirmationCall(order.id, 'long');
+                if (isTwilioEnabled) {
+                    this.logger.log(`Order ${order.id}: MEDIUM risk — initiating long Twilio call.`);
+                    await this.twilioVoiceService.initiateConfirmationCall(order.id, 'long');
+                } else {
+                    this.logger.log(`Order ${order.id}: MEDIUM risk — Twilio calls disabled for store ${order.storeName}. Skipping call.`);
+                }
                 return;
             }
 

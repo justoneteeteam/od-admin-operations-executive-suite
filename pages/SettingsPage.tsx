@@ -73,6 +73,7 @@ const SettingsPage: React.FC = () => {
     gsSheetName: 'Sheet1',
     callCenterSheetId: '',
     callCenterSheetName: '',
+    enableTwilioCalls: false,
   };
 
   const [formData, setFormData] = useState<Partial<StoreSettings>>(emptyForm);
@@ -764,6 +765,36 @@ const SettingsPage: React.FC = () => {
               <p className="text-[10px] text-text-muted">Name of the tracking tab.</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Twilio Integration */}
+      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="p-6 border-b border-border-dark flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-blue-400" style={{ fontSize: 18 }}>call</span>
+              Automated Twilio Confirmations
+            </h3>
+            <p className="text-text-muted text-xs mt-1">Automatically call customers to confirm COD orders based on risk level.</p>
+          </div>
+        </div>
+        <div className="p-6 flex flex-col gap-6">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.enableTwilioCalls ? 'bg-primary' : 'bg-[#1a2332] border border-border-dark'}`}>
+              <span className={`inline-block size-4 transform rounded-full bg-white transition-transform ${formData.enableTwilioCalls ? 'translate-x-6' : 'translate-x-1'}`} />
+            </div>
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={formData.enableTwilioCalls || false}
+              onChange={e => handleChange('enableTwilioCalls', e.target.checked)}
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">Enable Voice Calls</span>
+              <span className="text-xs text-text-muted mt-0.5">When checked, new orders will trigger automated voice calls via Twilio.</span>
+            </div>
+          </label>
         </div>
       </div>
 
