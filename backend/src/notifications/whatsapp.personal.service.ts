@@ -30,8 +30,10 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
     private clientInitialized = false;
 
     private initializeClient() {
+        // Run headless on Railway/Docker (no display), visible window only on local dev
+        const isServer = !!(process.env.RAILWAY_ENVIRONMENT || process.env.PUPPETEER_EXECUTABLE_PATH || process.env.NODE_ENV === 'production');
         const puppeteerConfig: any = {
-            headless: process.env.NODE_ENV === 'production',
+            headless: isServer,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
         };
 
