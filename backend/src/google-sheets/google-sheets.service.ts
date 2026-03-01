@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
@@ -49,7 +49,7 @@ export class GoogleSheetsService {
 
     constructor(
         private prisma: PrismaService,
-        private riskScoringService: RiskScoringService
+        @Inject(forwardRef(() => RiskScoringService)) private riskScoringService: RiskScoringService
     ) { }
 
     private parseDate(dateStr?: string): Date | null {
