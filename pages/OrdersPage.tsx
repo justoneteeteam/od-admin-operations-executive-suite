@@ -69,7 +69,19 @@ const OrdersPage: React.FC = () => {
 
   useEffect(() => {
     if (showDrawer && selectedOrder) {
-      setEditOrder({ ...selectedOrder });
+      // Fetch full order details to get trackingHistory and customerResponses
+      const fetchDetails = async () => {
+        try {
+          const fullOrder = await ordersService.getById(selectedOrder.id);
+          setEditOrder(fullOrder);
+        } catch (err) {
+          console.error("Failed to fetch full order details", err);
+          setEditOrder({ ...selectedOrder }); // Fallback to shallow copy
+        }
+      };
+      // Set to shallow copy immediately for responsive UI, then overwrite with full data
+      setEditOrder({ ...selectedOrder, trackingHistory: [], customerResponses: [] });
+      fetchDetails();
     } else {
       setEditOrder(null);
     }
