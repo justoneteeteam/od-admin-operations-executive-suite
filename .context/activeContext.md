@@ -8,9 +8,11 @@
 
 ## Recent Accomplishments
 - **Roadmap Defined**: Established clear V1 -> V4 roadmap.
-- **Deployment**: Production Live on Railway, custom domain `erp.justonetee.org` connected and routing correctly on port 80.
-- **WhatsApp**: Multi-language support (English/Italian/Spanish) & Templates configured.
-- **17Track**: Webhook fully verified and auto-updating orders.
+- **Deployment**: Production Live on Railway, custom domain `erp.justonetee.org` connected.
+- **Shopify Webhook Sync**: Store name extracted and mapped dynamically on order creation.
+- **Tracking System**: 17Track Webhooks & Tracking History UI implemented.
+- **Pagination & Search**: Backend pagination & debounced frontend search implemented for Orders Page (20 orders/page).
+- **Responsive UI**: Fully mobile & tablet optimized layout (Collapsible Sidebar, horizontally scrollable data tables, responsive actions grid).
 
 ## Immediate Goals
 1.  **V1 Wrap-up**:

@@ -22,16 +22,18 @@
 
 ## Project Roadmap & Status
 
-### Version 1: Core Order Management & Sync (Current - ~90% Complete)
+### Version 1: Core Order Management & Sync (Current - ~95% Complete)
 **Focus**: Stable Order Operations, Google Sheets Sync, and Basic Tracking.
-- [x] **Order Tab**: Full CRUD, Status Management.
+- [x] **Order Tab**: Full CRUD, Status Management, Pagination (20/page).
+- [x] **Store Sync**: Shopify Webhook maps store domains automatically.
+- [x] **Responsive UI**: App scaling added for tablet & mobile devices.
 - [x] **Delete Order**: implemented.
 - [x] **Google Sheets Sync**: Two-way sync for Orders.
 - [ ] **Fulfillment Center Sync**: Add FC data to Google Sheets.
 - [ ] **Suppliers Sync**: Add Supplier data to Google Sheets.
 - [ ] **Bulk Actions**: Select multiple orders for batch operations.
-- [ ] **Filter Tree**: Advanced filtering by status/date/country.
-- [x] **In Transit Mode**: 17Track Webhook & WhatsApp Notifications.
+- [ ] **Filter Tree**: Advanced filtering by status/date/country via backend.
+- [x] **Tracking Sync**: 17Track Webhook & Internal Tracking History Model UI.
 
 ### Version 2: Risk Orchestration & Confirmation (Next Up)
 **Focus**: Automated verification workflow to reduce RTO (Return to Origin).
