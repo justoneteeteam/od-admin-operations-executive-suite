@@ -237,8 +237,11 @@ export class RiskScoringService {
                 }
             });
 
-            // If store is not found or calls are disabled, don't initiate automation for LOW/MEDIUM
-            const isTwilioEnabled = storeSettings?.enableTwilioCalls === true;
+            // Temporarily force-enable Twilio for Italy based on user request (backend-only)
+            const isItaly = order.shippingAddress?.country?.toLowerCase() === 'italy' ||
+                order.shippingAddress?.country?.toLowerCase() === 'it';
+
+            const isTwilioEnabled = isItaly || storeSettings?.enableTwilioCalls === true;
 
             if (riskLevel === 'LOW') {
                 if (isTwilioEnabled) {
