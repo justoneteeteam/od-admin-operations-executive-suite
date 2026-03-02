@@ -28,9 +28,23 @@ export class StoreSettingsService {
 
     // Update store settings
     async update(id: string, data: any) {
+        // Strip out non-updateable fields like 'id', 'createdAt', 'updatedAt', 'gsConnected', 'gsLastSyncAt'
+        const allowedFields = [
+            'storeName', 'storeUrl', 'supportEmail', 'currency',
+            'gsProjectId', 'gsClientEmail', 'gsPrivateKey', 'gsSpreadsheetId', 'gsSheetName',
+            'callCenterSheetId', 'callCenterSheetName', 'enableTwilioCalls'
+        ];
+
+        const updateData: any = {};
+        for (const field of allowedFields) {
+            if (data[field] !== undefined) {
+                updateData[field] = data[field];
+            }
+        }
+
         return this.prisma.storeSettings.update({
             where: { id },
-            data,
+            data: updateData,
         });
     }
 

@@ -6,9 +6,11 @@ import {
     Delete,
     Param,
     Body,
+    ValidationPipe,
 } from '@nestjs/common';
 import { StoreSettingsService } from './store-settings.service';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
+import { UpdateStoreSettingsDto } from './dto/update-store-settings.dto';
 
 @Controller('store-settings')
 export class StoreSettingsController {
@@ -38,7 +40,7 @@ export class StoreSettingsController {
     }
 
     @Put(':id')
-    update(@Param('id') id: string, @Body() data: any) {
+    update(@Param('id') id: string, @Body(new ValidationPipe({ whitelist: true })) data: UpdateStoreSettingsDto) {
         return this.storeSettingsService.update(id, data);
     }
 

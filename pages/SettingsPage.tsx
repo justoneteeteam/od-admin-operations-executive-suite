@@ -234,9 +234,12 @@ const SettingsPage: React.FC = () => {
         setMessage({ type: 'success', text: 'Store created successfully!' });
       }
       await fetchStores();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save settings', err);
-      setMessage({ type: 'error', text: 'Failed to save settings.' });
+      const errorMessage = err.response?.data?.message
+        ? (Array.isArray(err.response.data.message) ? err.response.data.message[0] : err.response.data.message)
+        : 'Failed to save settings. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsSaving(false);
     }
