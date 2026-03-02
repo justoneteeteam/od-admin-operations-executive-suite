@@ -213,7 +213,7 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: keyof StoreSettings, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
