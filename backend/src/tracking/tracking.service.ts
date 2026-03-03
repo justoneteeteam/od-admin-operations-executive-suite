@@ -86,10 +86,10 @@ export class TrackingService {
             });
         }
 
-        if (mainStatus === 'PickUp') {
-            // "PickUp" in 17Track means Out for Delivery
-            if (order.shippingStatus === 'Out for Delivery') {
-                this.logger.log(`Order ${order.orderNumber} is already 'Out for Delivery'. Skipping duplicate SMS.`);
+        if (mainStatus === 'OutForDelivery') {
+            // "PickUp" natively in some 17track docs, but "OutForDelivery" comes through occasionally
+            if (order.shippingStatus === 'OutForDelivery') {
+                this.logger.log(`Order ${order.orderNumber} is already 'OutForDelivery'. Skipping duplicate SMS.`);
                 return;
             }
 
@@ -110,11 +110,11 @@ export class TrackingService {
             await this.prisma.order.update({
                 where: { id: order.id },
                 data: {
-                    shippingStatus: 'Out for Delivery',
-                    orderStatus: 'Out for Delivery',
+                    shippingStatus: 'OutForDelivery',
+                    orderStatus: 'OutForDelivery',
                 },
             });
-            this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'Out for Delivery'`);
+            this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'OutForDelivery'`);
 
             // 5a. Send IMMEDIATE Twilio SMS
             try {
@@ -158,16 +158,16 @@ export class TrackingService {
                 }
             }, delayMs);
 
-        } else if (mainStatus === 'Transit' || mainStatus === 'In Transit' || subStatus === 'InTransit_Arrival') {
-            if (order.shippingStatus !== 'In Transit' && order.shippingStatus !== 'Out for Delivery' && order.shippingStatus !== 'Delivered') {
+        } else if (mainStatus === 'InTransit' || mainStatus === 'Transit' || mainStatus === 'In Transit' || subStatus === 'InTransit_Arrival') {
+            if (order.shippingStatus !== 'InTransit' && order.shippingStatus !== 'OutForDelivery' && order.shippingStatus !== 'Delivered') {
                 await this.prisma.order.update({
                     where: { id: order.id },
                     data: {
-                        shippingStatus: 'In Transit',
-                        orderStatus: 'In Transit',
+                        shippingStatus: 'InTransit',
+                        orderStatus: 'InTransit',
                     },
                 });
-                this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'In Transit'`);
+                this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'InTransit'`);
             }
         } else if (mainStatus === 'Delivered' || (subStatus && subStatus.startsWith('Delivered'))) {
             // Package was delivered - update order to Delivered
@@ -198,7 +198,7 @@ export class TrackingService {
                 where: { id: order.id },
                 data: {
                     shippingStatus: 'Undelivered',
-                    orderStatus: 'Exception', // Flag as exception internally
+                    orderStatus: 'Undelivered',
                     notes: order.notes ? `${order.notes}\n[Tracking] Undelivered: ${description}` : `[Tracking] Undelivered: ${description}`
                 },
             });
@@ -213,6 +213,27 @@ export class TrackingService {
                 },
             });
             this.logger.log(`Updated Order ${order.orderNumber} to 'Exception'`);
+        } else if (mainStatus === 'Expired') {
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: {
+                    shippingStatus: 'Expired',
+                    orderStatus: 'Expired',
+                    notes: order.notes ? `${order.notes}\n[Tracking] Expired: ${description}` : `[Tracking] Expired: ${description}`
+                },
+            });
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Expired'`);
+        } else if (mainStatus === 'NotFound') {
+            if (order.shippingStatus !== 'NotFound' && order.orderStatus !== 'Processing') {
+                await this.prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        shippingStatus: 'NotFound',
+                        orderStatus: 'NotFound',
+                    },
+                });
+                this.logger.log(`Updated Order ${order.orderNumber} to 'NotFound'`);
+            }
         }
     }
 

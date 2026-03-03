@@ -438,13 +438,16 @@ const OrdersPage: React.FC = () => {
               onChange={(e) => setOrderStatusFilter(e.target.value)}
             >
               <option>All Status</option>
-              <option>Pending</option>
-              <option>Processing</option>
-              <option>Shipped</option>
-              <option>In Transit</option>
-              <option>Delivered</option>
-              <option>Returned</option>
-              <option>Cancelled</option>
+              <option value="Pending">Pending</option>
+              <option value="Processing">Processing</option>
+              <option value="NotFound">Not Found</option>
+              <option value="InTransit">In transit</option>
+              <option value="OutForDelivery">Pickup (Out of delivery)</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Undelivered">Undelivered</option>
+              <option value="Exception">Exception</option>
+              <option value="Expired">Expired</option>
+              <option value="Cancelled">Cancel</option>
             </select>
             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
           </div>
@@ -576,9 +579,24 @@ const OrdersPage: React.FC = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-6">
                         <div className="flex items-center gap-2">
-                          <span className={`size-1.5 rounded-full ${order.orderStatus === 'Delivered' ? 'bg-emerald-500' : order.orderStatus === 'In Transit' ? 'bg-blue-400' : 'bg-primary/60'}`}></span>
-                          <span className="text-xs font-bold text-text-muted uppercase tracking-wider">
-                            {order.orderStatus}
+                          <span className={`size-1.5 rounded-full ${order.orderStatus === 'Delivered' ? 'bg-emerald-500' :
+                            (order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered') ? 'bg-red-500' :
+                              order.orderStatus === 'OutForDelivery' ? 'bg-orange-500' :
+                                (order.orderStatus === 'InTransit' || order.orderStatus === 'Processing') ? 'bg-blue-400' :
+                                  order.orderStatus === 'NotFound' ? 'bg-gray-500' :
+                                    'bg-primary/60'
+                            }`}></span>
+                          <span className={`text-xs uppercase tracking-wider ${(order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered' || order.orderStatus === 'OutForDelivery') ? 'font-black' : 'font-bold text-text-muted'
+                            } ${(order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered') ? 'text-red-500' :
+                              order.orderStatus === 'OutForDelivery' ? 'text-orange-500' : ''
+                            }`}>
+                            {
+                              order.orderStatus === 'InTransit' ? 'In transit' :
+                                order.orderStatus === 'OutForDelivery' ? 'Pickup (Out of delivery)' :
+                                  order.orderStatus === 'NotFound' ? 'Not Found' :
+                                    order.orderStatus === 'Cancelled' ? 'Cancel' :
+                                      order.orderStatus
+                            }
                           </span>
                         </div>
                       </td>
