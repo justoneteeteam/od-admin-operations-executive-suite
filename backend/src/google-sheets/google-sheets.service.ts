@@ -4,6 +4,7 @@ import { JWT } from 'google-auth-library';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { RiskScoringService } from '../risk-scoring/risk-scoring.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 export interface SyncResult {
     success: boolean;
@@ -49,7 +50,8 @@ export class GoogleSheetsService {
 
     constructor(
         private prisma: PrismaService,
-        @Inject(forwardRef(() => RiskScoringService)) private riskScoringService: RiskScoringService
+        @Inject(forwardRef(() => RiskScoringService)) private riskScoringService: RiskScoringService,
+        private trackingService: TrackingService
     ) { }
 
     private parseDate(dateStr?: string): Date | null {
@@ -409,6 +411,12 @@ export class GoogleSheetsService {
                 },
             });
 
+            // Auto register to 17track if tracking number provided
+            if (firstRow.trackingNumber && firstRow.trackingNumber.trim() !== '') {
+                const courier = firstRow.courier || existingOrder.courier || undefined;
+                this.trackingService.registerTracking(firstRow.trackingNumber, courier).catch(e => console.error("Tracking Register Error:", e));
+            }
+
             // Re-create items logic remains similar but ensuring field names
             const itemsToCreate = items.map((item) => {
                 return {
@@ -479,6 +487,11 @@ export class GoogleSheetsService {
                 await this.prisma.orderItem.createMany({
                     data: itemsToCreate,
                 });
+            }
+
+            // Auto register to 17track for new order
+            if (firstRow.trackingNumber && firstRow.trackingNumber.trim() !== '') {
+                this.trackingService.registerTracking(firstRow.trackingNumber, firstRow.courier).catch(e => console.error("Tracking Register Error:", e));
             }
 
             // Trigger Risk Assessment

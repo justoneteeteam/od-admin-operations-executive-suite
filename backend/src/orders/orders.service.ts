@@ -7,6 +7,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { ProfitsService } from '../profits/profits.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { RiskScoringService } from '../risk-scoring/risk-scoring.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 @Injectable()
 export class OrdersService {
@@ -14,7 +15,8 @@ export class OrdersService {
         private prisma: PrismaService,
         private profitsService: ProfitsService,
         private inventoryService: InventoryService,
-        private riskScoringService: RiskScoringService
+        private riskScoringService: RiskScoringService,
+        private trackingService: TrackingService
     ) { }
 
     async create(createOrderDto: CreateOrderDto) {
@@ -262,6 +264,13 @@ export class OrdersService {
                     customer: true,
                 },
             });
+
+            // Trigger 17Track Registration if tracking number was updated
+            if (updateData.trackingNumber && updateData.trackingNumber.trim() !== '') {
+                const courier = updateData.courier || updatedOrder.courier;
+                // Fire and forget (don't await so we don't block the request)
+                this.trackingService.registerTracking(updateData.trackingNumber, courier).catch(e => console.error("Tracking Register Error:", e));
+            }
 
             // Trigger Fulfillment if Shipped
             if (updatedOrder.orderStatus === 'Shipped') {

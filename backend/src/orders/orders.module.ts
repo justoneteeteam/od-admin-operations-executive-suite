@@ -6,9 +6,10 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ProfitsModule } from '../profits/profits.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { RiskScoringModule } from '../risk-scoring/risk-scoring.module';
+import { TrackingModule } from '../tracking/tracking.module';
 
 @Module({
-  imports: [PrismaModule, ProfitsModule, InventoryModule, RiskScoringModule],
+  imports: [PrismaModule, ProfitsModule, InventoryModule, RiskScoringModule, TrackingModule],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],
