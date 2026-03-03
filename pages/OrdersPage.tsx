@@ -1050,11 +1050,14 @@ const OrdersPage: React.FC = () => {
                           >
                             <option value="Pending">Pending</option>
                             <option value="Processing">Processing</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="In Transit">In Transit</option>
+                            <option value="NotFound">Not Found</option>
+                            <option value="InTransit">In transit</option>
+                            <option value="OutForDelivery">Pickup (Out of delivery)</option>
                             <option value="Delivered">Delivered</option>
-                            <option value="Returned">Returned</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="Undelivered">Undelivered</option>
+                            <option value="Exception">Exception</option>
+                            <option value="Expired">Expired</option>
+                            <option value="Cancelled">Cancel</option>
                           </select>
                         </div>
                       )}
