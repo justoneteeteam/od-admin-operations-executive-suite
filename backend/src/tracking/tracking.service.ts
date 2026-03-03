@@ -86,7 +86,13 @@ export class TrackingService {
             });
         }
 
-        if (subStatus === 'InTransit_Arrival') {
+        if (mainStatus === 'PickUp') {
+            // "PickUp" in 17Track means Out for Delivery
+            if (order.shippingStatus === 'Out for Delivery') {
+                this.logger.log(`Order ${order.orderNumber} is already 'Out for Delivery'. Skipping duplicate SMS.`);
+                return;
+            }
+
             if (!order.customer) {
                 this.logger.warn(`Customer not found for order: ${order.orderNumber}`);
                 return;
@@ -104,11 +110,11 @@ export class TrackingService {
             await this.prisma.order.update({
                 where: { id: order.id },
                 data: {
-                    shippingStatus: 'In Transit',
-                    orderStatus: 'In Transit',
+                    shippingStatus: 'Out for Delivery',
+                    orderStatus: 'Out for Delivery',
                 },
             });
-            this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'In Transit'`);
+            this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'Out for Delivery'`);
 
             // 5a. Send IMMEDIATE Twilio SMS
             try {
@@ -118,7 +124,7 @@ export class TrackingService {
                     [safeName, order.orderNumber],
                     { orderId: order.id, customerId: order.customerId }
                 );
-                this.logger.log(`[SMS] In Transit sent immediately for Order ${order.orderNumber} (${smsTemplateName})`);
+                this.logger.log(`[SMS] Out for Delivery sent immediately for Order ${order.orderNumber} (${smsTemplateName})`);
             } catch (e) {
                 this.logger.error(`Failed to send SMS for Order ${order.orderNumber}: ${e.message}`, e.stack);
             }
@@ -152,17 +158,30 @@ export class TrackingService {
                 }
             }, delayMs);
 
-        } else if (subStatus && subStatus.startsWith('Delivered')) {
+        } else if (mainStatus === 'Transit' || mainStatus === 'In Transit' || subStatus === 'InTransit_Arrival') {
+            if (order.shippingStatus !== 'In Transit' && order.shippingStatus !== 'Out for Delivery' && order.shippingStatus !== 'Delivered') {
+                await this.prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        shippingStatus: 'In Transit',
+                        orderStatus: 'In Transit',
+                    },
+                });
+                this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'In Transit'`);
+            }
+        } else if (mainStatus === 'Delivered' || (subStatus && subStatus.startsWith('Delivered'))) {
             // Package was delivered - update order to Delivered
-            await this.prisma.order.update({
-                where: { id: order.id },
-                data: {
-                    shippingStatus: 'Delivered',
-                    orderStatus: 'Delivered',
-                    deliveredDate: statusDate,
-                },
-            });
-            this.logger.log(`Updated Order ${order.orderNumber} to 'Delivered' (17Track sub_status: ${subStatus})`);
+            if (order.shippingStatus !== 'Delivered') {
+                await this.prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        shippingStatus: 'Delivered',
+                        orderStatus: 'Delivered',
+                        deliveredDate: statusDate,
+                    },
+                });
+                this.logger.log(`Updated Order ${order.orderNumber} to 'Delivered'`);
+            }
         } else if (mainStatus === 'Returned') {
             await this.prisma.order.update({
                 where: { id: order.id },
