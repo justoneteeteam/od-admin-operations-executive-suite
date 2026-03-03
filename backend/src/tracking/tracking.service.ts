@@ -15,13 +15,21 @@ export class TrackingService {
 
     async handleWebhook(payload: any) {
         this.logger.log('Received Webhook Payload', JSON.stringify(payload));
+        require('fs').appendFileSync('/tmp/webhook.log', `Webhook Hit! Payload: ${JSON.stringify(payload)}\n`);
 
         const event = payload.event;
-        // 17Track structure: { event: "TRACKING_UPDATED", data: { accepted: [...] } }
 
-        if (event === 'TRACKING_UPDATED' && payload.data?.accepted) {
-            for (const item of payload.data.accepted) {
-                await this.processTrackingItem(item);
+        if (event === 'TRACKING_UPDATED' && payload.data) {
+            // Webhook pushes single object in data usually, or sometimes arrays
+            const items = Array.isArray(payload.data) ? payload.data : [payload.data];
+            require('fs').appendFileSync('/tmp/webhook.log', `Items count: ${items.length}\n`);
+
+            for (const item of items) {
+                // Ignore if it's missing the tracking number
+                if (item && item.number) {
+                    require('fs').appendFileSync('/tmp/webhook.log', `Processing item: ${item.number}\n`);
+                    await this.processTrackingItem(item);
+                }
             }
         }
     }
@@ -31,6 +39,7 @@ export class TrackingService {
         const subStatus = item.track_info?.latest_status?.sub_status; // "InTransit_Arrival"
 
         this.logger.log(`Processing ${trackingNumber}, Status: ${subStatus}`);
+        require('fs').appendFileSync('/tmp/webhook.log', `processTrackingItem started for ${trackingNumber}, subStatus: ${subStatus}\n`);
 
         // 1. Find Order by Tracking Number
         const order = await this.prisma.order.findFirst({
@@ -40,8 +49,10 @@ export class TrackingService {
 
         if (!order) {
             this.logger.warn(`Order not found for tracking number: ${trackingNumber}`);
+            require('fs').appendFileSync('/tmp/webhook.log', `Order NOT FOUND for ${trackingNumber}\n`);
             return;
         }
+        require('fs').appendFileSync('/tmp/webhook.log', `Order FOUND for ${trackingNumber}: ID ${order.id}\n`);
 
         // Save Tracking History Log
         const carrierName = item.track_info?.latest_provider?.provider?.name || item.track_info?.provider?.provider?.name || item.track_info?.latest_provider?.provider?.alias || null;
