@@ -55,6 +55,27 @@ export class WhatsappService {
                 return { success: false, sid: 'SKIPPED_NO_CREDS' };
             }
 
+            // --- SMS SENDING IS TEMPORARILY PAUSED BY USER REQUEST ---
+            this.logger.warn(`SMS sending to ${toClean} is currently PAUSED. Skipping Twilio call.`);
+
+            // Still log to CustomerResponse that we "skipped" it
+            await this.prisma.customerResponse.create({
+                data: {
+                    orderId: context.orderId || '00000000-0000-0000-0000-000000000000',
+                    customerId: context.customerId,
+                    notificationType: 'sms_skipped',
+                    messageContent: body,
+                    messageTemplate: templateName,
+                    sentAt: new Date(),
+                    externalMessageId: 'SKIPPED_BY_USER',
+                    externalStatus: 'skipped',
+                    status: 'skipped',
+                },
+            });
+
+            return { success: false, sid: 'PAUSED_BY_USER' };
+
+            /*
             const message = await this.client.messages.create({
                 body,
                 from: fromClean,
@@ -79,6 +100,7 @@ export class WhatsappService {
 
             this.logger.log(`Message sent to ${to}: ${message.sid}`);
             return { success: true, sid: message.sid };
+            */
         } catch (error) {
             this.logger.error(`Failed to send WhatsApp: ${error.message}`, error.stack);
             throw error;
