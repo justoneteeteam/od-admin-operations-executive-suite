@@ -14,6 +14,13 @@ export class TwilioVoiceController {
         private readonly prisma: PrismaService,
     ) { }
 
+    @Public()
+    @Post('test-call')
+    async testCall(@Query('orderId') orderId: string, @Query('scriptType') scriptType: 'short' | 'long' = 'short') {
+        await this.twilioVoiceService.initiateConfirmationCall(orderId, scriptType);
+        return { success: true };
+    }
+
     // ───────────────────────────────────────
     // 1. TwiML Script Generator (Twilio calls this URL)
     // ───────────────────────────────────────

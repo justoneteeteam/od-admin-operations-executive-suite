@@ -24,13 +24,37 @@ export class TwilioVoiceService {
         this.logger.log('Twilio Voice Service initialized.');
     }
 
+    private async logSkip(orderId: string, scriptType: string, scriptLanguage: string, reason: string) {
+        this.logger.log(`Order ${orderId}: Skipping call. Reason: ${reason}`);
+
+        // Find attempt number
+        const existingAttempts = await this.prisma.callLog.count({ where: { orderId } });
+
+        await this.prisma.callLog.create({
+            data: {
+                orderId,
+                callSid: `SKIPPED-${Date.now()}`,
+                attemptNumber: existingAttempts + 1,
+                callStatus: 'skipped',
+                skipReason: reason,
+                scriptType,
+                scriptLanguage,
+            },
+        });
+    }
+
     /**
      * Initiate a confirmation call for an order.
      */
     async initiateConfirmationCall(orderId: string, scriptType: 'short' | 'long') {
+        if (!this.client) {
+            this.logger.warn(`Twilio not configured. Skipping call for order ${orderId}.`);
+            return;
+        }
+
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
-            include: { customer: true, items: true },
+            include: { customer: true },
         });
 
         if (!order || !order.customer) {
@@ -38,8 +62,53 @@ export class TwilioVoiceService {
             return;
         }
 
-        if (!this.client) {
-            this.logger.warn(`Twilio not configured. Skipping call for order ${orderId}.`);
+        const language = this.detectLanguage(order.shippingCountry);
+
+        // Rule 1: Check if finalized
+        if (
+            ['Confirmed', 'Declined', 'Call Center'].includes(order.confirmationStatus || '') ||
+            order.orderStatus === 'Cancelled'
+        ) {
+            await this.logSkip(orderId, scriptType, language, 'already_confirmed');
+            return;
+        }
+
+        // Rule 2: Check if successful call exists
+        const successfulCall = await this.prisma.callLog.findFirst({
+            where: {
+                orderId,
+                callStatus: { in: ['completed', 'answered'] },
+                callSid: { not: { startsWith: 'SKIPPED-' } },
+            },
+        });
+        if (successfulCall) {
+            await this.logSkip(orderId, scriptType, language, 'already_answered');
+            return;
+        }
+
+        // Rule 3: Check max attempts
+        const existingAttempts = await this.prisma.callLog.count({
+            where: { orderId },
+        });
+        const attemptNumber = existingAttempts + 1;
+
+        if (attemptNumber > this.MAX_ATTEMPTS) {
+            await this.logSkip(orderId, scriptType, language, 'max_attempts');
+            await this.forwardToCallCenter(orderId, null, null, `${this.MAX_ATTEMPTS} failed call attempts`);
+            return;
+        }
+
+        // Rule 4: Active call in progress
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const activeCall = await this.prisma.callLog.findFirst({
+            where: {
+                orderId,
+                callStatus: { in: ['queued', 'ringing', 'in-progress', 'initiated'] },
+                createdAt: { gte: tenMinutesAgo },
+            },
+        });
+        if (activeCall) {
+            await this.logSkip(orderId, scriptType, language, 'active_call_exists');
             return;
         }
 
@@ -47,21 +116,6 @@ export class TwilioVoiceService {
         if (!customerPhone || customerPhone === '0000000000') {
             this.logger.warn(`Order ${orderId}: Customer has no valid phone number. Forwarding to call center.`);
             await this.forwardToCallCenter(orderId, null, null, 'No valid phone number');
-            return;
-        }
-
-        // Determine language from shipping country
-        const language = this.detectLanguage(order.shippingCountry);
-
-        // Get current attempt count for this order
-        const existingAttempts = await this.prisma.callLog.count({
-            where: { orderId },
-        });
-        const attemptNumber = existingAttempts + 1;
-
-        if (attemptNumber > this.MAX_ATTEMPTS) {
-            this.logger.log(`Order ${orderId}: Max call attempts (${this.MAX_ATTEMPTS}) reached. Forwarding to call center.`);
-            await this.forwardToCallCenter(orderId, null, null, `${this.MAX_ATTEMPTS} failed call attempts`);
             return;
         }
 
@@ -75,6 +129,55 @@ export class TwilioVoiceService {
             `scriptType=${scriptType}&` +
             `language=${language}`;
 
+        // Rule 5: Idempotency check via DB creation before Twilio call
+        const idempotencyKey = `twilio-call:${orderId}:${scriptType}:${attemptNumber}`;
+
+        let callLogEntry;
+        try {
+            // We create the log entry FIRST in initiated state. 
+            // If the idempotency key already exists, Prisma will throw a unique constraint error.
+            callLogEntry = await this.prisma.callLog.create({
+                data: {
+                    orderId,
+                    callSid: `PENDING-${Date.now()}`, // Temporary SID until call is created
+                    attemptNumber,
+                    callStatus: 'initiated',
+                    scriptType,
+                    scriptLanguage: language,
+                    idempotencyKey,
+                },
+            });
+        } catch (dbError: any) {
+            // Prisma error P2002 is unique constraint violation
+            if (dbError.code === 'P2002') {
+                this.logger.warn(`Order ${orderId}: Idempotency key ${idempotencyKey} already exists. Skipping.`);
+                return;
+            }
+            throw dbError; // rethrow if it's some other DB error
+        }
+
+        // Rule 6: Final DB re-check
+        const finalOrderCheck = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            select: { confirmationStatus: true, orderStatus: true }
+        });
+
+        if (
+            ['Confirmed', 'Declined', 'Call Center'].includes(finalOrderCheck?.confirmationStatus || '') ||
+            finalOrderCheck?.orderStatus === 'Cancelled'
+        ) {
+            // It got finalized in the split second before we called
+            await this.prisma.callLog.update({
+                where: { id: callLogEntry.id },
+                data: {
+                    callStatus: 'skipped',
+                    skipReason: 'already_confirmed_race',
+                }
+            });
+            this.logger.log(`Order ${orderId}: Skipped call at the last millisecond due to finalization race condition.`);
+            return;
+        }
+
         try {
             const call = await this.client.calls.create({
                 to: customerPhone,
@@ -86,15 +189,12 @@ export class TwilioVoiceService {
                 method: 'POST',
             });
 
-            // Log the call attempt
-            await this.prisma.callLog.create({
+            // Update the log attempt with real SID
+            await this.prisma.callLog.update({
+                where: { id: callLogEntry.id },
                 data: {
-                    orderId,
                     callSid: call.sid,
-                    attemptNumber,
-                    callStatus: 'initiated',
-                    scriptType,
-                    scriptLanguage: language,
+                    callStatus: call.status || 'initiated', // Can be queued/ringing etc from Twilio
                 },
             });
 
@@ -122,15 +222,12 @@ export class TwilioVoiceService {
         } catch (error) {
             this.logger.error(`Order ${orderId}: Failed to initiate call: ${error.message}`, error.stack);
 
-            // Log the failed attempt
-            await this.prisma.callLog.create({
+            // Update the failed attempt
+            await this.prisma.callLog.update({
+                where: { id: callLogEntry.id },
                 data: {
-                    orderId,
-                    callSid: `FAILED-${Date.now()}`,
-                    attemptNumber,
                     callStatus: 'failed',
-                    scriptType,
-                    scriptLanguage: language,
+                    skipReason: 'twilio_api_error',
                 },
             });
 

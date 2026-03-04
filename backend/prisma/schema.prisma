@@ -793,6 +793,9 @@ model CallLog {
 
   intentDetected  String?   @map("intent_detected") @db.VarChar(50)
 
+  skipReason      String?   @map("skip_reason") @db.VarChar(50)
+  idempotencyKey  String?   @unique @map("idempotency_key") @db.VarChar(150)
+
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
 
