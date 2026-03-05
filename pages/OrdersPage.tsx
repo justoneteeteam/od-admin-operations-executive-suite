@@ -426,6 +426,8 @@ const OrdersPage: React.FC = () => {
               <option>All Confirmations</option>
               <option>Pending</option>
               <option>Confirmed</option>
+              <option>Declined</option>
+              <option>Call Center</option>
               <option>Cancelled</option>
               <option>No Answer</option>
             </select>
@@ -1035,6 +1037,8 @@ const OrdersPage: React.FC = () => {
                         >
                           <option value="Confirmed">Confirmed</option>
                           <option value="Pending">Pending</option>
+                          <option value="Declined">Declined</option>
+                          <option value="Call Center">Call Center</option>
                           <option value="Cancelled">Cancelled</option>
                           <option value="No Answer">No Answer</option>
                         </select>

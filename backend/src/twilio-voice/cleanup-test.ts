@@ -7,12 +7,12 @@ import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 
 async function main() {
-    console.log('Cleaning up failed logs for Order #1526...');
+    console.log('Cleaning up failed logs for Order #1528...');
     const app = await NestFactory.createApplicationContext(AppModule);
     const prisma = app.get(PrismaService);
 
     const order = await prisma.order.findFirst({
-        where: { orderNumber: { contains: '1526' } },
+        where: { orderNumber: { contains: '1528' } },
     });
 
     if (order) {
@@ -22,7 +22,14 @@ async function main() {
         await prisma.customerResponse.deleteMany({
             where: { orderId: order.id }
         });
-        console.log('Cleanup complete.');
+        await prisma.order.update({
+            where: { id: order.id },
+            data: {
+                confirmationStatus: 'Pending',
+                orderStatus: 'Pending'
+            }
+        });
+        console.log('Cleanup complete. Status reset to Pending.');
     } else {
         console.log('Order not found.');
     }

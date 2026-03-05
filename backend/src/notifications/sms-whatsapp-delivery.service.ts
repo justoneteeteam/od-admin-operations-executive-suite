@@ -55,8 +55,12 @@ export class SmsWhatsappDeliveryService {
                 return { success: false, sid: 'SKIPPED_NO_CREDS' };
             }
 
+            // Fix SMS length to 1 segment by converting to pure GSM-7 (removing diacritics/accents)
+            // e.g., García -> Garcia. This prevents UCS2 encoding which drops the limit from 160 to 70 chars.
+            const gsm7Body = body.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
             const message = await this.client.messages.create({
-                body,
+                body: gsm7Body,
                 from: fromClean,
                 to: toClean,
                 statusCallback: `${process.env.APP_URL || (process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : 'http://localhost:3000')}/api/notifications/callbacks/twilio`,

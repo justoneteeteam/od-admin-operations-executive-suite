@@ -9,7 +9,12 @@ async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule, { logger: false });
   const prisma = app.get(PrismaService);
 
-  const orderId = '62cceabb-8c92-41c6-84d3-79ce5b7468e0'; // Order 1526
+  const orderRec = await prisma.order.findFirst({
+    where: { items: { some: { sku: { startsWith: 'NO-SKU-' } } } },
+    orderBy: { createdAt: 'desc' }
+  });
+  if (!orderRec) return console.log("NO-SKU order not found");
+  const orderId = orderRec.id;
 
   const logs = await prisma.callLog.findMany({
     where: { orderId },

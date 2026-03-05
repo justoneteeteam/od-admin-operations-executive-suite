@@ -10,7 +10,7 @@ export class TwilioVoiceService {
 
     // Retry delays in minutes: immediate, 30 min, 4 hours
     private readonly RETRY_DELAYS = [0, 30, 240];
-    private readonly MAX_ATTEMPTS = 3;
+    private readonly MAX_ATTEMPTS = 1;
     private readonly PRE_CALL_DELAY_MS = 8000; // 8 seconds
 
     constructor(
@@ -275,8 +275,23 @@ export class TwilioVoiceService {
         const nextAttemptIndex = currentAttempts; // 0-indexed into RETRY_DELAYS
 
         if (nextAttemptIndex >= this.MAX_ATTEMPTS) {
-            this.logger.log(`Order ${orderId}: No more retries. Forwarding to call center.`);
-            await this.forwardToCallCenter(orderId, null, null, `${this.MAX_ATTEMPTS} failed call attempts`);
+            this.logger.log(`Order ${orderId}: No more retries. Marking as No Answer.`);
+
+            await this.prisma.riskAssessment.updateMany({
+                where: { orderId },
+                data: {
+                    actionResult: 'no_answer_exhausted',
+                    reviewNotes: `${this.MAX_ATTEMPTS} failed call attempt(s)`,
+                },
+            });
+
+            await this.prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    confirmationStatus: 'No Answer',
+                    confirmationNotes: `No answer after ${this.MAX_ATTEMPTS} call attempt(s)`,
+                },
+            });
             return;
         }
 

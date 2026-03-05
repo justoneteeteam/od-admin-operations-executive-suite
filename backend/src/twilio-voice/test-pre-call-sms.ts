@@ -18,14 +18,18 @@ async function main() {
     const twilioVoiceService = app.get(TwilioVoiceService);
     const prisma = app.get(PrismaService);
 
-    // Find the order by orderNumber
+    // Find the order that has a NO-SKU product
     const order = await prisma.order.findFirst({
-        where: { orderNumber: { contains: '1526' } },
-        include: { customer: true },
+        where: {
+            items: { some: { sku: { startsWith: 'NO-SKU-' } } },
+            confirmationStatus: { in: ['Pending', 'No Answer', 'Call Center'] }
+        },
+        include: { customer: true, items: true },
+        orderBy: { createdAt: 'desc' },
     });
 
     if (!order) {
-        console.error('Order #1526 not found!');
+        console.error('Order #1528 not found!');
         await app.close();
         process.exit(1);
     }
