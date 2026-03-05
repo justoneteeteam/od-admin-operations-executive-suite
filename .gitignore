@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# WhatsApp session cache (500MB+, machine-specific)
+backend/.wwebjs_auth
