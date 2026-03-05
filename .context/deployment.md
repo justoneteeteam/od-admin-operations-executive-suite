@@ -20,6 +20,11 @@ Deploy the COD Admin Dashboard to a production-like cloud environment for intern
 - **Service 1 (Backend)**: NestJS, Node 18, Dockerfile.
 - **Service 2 (Frontend)**: Vite, Nginx/Serve, Dockerfile.
 
+### 2. Repo Optimization (Cleanup) - **Executed**
+- **Status**: ✅ Configured.
+- **Action**: Added `.railwayignore` and `.gitignore` to exclude `backend/.wwebjs_auth`.
+- **Impact**: Deployment time reduced; prevents session conflicts for WhatsApp Personal.
+
 ## Critical Checklist (Verified)
 1.  **Environment Variables**:
     -   `VITE_API_URL`: Set on Frontend service.

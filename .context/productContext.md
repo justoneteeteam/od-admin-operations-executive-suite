@@ -29,12 +29,16 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 ### 1. Standard Order Flow
 `Pending` (Sync from Sheets) -> `Confirmed` (Manual) -> `Order Shipped` (Tracking Added) -> `Processing` (Carrier Scan) -> `In Transit` -> `Out for Delivery` -> `Delivered` -> `COD Collected` / `Return Requested`
 
-### 2. RTO Reduction Workflow
-- **Trigger**: Status becomes `In Transit`.
-- **Action**: Send WhatsApp message asking for availability.
+### 2. RTO Reduction & Confirmation Workflow
+- **Trigger**: New Order or Status becomes `In Transit`.
+- **Action**: Automated Voice/WhatsApp confirmation to verify intent.
 - **Logic**:
-  -   If Customer replies "YES": Mark as ready.
-  -   If No Response (24h): Trigger manual call task.
+  - **Phase 1**: Trigger Pre-Call SMS notification.
+  - **Phase 2**: Twilio AI Voice Call (`MAX_ATTEMPTS=1`).
+  - **Outcome**:
+    - "Sí/Yes": Order Confirmed.
+    - No Answer: Marked as "No Answer" status.
+    - Fake/Cancel: Marked as "Declined".
 
 ## Product Feature Refinement (Recent)
 - **Data Linking**:
@@ -45,7 +49,8 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 - **Edit Functionality**: Full CRUD support implemented in both backend and frontend for all core modules.
 - **Image Management**: Seamless support for local file uploads and remote image URLs with live preview.
 - **Orders Management**: Enhanced Edit Drawer with detailed logistics tracking (Courier, Tracking #, Fulfillment Center) and country selection.
-- **WhatsApp Notifications**: Integrated Twilio for automated "In Transit" alerts with direct tracking links.
+- **WhatsApp & Voice Confirmation**: Integrated Twilio for automated call/SMS workflows with unified "No Answer" status handling.
+- **Enhanced Timeline**: Unified view for tracking, messages, and voice call logs with automatic deduplication.
 - **17Track Webhook**: Real-time order status updates via 17Track push events.
 
 ## Financial Logic & Formulas

@@ -15,7 +15,7 @@
 
 ### External Services
 - **Shipment Tracking**: 17Track API (Webhook Listener Active)
-- **Notifications**: Twilio (WhatsApp Business API - Template Messaging Active)
+- **Notifications**: Twilio (WhatsApp Business API & Voice API - Active)
 - **Data Sync**: Google Sheets API (via generic HTTP or client library)
 - **Scheduling**: Node-cron (for periodic sync jobs)
 
@@ -46,6 +46,7 @@ To enable these features, the following credentials are required in the `.env` f
 - **Package Manager**: npm
 - **Hosting/PaaS**: Railway (Production)
 - **Containerization**: Docker (Frontend & Backend)
+- **Optimization**: `.railwayignore` and `.gitignore` exclude `backend/.wwebjs_auth` (WhatsApp cache) to speed up builds and prevent session conflicts.
 
 ## Development Environment
 - **Local Dev Server**: Vite (Frontend), NestJS (Backend)

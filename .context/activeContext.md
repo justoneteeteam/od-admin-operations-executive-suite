@@ -7,19 +7,17 @@
 - **Maintenance**: Monitoring Production Deployment.
 
 ## Recent Accomplishments
-- **Roadmap Defined**: Established clear V1 -> V4 roadmap.
-- **Deployment**: Production Live on Railway, custom domain `erp.justonetee.org` connected.
-- **Shopify Webhook Sync**: Store name extracted and mapped dynamically on order creation.
-- **Tracking System**: 17Track Webhooks & Tracking History UI implemented.
-- **Pagination & Search**: Backend pagination & debounced frontend search implemented for Orders Page (20 orders/page).
-- **Responsive UI**: Fully mobile & tablet optimized layout (Collapsible Sidebar, horizontally scrollable data tables, responsive actions grid).
+- **Twilio Call Logic**: Implemented unified call confirmation flow with `MAX_ATTEMPTS=1` and automatic "No Answer" status transition.
+- **Enhanced Timeline**: Integrated Twilio call logs (with duration/intent/speech results) and deduplicated 17Track tracking updates in the order history.
+- **WhatsApp Cache Optimization**: Excluded `.wwebjs_auth` from version control and Railway to speed up deployments and prevent session conflicts.
+- **Deployment**: Production Live on Railway with latest source code and optimized `.railwayignore`.
 
 ## Immediate Goals
 1.  **V1 Wrap-up**:
     -   Implement **Bulk Select** for Orders.
     -   Build **Filter Tree** (Status/Date/Country).
     -   Add **Suppliers** & **Fulfillment Centers** to Google Sheets Sync.
-2.  **V2 kickoff**: Design database schema for Risk Scoring.
+2.  **V2 Optimization**: Migrate WhatsApp `LocalAuth` to `RemoteAuth` (DB-backed sessions) to allow multi-instance support.
 
 ## Prerequisites & Blocking Issues
 - **User Data**: Customers must have valid international phone numbers (e.g., `+1...`) for WhatsApp to work.

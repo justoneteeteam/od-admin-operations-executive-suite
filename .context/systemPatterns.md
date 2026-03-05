@@ -40,15 +40,17 @@ Current structure places source files directly in the root or specifically:
 - **Backup Flow (Poll)**:
   -   Cron job (every 3h) to sync stale orders.
 
-### 3. WhatsApp Notification Workflow (Twilio)
-- **Pattern**: Event-Driven / State Machine
-- **Data Requirement**: `Customer.phone` must be in E.164 format (e.g., `+1234567890`) for Twilio delivery.
-- **Trigger**: Order Status changes to `In Transit`.
-- **Action**: Send WhatsApp message via Twilio.
-- **Feedback Loop**:
-  -   Wait 24h for customer response ("YES" to confirm availability).
-  -   **Yes**: No further action.
-  -   **No Response**: Flag for manual follow-up (Phone Call).
+### 3. Order Confirmation Workflow (Twilio WhatsApp & Voice)
+- **Pattern**: Deterministic State Machine with Escalation
+- **Data Requirement**: `Customer.phone` must be in E.164 format.
+- **Trigger**: Order remains `Pending` and needs confirmation.
+- **Logic**:
+  1.  **Phase 1 (SMS/WA)**: Send Pre-Call SMS ("We will call you in 8 seconds to confirm").
+  2.  **Phase 2 (Voice)**: Twilio dials number (`MAX_ATTEMPTS=1`).
+  3.  **Result Handling**:
+      -   **Confirmed/Declined**: Update `confirmationStatus` and trigger financial/inventory logic.
+      -   **No Answer**: Set `confirmationStatus` to "No Answer" immediately after 1 attempt.
+      -   **Unclear/Hung Up**: Forward to "Call Center" for manual human review.
 
 ### 4. Risk Orchestration Workflow (Version 2)
 - **Pattern**: Orchestrator / SAGA
@@ -97,6 +99,13 @@ Current structure places source files directly in the root or specifically:
   - `Delivered` -> Calculate **COD Collected** (Realized Cash).
   - **Profit Definition**: `Gross Profit = Revenue - COGS - [Outbound Shipping Cost]`.
   - Update `ProfitCalculation` table.
+
+### 7. Unified Order Timeline (Frontend)
+- **Pattern**: Multi-source Chronological Merge
+- **Implementation**:
+  - Combines `trackingHistory`, `customerResponses`, and `callLogs` into a single descending list.
+  - **Deduplication Logic**: Filters out tracking updates with the same status/substatus/description occurring within a 5-minute window (prevents UI noise from redundant 17Track pushes).
+  - **Status Logic**: Uses color-coded icons (Red/Green/Yellow) to indicate call success or failure states.
 
 ## Naming Conventions
 - **Files**: PascalCase for React components (`MyComponent.tsx`), camelCase for utilities (`myUtility.ts`).

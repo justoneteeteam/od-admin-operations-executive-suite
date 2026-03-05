@@ -1,8 +1,8 @@
 # Progress Status
 
 ## Overview
-- **Frontend**: 99% Completed (UI/UX, API Client Setup, Store Settings, Core Modules)
-- **Backend**: 100% Completed (All CRUD APIs, Auth, DB Sync, Relations, Store Settings, Google Sheets Sync)
+- **Frontend**: 100% Completed (UI/UX, API Client Setup, Store Settings, Core Modules, Timeline Integration)
+- **Backend**: 100% Completed (All CRUD APIs, Auth, DB Sync, Twilio Call Logic/Webhook, Google Sheets Sync)
 - **Database**: 100% Completed (Full Schema Deployed & Verified)
 
 ## Roadmap
@@ -35,13 +35,11 @@
 - [ ] **Filter Tree**: Advanced filtering by status/date/country via backend.
 - [x] **Tracking Sync**: 17Track Webhook & Internal Tracking History Model UI.
 
-### Version 2: Risk Orchestration & Confirmation (Next Up)
-**Focus**: Automated verification workflow to reduce RTO (Return to Origin).
+- [x] **Twilio Call Logic**: Unified confirmation flow with `MAX_ATTEMPTS=1`.
+- [x] **Timeline Integration**: Merged tracking, call logs, and messages in one view.
+- [x] **Tracking Deduplication**: Logic to collapse redundant 17Track updates.
 - [ ] **Workflow Engine**: New Order -> Validate Phone -> Validate Address.
 - [ ] **Risk Scoring**: Calculate risk based on history/location.
-- [ ] **Low Risk Flow**: Wait 2h -> Auto-WhatsApp -> IVR Fallback.
-- [ ] **Medium Risk Flow**: Push to Google Sheets for Manual Review.
-- [ ] **High Risk Flow**: Push to Google Sheets for Priority Call.
 - [ ] **Status Sync**: Sync Call Center updates (Unconfirmed, Call Later) back to App.
 
 ### Version 3: Incident Management
