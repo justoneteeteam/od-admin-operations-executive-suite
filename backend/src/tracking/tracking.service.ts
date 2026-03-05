@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../notifications/whatsapp.service';
+import { SmsWhatsappDeliveryService } from '../notifications/sms-whatsapp-delivery.service';
 import { WhatsappPersonalService } from '../notifications/whatsapp.personal.service';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class TrackingService {
 
     constructor(
         @Inject(PrismaService) private readonly prisma: PrismaService,
-        @Inject(WhatsappService) private readonly whatsappService: WhatsappService,
+        @Inject(SmsWhatsappDeliveryService) private readonly smsWhatsappDeliveryService: SmsWhatsappDeliveryService,
         @Inject(WhatsappPersonalService) private readonly whatsappPersonalService: WhatsappPersonalService,
     ) { }
 
@@ -118,7 +118,7 @@ export class TrackingService {
 
             // 5a. Send IMMEDIATE Twilio SMS
             try {
-                await this.whatsappService.sendTemplateMessage(
+                await this.smsWhatsappDeliveryService.sendTemplateMessage(
                     order.customer.phone,
                     smsTemplateName,
                     [safeName, order.orderNumber],
@@ -238,19 +238,19 @@ export class TrackingService {
     }
 
     private getTemplateForCountry(country: string): string {
-        if (!country) return 'sms_in_transit_en';
+        if (!country) return 'sms_out_for_delivery_en';
 
         const normalizedCountry = country.toLowerCase().trim();
 
         if (normalizedCountry === 'italy' || normalizedCountry === 'italia') {
-            return 'sms_in_transit_it';
+            return 'sms_out_for_delivery_it';
         }
 
         if (normalizedCountry === 'spain' || normalizedCountry === 'españa' || normalizedCountry === 'espana') {
-            return 'sms_in_transit_es';
+            return 'sms_out_for_delivery_es';
         }
 
-        return 'sms_in_transit_en'; // Default to English
+        return 'sms_out_for_delivery_en'; // Default to English
     }
 
     private getWhatsappTemplateForCountry(country: string): string {

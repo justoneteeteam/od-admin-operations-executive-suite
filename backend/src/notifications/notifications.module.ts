@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { NotificationsController } from './notifications.controller';
-import { WhatsappService } from './whatsapp.service';
+import { SmsWhatsappDeliveryService } from './sms-whatsapp-delivery.service';
 import { WhatsappPersonalService } from './whatsapp.personal.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
     imports: [PrismaModule],
     controllers: [NotificationsController],
-    providers: [WhatsappService, WhatsappPersonalService],
-    exports: [WhatsappService, WhatsappPersonalService],
+    providers: [SmsWhatsappDeliveryService, WhatsappPersonalService],
+    exports: [SmsWhatsappDeliveryService, WhatsappPersonalService],
 })
 export class NotificationsModule { }

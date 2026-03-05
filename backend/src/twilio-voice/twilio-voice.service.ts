@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Twilio } from 'twilio';
+import { SmsWhatsappDeliveryService } from '../notifications/sms-whatsapp-delivery.service';
 
 @Injectable()
 export class TwilioVoiceService {
@@ -10,8 +11,12 @@ export class TwilioVoiceService {
     // Retry delays in minutes: immediate, 30 min, 4 hours
     private readonly RETRY_DELAYS = [0, 30, 240];
     private readonly MAX_ATTEMPTS = 3;
+    private readonly PRE_CALL_DELAY_MS = 8000; // 8 seconds
 
-    constructor(private readonly prisma: PrismaService) {
+    constructor(
+        private readonly prisma: PrismaService,
+        @Inject(SmsWhatsappDeliveryService) private readonly smsService: SmsWhatsappDeliveryService,
+    ) {
         const accountSid = process.env.TWILIO_ACCOUNT_SID;
         const authToken = process.env.TWILIO_AUTH_TOKEN;
 
@@ -120,9 +125,9 @@ export class TwilioVoiceService {
         }
 
         // Build the TwiML webhook URL
-        const appUrl = process.env.APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN
-            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-            : 'http://localhost:3000';
+        const appUrl = process.env.APP_URL
+            || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null)
+            || 'http://localhost:3000';
 
         const twimlUrl = `${appUrl}/twilio/call-script?` +
             `orderId=${orderId}&` +
@@ -178,13 +183,36 @@ export class TwilioVoiceService {
             return;
         }
 
+        // ── Pre-Call SMS Warning (first attempt only) ──
+        if (attemptNumber === 1) {
+            try {
+                const preCallTemplate = this.getPreCallTemplateForCountry(order.shippingCountry);
+                const twilioPhone = process.env.TWILIO_PHONE_NUMBER || '+12765311327';
+                const customerName = order.customer.name || 'Customer';
+
+                await this.smsService.sendTemplateMessage(
+                    customerPhone,
+                    preCallTemplate,
+                    [customerName, order.orderNumber, twilioPhone],
+                    { orderId, customerId: order.customerId },
+                );
+                this.logger.log(`Order ${orderId}: Pre-call SMS warning sent. Waiting ${this.PRE_CALL_DELAY_MS / 1000}s before calling...`);
+
+                // Delay to let the SMS arrive before the phone rings
+                await new Promise(resolve => setTimeout(resolve, this.PRE_CALL_DELAY_MS));
+            } catch (smsError) {
+                // Non-blocking: if SMS fails, still proceed with the call
+                this.logger.warn(`Order ${orderId}: Pre-call SMS failed (${smsError.message}). Proceeding with call anyway.`);
+            }
+        }
+
         try {
             const call = await this.client.calls.create({
                 to: customerPhone,
                 from: process.env.TWILIO_PHONE_NUMBER || '+12765311327',
                 url: twimlUrl,
                 statusCallback: `${appUrl}/twilio/call-status?orderId=${orderId}`,
-                statusCallbackEvent: ['completed', 'no-answer', 'busy', 'failed'],
+                statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
                 statusCallbackMethod: 'POST',
                 method: 'POST',
             });
@@ -322,6 +350,16 @@ export class TwilioVoiceService {
         if (c === 'italy' || c === 'it' || c === 'italia') return 'it-IT';
         // Default to Spanish for Spain and everything else
         return 'es-ES';
+    }
+
+    /**
+     * Get the pre-call SMS template name based on shipping country.
+     */
+    private getPreCallTemplateForCountry(country: string): string {
+        const c = (country || '').toLowerCase().trim();
+        if (c === 'italy' || c === 'it' || c === 'italia') return 'sms_pre_call_it';
+        if (c === 'spain' || c === 'es' || c === 'españa' || c === 'espana') return 'sms_pre_call_es';
+        return 'sms_pre_call_en';
     }
 
     /**

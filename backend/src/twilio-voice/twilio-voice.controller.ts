@@ -102,6 +102,10 @@ export class TwilioVoiceController {
         );
         twiml.pause({ length: 1 });
 
+        const appUrl = process.env.APP_URL
+            || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null)
+            || 'http://localhost:3000';
+
         // Gather response
         const gather = twiml.gather({
             input: ['speech', 'dtmf'],
@@ -109,7 +113,7 @@ export class TwilioVoiceController {
             numDigits: 1,
             speechTimeout: 'auto',
             language: lang as any,
-            action: `/twilio/process-response?orderId=${orderId}&scriptType=short`,
+            action: `${appUrl}/twilio/process-response?orderId=${orderId}&scriptType=short`,
             method: 'POST',
         });
 
@@ -180,6 +184,10 @@ export class TwilioVoiceController {
         );
         twiml.pause({ length: 1 });
 
+        const appUrl = process.env.APP_URL
+            || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null)
+            || 'http://localhost:3000';
+
         // Gather response
         const gather = twiml.gather({
             input: ['speech', 'dtmf'],
@@ -187,7 +195,7 @@ export class TwilioVoiceController {
             numDigits: 1,
             speechTimeout: 'auto',
             language: lang as any,
-            action: `/twilio/process-response?orderId=${orderId}&scriptType=long`,
+            action: `${appUrl}/twilio/process-response?orderId=${orderId}&scriptType=long`,
             method: 'POST',
         });
 

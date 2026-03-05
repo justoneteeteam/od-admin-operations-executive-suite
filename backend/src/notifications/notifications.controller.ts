@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Res, Get, Query, Patch, Param } from '@nestjs/common';
-import { WhatsappService } from './whatsapp.service';
+import { SmsWhatsappDeliveryService } from './sms-whatsapp-delivery.service';
 import { WhatsappPersonalService } from './whatsapp.personal.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
@@ -8,7 +8,7 @@ import { Response } from 'express';
 @Controller('notifications')
 export class NotificationsController {
     constructor(
-        private readonly whatsappService: WhatsappService,
+        private readonly smsWhatsappDeliveryService: SmsWhatsappDeliveryService,
         private readonly whatsappPersonalService: WhatsappPersonalService,
         private readonly prisma: PrismaService
     ) { }
@@ -16,14 +16,14 @@ export class NotificationsController {
     @Public()
     @Post('callbacks/twilio')
     async handleTwilioCallback(@Body() body: any) {
-        await this.whatsappService.handleStatusCallback(body);
+        await this.smsWhatsappDeliveryService.handleStatusCallback(body);
         return { status: 'ok' };
     }
 
     // Temporary SMS Test Endpoint
     @Post('test')
     async sendTestMessage(@Body() body: { to: string; orderId: string }) {
-        return await this.whatsappService.sendTemplateMessage(
+        return await this.smsWhatsappDeliveryService.sendTemplateMessage(
             body.to,
             'order_in_transit',
             ['Test Customer', 'ORD-TEST-123', 'https://17track.net/test'],

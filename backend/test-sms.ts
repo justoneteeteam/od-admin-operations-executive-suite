@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { PrismaService } from './src/prisma/prisma.service';
-import { WhatsappService } from './src/notifications/whatsapp.service';
+import { SmsWhatsappDeliveryService } from './src/notifications/sms-whatsapp-delivery.service';
 
 const prisma = new PrismaService();
 
@@ -24,7 +24,7 @@ async function main() {
     console.log('Customer Phone:', order.customer?.phone);
     console.log('Alternatively tracking number:', order.trackingNumber);
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const accountSid = process.env.smsIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_WHATSAPP_NUMBER;
 
@@ -36,13 +36,13 @@ async function main() {
         return;
     }
 
-    const whatsappService = new WhatsappService(prisma);
+    const smsWhatsappDeliveryService = new SmsWhatsappDeliveryService(prisma as any);
     const templateName = 'sms_in_transit_es';
 
     console.log(`Sending SMS using template '${templateName}' from ${fromNumber} to ${order.customer.phone}...`);
 
     try {
-        const result = await whatsappService.sendTemplateMessage(
+        const result = await smsWhatsappDeliveryService.sendTemplateMessage(
             order.customer.phone,
             templateName,
             [order.customer.name || 'Customer', order.orderNumber],

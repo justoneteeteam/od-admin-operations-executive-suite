@@ -751,6 +751,14 @@ model RiskAssessment {
   isBlocked        Boolean? @map("is_blocked")
   recentOrderCount Int?     @map("recent_order_count")
 
+  // Loqate Address Verify fields
+  addressFormatScore      Int     @default(0) @map("address_format_score")
+  missingHouseNumberScore Int     @default(0) @map("missing_house_number_score")
+  loqateSource            String  @default("local_fallback") @map("loqate_source")
+  loqateAvc               String? @map("loqate_avc")
+  loqateDurationMs        Int?    @map("loqate_duration_ms")
+  loqateCalledAt          DateTime? @map("loqate_called_at") @db.Timestamptz(6)
+
   actionTaken  String?   @map("action_taken") @db.VarChar(50)
   actionResult String?   @map("action_result") @db.VarChar(50)
   reviewedBy   String?   @map("reviewed_by") @db.Uuid
@@ -802,4 +810,18 @@ model CallLog {
   order           Order     @relation(fields: [orderId], references: [id])
 
   @@map("call_logs")
+}
+
+model LoqateAddressCache {
+  id                      String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  addressHash             String   @unique @map("address_hash")
+  avc                     String
+  hasHouseNumber          Boolean  @map("has_house_number")
+  addressFormatScore      Int      @map("address_format_score")
+  missingHouseNumberScore Int      @map("missing_house_number_score")
+  source                  String   @default("loqate")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt               DateTime @default(dbgenerated("(now() + '24:00:00'::interval)")) @map("expires_at") @db.Timestamptz(6)
+
+  @@map("loqate_address_cache")
 }
