@@ -1125,15 +1125,28 @@ const OrdersPage: React.FC = () => {
                   </h3>
                   <div className="bg-[#17232f] rounded-2xl p-6 border border-border-dark space-y-8">
                     {(() => {
-                      // Merge Tracking Logs + Customer Responses
+                      // Merge Tracking Logs + Customer Responses + Call Logs
                       const historyItems = [...(editOrder.trackingHistory || [])].map(t => ({ ...t, _type: 'tracking', _date: t.statusDate }));
                       const msgItems = [...(editOrder.customerResponses || [])].map(m => ({ ...m, _type: 'message', _date: m.sentAt }));
-                      const merged = [...historyItems, ...msgItems].sort((a, b) => new Date(b._date).getTime() - new Date(a._date).getTime());
+                      const callItems = [...(editOrder.callLogs || [])].filter((c: any) => !c.callSid?.startsWith('SKIPPED-')).map((c: any) => ({ ...c, _type: 'call', _date: c.createdAt }));
+
+                      // Deduplicate tracking entries (same status + substatus + description within 5 minutes)
+                      const dedupedHistory = historyItems.filter((item, index) => {
+                        return !historyItems.some((other, otherIndex) =>
+                          otherIndex < index &&
+                          other.status === item.status &&
+                          other.substatus === item.substatus &&
+                          other.description === item.description &&
+                          Math.abs(new Date(other._date).getTime() - new Date(item._date).getTime()) < 5 * 60 * 1000
+                        );
+                      });
+
+                      const merged = [...dedupedHistory, ...msgItems, ...callItems].sort((a, b) => new Date(b._date).getTime() - new Date(a._date).getTime());
 
                       if (merged.length === 0) {
                         return (
                           <div className="text-center py-4">
-                            <span className="text-xs text-text-muted italic">No tracking or message logs available for this order.</span>
+                            <span className="text-xs text-text-muted italic">No tracking, call, or message logs available for this order.</span>
                           </div>
                         );
                       }
@@ -1141,6 +1154,39 @@ const OrdersPage: React.FC = () => {
                       return merged.map((log: any, i: number) => {
                         const dateObj = new Date(log._date);
                         const formattedDate = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                        if (log._type === 'call') {
+                          // Render a Twilio call log entry
+                          const isSuccess = log.callStatus === 'completed';
+                          const isFailed = ['no-answer', 'busy', 'failed', 'canceled'].includes(log.callStatus);
+                          const dotColor = isSuccess ? 'bg-green-500 ring-green-500/10' : isFailed ? 'bg-red-500 ring-red-500/10' : 'bg-yellow-500 ring-yellow-500/10';
+                          const statusLabel = (log.callStatus || 'unknown').replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                          return (
+                            <div key={`call-${log.id || i}`} className="relative flex gap-6 pl-2 group">
+                              {i !== merged.length - 1 && (
+                                <div className="absolute left-[13px] top-6 bottom-[-32px] w-px bg-border-dark"></div>
+                              )}
+                              <div className={`z-10 mt-1.5 size-[11px] rounded flex items-center justify-center shrink-0 ${dotColor} ring-4`}>
+                              </div>
+                              <div className="flex flex-col gap-1 w-full relative">
+                                <span className="text-[10px] font-black text-text-muted tracking-widest uppercase">{formattedDate}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="material-symbols-outlined" style={{ fontSize: 14, color: isSuccess ? '#22c55e' : isFailed ? '#ef4444' : '#eab308' }}>call</span>
+                                  <span className="text-sm font-black text-white">Twilio Call — Attempt #{log.attemptNumber || '?'}</span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isSuccess ? 'bg-green-500/10 text-green-400 border border-green-500/20' : isFailed ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>
+                                    {statusLabel}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-3 mt-1 text-[11px] text-text-muted">
+                                  {log.callDuration != null && <span>⏱ {log.callDuration}s</span>}
+                                  {log.scriptLanguage && <span>🌐 {log.scriptLanguage}</span>}
+                                  {log.intentDetected && <span>🎯 {log.intentDetected}</span>}
+                                  {log.speechResult && <span>🗣 "{log.speechResult}"</span>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
 
                         if (log._type === 'message') {
                           // Render a sent message log

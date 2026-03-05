@@ -194,6 +194,11 @@ export class OrdersService {
                     orderBy: {
                         sentAt: 'desc'
                     }
+                },
+                callLogs: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
                 }
             },
         });
