@@ -99,7 +99,21 @@ export class TwilioVoiceService {
 
         if (attemptNumber > this.MAX_ATTEMPTS) {
             await this.logSkip(orderId, scriptType, language, 'max_attempts');
-            await this.forwardToCallCenter(orderId, null, null, `${this.MAX_ATTEMPTS} failed call attempts`);
+            // Mark as No Answer when max attempts exhausted
+            await this.prisma.riskAssessment.updateMany({
+                where: { orderId },
+                data: {
+                    actionResult: 'no_answer_exhausted',
+                    reviewNotes: `${this.MAX_ATTEMPTS} failed call attempt(s)`,
+                },
+            });
+            await this.prisma.order.update({
+                where: { id: orderId },
+                data: {
+                    confirmationStatus: 'No Answer',
+                    confirmationNotes: `No answer after ${this.MAX_ATTEMPTS} call attempt(s)`,
+                },
+            });
             return;
         }
 
