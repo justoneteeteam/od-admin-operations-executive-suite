@@ -63,6 +63,30 @@ const DashboardTab: React.FC = () => {
     const [endDate, setEndDate] = useState('');
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
 
+    // Global Database filter options
+    const [dbProducts, setDbProducts] = useState<any[]>([]);
+    const [dbCountries, setDbCountries] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [prodsRes, custsRes] = await Promise.all([
+                    productsService.getAll(),
+                    customersService.getAll()
+                ]);
+                const prods = Array.isArray(prodsRes) ? prodsRes : (prodsRes.data || []);
+                setDbProducts(prods);
+
+                const custs = Array.isArray(custsRes) ? custsRes : (custsRes.data || []);
+                const uniqueCountries = [...new Set(custs.map((c: any) => c.country).filter(Boolean))] as string[];
+                setDbCountries(uniqueCountries);
+            } catch (err) {
+                console.error("Failed to fetch filter options", err);
+            }
+        };
+        fetchFilters();
+    }, []);
+
     const fetchDashboard = async () => {
         setLoading(true);
         try {
@@ -97,10 +121,11 @@ const DashboardTab: React.FC = () => {
         { label: 'Total Orders', value: k.totalOrders.toLocaleString(), icon: 'package_2', color: 'text-pink-400', border: 'border-l-pink-500' },
     ];
 
-    // Countries for filter
-    const countries = [...new Set(data.campaigns.map(c => c.country).filter(Boolean))] as string[];
+    // Filter Options
+    // Country and SKU come from the global database, Stage comes from current data
+    const filterCountries = dbCountries.length > 0 ? dbCountries : [...new Set(data.campaigns.map(c => c.country).filter(Boolean))] as string[];
+    const filterSkus = dbProducts.length > 0 ? dbProducts.map(p => p.sku) : [...new Set(data.campaigns.map(c => c.sku).filter(Boolean))] as string[];
     const stages = [...new Set(data.campaigns.map(c => c.stage).filter(Boolean))] as string[];
-    const skus = [...new Set(data.campaigns.map(c => c.sku).filter(Boolean))] as string[];
 
     return (
         <div className="flex flex-col gap-6">
@@ -111,7 +136,7 @@ const DashboardTab: React.FC = () => {
                     <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)}
                         className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
                         <option value="">All</option>
-                        {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                        {filterCountries.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -127,7 +152,7 @@ const DashboardTab: React.FC = () => {
                     <select value={skuFilter} onChange={e => setSkuFilter(e.target.value)}
                         className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
                         <option value="">All</option>
-                        {skus.map(s => <option key={s} value={s}>{s}</option>)}
+                        {filterSkus.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
