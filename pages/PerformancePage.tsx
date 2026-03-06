@@ -1,281 +1,574 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import apiClient from '../src/services/apiClient';
 
-import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-
-interface DashboardData {
-  metrics: {
-    label: string;
-    value: string;
-    trend: string;
-    icon: string;
-    color: string;
-    border: string;
-  }[];
-  countryData: {
-    name: string;
-    value: number;
-    color: string;
-  }[];
-  productPerformance: {
-    name: string;
-    sku: string;
-    revenue: number;
-    profit: number;
-    returns: string;
-  }[];
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Order {
+  id: string;
+  orderNumber: string;
+  orderDate: string;
+  orderStatus: string;
+  confirmationStatus: string;
+  paymentStatus: string;
+  totalAmount: number;
+  shippingFee?: number;
+  shippingCountry: string;
+  items?: { productId: string; productName: string; sku: string; quantity: number; unitPrice: number }[];
+  customer?: { name: string };
 }
 
-const PerformancePage: React.FC = () => {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('30 DAY');
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const [showCustomRange, setShowCustomRange] = useState(false);
+interface DateRange {
+  from: Date;
+  to: Date;
+}
 
-  const aiInsight = "Based on current velocity, you are projected to hit $1.8M total revenue by end of Q4, exceeding target by 12%.";
+type DatePreset = 'today' | 'yesterday' | '7days' | 'thisMonth' | 'lastMonth' | 'custom';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatCurrency = (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
-        let url = `http://localhost:3000/analytics/dashboard?period=${filter}`;
-        if (filter === 'CUSTOM' && customStart && customEnd) {
-          url += `&startDate=${customStart}&endDate=${customEnd}`;
-        }
+const formatK = (n: number) => {
+  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+};
 
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          // Add colors to country data if missing
-          const colors = ['#137fec', '#10b981', '#f59e0b', '#6366f1', '#ec4899'];
-          if (result.countryData) {
-            result.countryData = result.countryData.map((c: any, i: number) => ({
-              ...c,
-              color: colors[i % colors.length]
-            }));
-          }
-          setData(result);
-        }
-      } catch (error) {
-        console.error('Failed to fetch dashboard data', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [filter, customStart, customEnd]);
-
-  if (loading) {
-    return <div className="p-8 text-white">Loading dashboard analytics...</div>;
+const getPresetRange = (preset: DatePreset): DateRange => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  switch (preset) {
+    case 'today':
+      return { from: today, to: new Date(today.getTime() + 86399999) };
+    case 'yesterday': {
+      const y = new Date(today); y.setDate(y.getDate() - 1);
+      return { from: y, to: new Date(y.getTime() + 86399999) };
+    }
+    case '7days': {
+      const s = new Date(today); s.setDate(s.getDate() - 6);
+      return { from: s, to: new Date(today.getTime() + 86399999) };
+    }
+    case 'thisMonth':
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59) };
+    case 'lastMonth':
+      return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59) };
+    default:
+      return { from: today, to: new Date(today.getTime() + 86399999) };
   }
+};
 
-  const metrics = data?.metrics || [];
-  const countryData = data?.countryData || [];
-  const productPerformance = data?.productPerformance || [];
+const fmtDate = (d: Date) => d.toISOString().split('T')[0];
+
+// ─── Mini Sparkline ───────────────────────────────────────────────────────────
+const Sparkline: React.FC<{ data: number[]; color: string; height?: number }> = ({ data, color, height = 40 }) => {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data) || 1;
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const w = 120, h = height;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(' ');
+  return (
+    <svg width={w} height={h} className="opacity-80">
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+const StatCard: React.FC<{
+  label: string; value: string; sub?: string; icon: string;
+  iconColor: string; trend?: number; spark?: number[];
+}> = ({ label, value, sub, icon, iconColor, trend, spark }) => (
+  <div className="bg-card-dark border border-border-dark rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/30 transition-all group">
+    <div className="flex items-start justify-between">
+      <div className={`size-10 rounded-xl flex items-center justify-center ${iconColor}`}>
+        <span className="material-symbols-outlined text-[20px]">{icon}</span>
+      </div>
+      {trend !== undefined && (
+        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${trend >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+          {trend >= 0 ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
+        </span>
+      )}
+    </div>
+    <div>
+      <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">{label}</p>
+      <p className="text-2xl font-black text-white mt-1 leading-none">{value}</p>
+      {sub && <p className="text-xs text-text-muted mt-1">{sub}</p>}
+    </div>
+    {spark && <Sparkline data={spark} color={iconColor.includes('emerald') ? '#10b981' : iconColor.includes('blue') ? '#3b82f6' : iconColor.includes('amber') ? '#f59e0b' : '#6366f1'} />}
+  </div>
+);
+
+// ─── Funnel Bar ───────────────────────────────────────────────────────────────
+const FunnelBar: React.FC<{ label: string; count: number; max: number; color: string; pct?: number; icon: string }> = ({ label, count, max, color, pct, icon }) => {
+  const width = max > 0 ? (count / max) * 100 : 0;
+  return (
+    <div className="flex items-center gap-4 group">
+      <div className="flex items-center gap-2 w-44 shrink-0">
+        <span className={`material-symbols-outlined text-[16px] ${color}`}>{icon}</span>
+        <span className="text-xs font-bold text-text-muted uppercase tracking-wide truncate">{label}</span>
+      </div>
+      <div className="flex-1 h-8 bg-[#1c2d3d] rounded-lg overflow-hidden relative">
+        <div
+          className={`h-full rounded-lg transition-all duration-700 flex items-center justify-end pr-3 ${color.replace('text-', 'bg-').replace('-400', '-500/20').replace('-500', '-500/20')}`}
+          style={{ width: `${Math.max(width, 2)}%`, borderRight: `2px solid currentColor` }}
+        >
+        </div>
+        <div className="absolute inset-0 flex items-center pl-3">
+          <span className={`text-xs font-black ${color}`}>{count.toLocaleString()}</span>
+        </div>
+      </div>
+      <div className="w-16 text-right shrink-0">
+        <span className="text-xs font-bold text-text-muted">{pct !== undefined ? `${pct.toFixed(1)}%` : ''}</span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
+const PerformancePage: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
+  const [dateRange, setDateRange] = useState<DateRange>(getPresetRange('thisMonth'));
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [customFrom, setCustomFrom] = useState(fmtDate(new Date()));
+  const [customTo, setCustomTo] = useState(fmtDate(new Date()));
+  const [selectedCountry, setSelectedCountry] = useState('All');
+  const [skuView, setSkuView] = useState<'revenue' | 'profit'>('revenue');
+
+  // ─── Fetch All Orders ──────────────────────────────────────────────────────
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let allOrders: Order[] = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
+        const res = await apiClient.get('/orders', { params: { page, limit: 100 } });
+        const data = res.data;
+        const batch: Order[] = data?.data || (Array.isArray(data) ? data : []);
+        allOrders = [...allOrders, ...batch];
+        const meta = data?.meta;
+        if (!meta || page >= (meta.totalPages || 1)) hasMore = false;
+        else page++;
+      }
+      setOrders(allOrders);
+    } catch (e: any) {
+      setError('Failed to load orders: ' + (e?.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  // ─── Apply Date Preset ─────────────────────────────────────────────────────
+  const applyPreset = (p: DatePreset) => {
+    setDatePreset(p);
+    if (p !== 'custom') {
+      setDateRange(getPresetRange(p));
+      setShowCalendar(false);
+    } else {
+      setShowCalendar(true);
+    }
+  };
+
+  const applyCustomRange = () => {
+    setDateRange({ from: new Date(customFrom), to: new Date(customTo + 'T23:59:59') });
+    setShowCalendar(false);
+  };
+
+  // ─── Filter Orders ─────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return orders.filter(o => {
+      const d = new Date(o.orderDate);
+      if (d < dateRange.from || d > dateRange.to) return false;
+      if (selectedCountry !== 'All' && o.shippingCountry !== selectedCountry) return false;
+      return true;
+    });
+  }, [orders, dateRange, selectedCountry]);
+
+  // ─── Countries ─────────────────────────────────────────────────────────────
+  const countries = useMemo(() => {
+    const set = new Set(orders.map(o => o.shippingCountry).filter(Boolean));
+    return ['All', ...Array.from(set).sort()];
+  }, [orders]);
+
+  // ─── KPI Metrics ───────────────────────────────────────────────────────────
+  const metrics = useMemo(() => {
+    const totalLeads = filtered.length;
+    const confirmLeads = filtered.filter(o => o.confirmationStatus === 'Confirmed').length;
+    const rejectLeads = filtered.filter(o => ['Cancelled', 'Declined'].includes(o.confirmationStatus || '')).length;
+    const shipped = filtered.filter(o => ['Shipped', 'InTransit', 'OutForDelivery'].includes(o.orderStatus)).length;
+    const delivered = filtered.filter(o => o.orderStatus === 'Delivered').length;
+    const undelivered = filtered.filter(o => o.orderStatus === 'Undelivered').length;
+    const outForDelivery = filtered.filter(o => o.orderStatus === 'OutForDelivery').length;
+    const failed = filtered.filter(o => ['Exception', 'Expired', 'Cancelled'].includes(o.orderStatus)).length;
+    const pending = filtered.filter(o => o.confirmationStatus === 'Pending' || o.orderStatus === 'Pending').length;
+
+    const totalRevenue = filtered.reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const confirmedRevenue = filtered.filter(o => o.confirmationStatus === 'Confirmed').reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const collectedRevenue = filtered.filter(o => o.paymentStatus === 'Paid').reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const confirmRate = totalLeads > 0 ? (confirmLeads / totalLeads) * 100 : 0;
+    const deliveryRate = confirmLeads > 0 ? (delivered / confirmLeads) * 100 : 0;
+    const returnRate = (delivered + undelivered) > 0 ? (undelivered / (delivered + undelivered)) * 100 : 0;
+
+    return {
+      totalLeads, confirmLeads, rejectLeads, shipped, delivered,
+      undelivered, outForDelivery, failed, pending,
+      totalRevenue, confirmedRevenue, collectedRevenue,
+      confirmRate, deliveryRate, returnRate,
+    };
+  }, [filtered]);
+
+  // ─── Funnel Data ───────────────────────────────────────────────────────────
+  const funnelSteps = useMemo(() => {
+    const steps = [
+      { label: 'All Leads', count: metrics.totalLeads, icon: 'inbox', color: 'text-slate-400' },
+      { label: 'Pending', count: metrics.pending, icon: 'hourglass_empty', color: 'text-yellow-400' },
+      { label: 'Confirm Leads', count: metrics.confirmLeads, icon: 'check_circle', color: 'text-emerald-400' },
+      { label: 'Reject Leads', count: metrics.rejectLeads, icon: 'cancel', color: 'text-red-400' },
+      { label: 'Shipped', count: metrics.shipped, icon: 'local_shipping', color: 'text-blue-400' },
+      { label: 'Out of Delivery', count: metrics.outForDelivery, icon: 'directions_bike', color: 'text-orange-400' },
+      { label: 'Delivered', count: metrics.delivered, icon: 'verified', color: 'text-emerald-400' },
+      { label: 'Undelivered', count: metrics.undelivered, icon: 'package_2', color: 'text-amber-500' },
+      { label: 'Delivery Fail', count: metrics.failed, icon: 'error', color: 'text-red-500' },
+    ];
+    const max = Math.max(...steps.map(s => s.count), 1);
+    return steps.map(s => ({ ...s, max, pct: metrics.totalLeads > 0 ? (s.count / metrics.totalLeads) * 100 : 0 }));
+  }, [metrics]);
+
+  // ─── Top SKUs ──────────────────────────────────────────────────────────────
+  const topSkus = useMemo(() => {
+    const map = new Map<string, { name: string; sku: string; leads: number; orders: number; revenue: number; returns: number }>();
+    for (const o of filtered) {
+      for (const item of o.items || []) {
+        const key = item.sku || item.productName;
+        const existing = map.get(key) || { name: item.productName, sku: item.sku, leads: 0, orders: 0, revenue: 0, returns: 0 };
+        existing.leads += 1;
+        if (o.confirmationStatus === 'Confirmed') existing.orders += 1;
+        if (o.confirmationStatus === 'Confirmed') existing.revenue += (item.unitPrice || 0) * (item.quantity || 1);
+        if (o.orderStatus === 'Undelivered') existing.returns += 1;
+        map.set(key, existing);
+      }
+    }
+    return Array.from(map.values())
+      .sort((a, b) => skuView === 'revenue' ? b.revenue - a.revenue : b.orders - b.returns - (a.orders - a.returns))
+      .slice(0, 10);
+  }, [filtered, skuView]);
+
+  // ─── Daily Revenue Sparkline ───────────────────────────────────────────────
+  const dailyData = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const o of filtered) {
+      const day = o.orderDate?.split('T')[0] || '';
+      map.set(day, (map.get(day) || 0) + (o.totalAmount || 0));
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
+  }, [filtered]);
+
+  const presetLabels: Record<DatePreset, string> = {
+    today: 'Today', yesterday: 'Yesterday', '7days': 'Last 7 Days',
+    thisMonth: 'This Month', lastMonth: 'Last Month', custom: 'Custom Range',
+  };
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="size-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <p className="text-text-muted text-sm font-bold uppercase tracking-widest">Loading Dashboard...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <span className="material-symbols-outlined text-red-500 text-5xl">error</span>
+      <p className="text-white font-bold text-lg">{error}</p>
+      <button onClick={fetchOrders} className="px-6 py-3 bg-primary rounded-xl text-white text-sm font-bold hover:bg-primary/90 transition-all">
+        Retry
+      </button>
+    </div>
+  );
 
   return (
-    <div className="flex flex-col gap-8 pb-12">
-      <div className="flex flex-wrap justify-between items-end gap-4">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-text-muted text-xs font-bold uppercase tracking-wider opacity-60">Home</span>
-            <span className="text-text-muted text-xs opacity-30">/</span>
-            <span className="text-white text-xs font-bold uppercase tracking-wider">Metrics</span>
+    <div className="flex flex-col gap-8 pb-16">
+
+      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-text-muted text-xs mb-2">
+            <span>Home</span><span>/</span><span className="text-white">Executive Performance</span>
           </div>
-          <h1 className="text-white text-3xl font-black tracking-tight">Executive Dashboard</h1>
-          <p className="text-text-muted text-sm max-w-lg leading-relaxed">Global business health overview. Analyzing real-time COD performance across GCC markets.</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">Executive Performance</h1>
+          <p className="text-text-muted text-sm mt-1">Real-time COD pipeline intelligence and business metrics.</p>
+        </div>
+        <button onClick={fetchOrders} className="flex items-center gap-2 px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-text-muted hover:text-white hover:border-primary/40 transition-all text-sm font-bold">
+          <span className="material-symbols-outlined text-[18px]">refresh</span>
+          Refresh
+        </button>
+      </div>
+
+      {/* ── Filters Bar ──────────────────────────────────────────────────────── */}
+      <div className="bg-card-dark border border-border-dark rounded-2xl p-4 flex flex-col gap-4 relative">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Date presets */}
+          <div className="flex items-center gap-1 bg-[#1c2d3d] rounded-xl p-1 flex-wrap">
+            {(['today', 'yesterday', '7days', 'thisMonth', 'lastMonth', 'custom'] as DatePreset[]).map(p => (
+              <button
+                key={p}
+                onClick={() => applyPreset(p)}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${datePreset === p ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-white'}`}
+              >
+                {presetLabels[p]}
+              </button>
+            ))}
+          </div>
+
+          {/* Country Filter */}
+          <div className="relative">
+            <select
+              className="appearance-none bg-[#1c2d3d] border border-border-dark text-white text-xs font-bold rounded-xl pl-4 pr-8 py-2.5 focus:outline-none focus:border-primary transition-all cursor-pointer"
+              value={selectedCountry}
+              onChange={e => setSelectedCountry(e.target.value)}
+            >
+              {countries.map(c => <option key={c} value={c}>{c === 'All' ? '🌍 All Countries' : `🏳 ${c}`}</option>)}
+            </select>
+            <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[16px]">expand_more</span>
+          </div>
+
+          {/* Date range display */}
+          <div className="ml-auto text-[10px] text-text-muted font-bold uppercase tracking-widest bg-[#1c2d3d] px-3 py-2 rounded-xl border border-border-dark">
+            {fmtDate(dateRange.from)} → {fmtDate(dateRange.to)}
+          </div>
         </div>
 
-        <div className="flex gap-3 relative">
-          <div
-            onClick={() => setShowFilterMenu(!showFilterMenu)}
-            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-card-dark px-4 border border-border-dark group cursor-pointer hover:border-primary/50 transition-all shadow-sm select-none"
-          >
-            <span className="material-symbols-outlined text-text-muted group-hover:text-primary" style={{ fontSize: '18px' }}>calendar_today</span>
-            <span className="text-white text-sm font-semibold">
-              {filter === 'TODAY' ? 'Today' : filter === '7 DAY' ? 'Last 7 Days' : filter === '30 DAY' ? 'Last 30 Days' : filter === 'ALL TIME' ? 'All Time' : 'Custom Range'}
-            </span>
-            <span className="material-symbols-outlined text-text-muted" style={{ fontSize: '18px' }}>expand_more</span>
+        {/* Custom date picker */}
+        {showCalendar && (
+          <div className="flex items-center gap-3 bg-[#1c2d3d] border border-border-dark rounded-xl p-4 w-fit">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-black text-text-muted uppercase">From</label>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                className="bg-[#17232f] border border-border-dark text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
+            </div>
+            <span className="text-text-muted mt-5">→</span>
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-black text-text-muted uppercase">To</label>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                className="bg-[#17232f] border border-border-dark text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
+            </div>
+            <button onClick={applyCustomRange}
+              className="mt-5 px-4 py-2 bg-primary text-white text-xs font-black uppercase rounded-lg hover:bg-primary/90 transition-all">
+              Apply
+            </button>
+            <button onClick={() => setShowCalendar(false)}
+              className="mt-5 px-3 py-2 bg-[#17232f] text-text-muted text-xs font-bold rounded-lg hover:text-white transition-all border border-border-dark">
+              ✕
+            </button>
           </div>
+        )}
+      </div>
 
-          {showFilterMenu && (
-            <div className="absolute top-12 left-0 bg-[#0f172a] border border-border-dark z-50 p-1 rounded-xl shadow-2xl w-48 overflow-hidden backdrop-blur-md">
-              {['TODAY', '7 DAY', '30 DAY', 'ALL TIME', 'CUSTOM'].map(f => (
-                <button
-                  key={f}
-                  className={`block w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${filter === f ? 'bg-primary/20 text-primary' : 'text-text-muted hover:bg-white/5 hover:text-white'}`}
-                  onClick={() => {
-                    setFilter(f);
-                    setShowFilterMenu(false);
-                    if (f === 'CUSTOM') setShowCustomRange(true);
-                    else setShowCustomRange(false);
-                  }}
-                >
-                  {f === 'TODAY' ? 'Today' : f === '7 DAY' ? 'Last 7 Days' : f === '30 DAY' ? 'Last 30 Days' : f === 'ALL TIME' ? 'All Time' : 'Custom Range'}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* ── KPI Cards ─────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Total Revenue" value={formatK(metrics.totalRevenue)} sub={`${metrics.totalLeads} total leads`} icon="payments" iconColor="bg-primary/15 text-primary" spark={dailyData} />
+        <StatCard label="Confirmed Revenue" value={formatK(metrics.confirmedRevenue)} sub={`${metrics.confirmLeads} confirmed orders`} icon="verified" iconColor="bg-emerald-500/15 text-emerald-400" />
+        <StatCard label="COD Collected" value={formatK(metrics.collectedRevenue)} sub="Payment status: Paid" icon="wallet" iconColor="bg-blue-500/15 text-blue-400" />
+        <StatCard label="Delivery Rate" value={`${metrics.deliveryRate.toFixed(1)}%`} sub={`${metrics.delivered} delivered`} icon="local_shipping" iconColor="bg-amber-500/15 text-amber-400" />
+      </div>
 
-          {filter === 'CUSTOM' && (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard label="Confirm Rate" value={`${metrics.confirmRate.toFixed(1)}%`} sub={`${metrics.confirmLeads} / ${metrics.totalLeads}`} icon="check_circle" iconColor="bg-emerald-500/15 text-emerald-400" />
+        <StatCard label="Return / Fail Rate" value={`${metrics.returnRate.toFixed(1)}%`} sub={`${metrics.undelivered} undelivered`} icon="undo" iconColor="bg-red-500/15 text-red-400" />
+        <StatCard label="Total Orders" value={metrics.totalLeads.toLocaleString()} sub={`${selectedCountry !== 'All' ? selectedCountry : 'All countries'}`} icon="package_2" iconColor="bg-violet-500/15 text-violet-400" />
+        <StatCard label="Delivered" value={metrics.delivered.toLocaleString()} sub={`${metrics.failed} failed/exception`} icon="task_alt" iconColor="bg-teal-500/15 text-teal-400" />
+      </div>
+
+      {/* ── Two-Column: Funnel + Market Share ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Order Funnel */}
+        <div className="lg:col-span-2 bg-card-dark border border-border-dark rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-2 py-1 text-white text-xs h-10 focus:border-primary outline-none" />
-              <span className="text-text-muted">-</span>
-              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-2 py-1 text-white text-xs h-10 focus:border-primary outline-none" />
+              <span className="material-symbols-outlined text-primary text-[18px]">filter_alt</span>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Order Pipeline Funnel</h3>
             </div>
-          )}
+            <span className="text-[10px] text-text-muted font-bold">{filtered.length} total</span>
+          </div>
+          <div className="p-6 flex flex-col gap-3">
+            {funnelSteps.map((step, i) => (
+              <div key={i}>
+                <FunnelBar {...step} />
+                {/* connector line between certain steps */}
+                {(i === 2 || i === 4) && (
+                  <div className="ml-[7.5rem] my-1 border-l-2 border-dashed border-border-dark h-3"></div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
 
-          <button className="flex items-center justify-center rounded-lg h-10 px-6 bg-primary text-white text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
-            <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>download</span>
-            Export
+        {/* Market Share Card */}
+        <div className="bg-card-dark border border-border-dark rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Market Share</h3>
+            <span className="material-symbols-outlined text-text-muted text-[18px]">more_horiz</span>
+          </div>
+          <div className="p-6 flex flex-col gap-4">
+            {/* Big Revenue Number */}
+            <div className="flex flex-col items-center justify-center py-4 gap-1">
+              <p className="text-4xl font-black text-white">{formatK(metrics.confirmedRevenue)}</p>
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Confirmed Revenue</p>
+            </div>
+            <div className="h-px bg-border-dark"></div>
+            {/* Country breakdown */}
+            <div className="flex flex-col gap-2">
+              {(() => {
+                const cMap = new Map<string, number>();
+                for (const o of filtered) {
+                  if (o.confirmationStatus === 'Confirmed') {
+                    cMap.set(o.shippingCountry || 'Unknown', (cMap.get(o.shippingCountry || 'Unknown') || 0) + (o.totalAmount || 0));
+                  }
+                }
+                const sorted = Array.from(cMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                const total = sorted.reduce((s, [, v]) => s + v, 0) || 1;
+                const colors = ['bg-primary', 'bg-emerald-500', 'bg-blue-500', 'bg-amber-500', 'bg-violet-500'];
+                return sorted.map(([country, rev], i) => (
+                  <div key={country} className="flex items-center gap-3">
+                    <div className={`size-2.5 rounded-sm shrink-0 ${colors[i]}`}></div>
+                    <span className="text-xs text-text-muted flex-1 truncate font-medium">{country}</span>
+                    <span className="text-xs font-black text-white">{formatK(rev)}</span>
+                    <span className="text-[10px] text-text-muted w-10 text-right">{((rev / total) * 100).toFixed(0)}%</span>
+                  </div>
+                ));
+              })()}
+              {filtered.filter(o => o.confirmationStatus === 'Confirmed').length === 0 && (
+                <p className="text-xs text-text-muted text-center py-4 italic">No confirmed orders in range</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Top Moving SKUs ───────────────────────────────────────────────────── */}
+      <div className="bg-card-dark border border-border-dark rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[18px]">trending_up</span>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Top Moving SKUs</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSkuView('revenue')}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${skuView === 'revenue' ? 'bg-primary text-white' : 'text-text-muted hover:text-white bg-[#1c2d3d]'}`}
+            >Revenue</button>
+            <button
+              onClick={() => setSkuView('profit')}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${skuView === 'profit' ? 'bg-primary text-white' : 'text-text-muted hover:text-white bg-[#1c2d3d]'}`}
+            >Profit</button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr className="bg-[#17232f] border-b border-[#233648]">
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest w-8">#</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Product Details</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Leads</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Orders</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Revenue</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Return Rate</th>
+                <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Conv. Rate</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#233648]">
+              {topSkus.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <span className="material-symbols-outlined text-text-muted text-4xl">inventory_2</span>
+                      <p className="text-text-muted text-sm">No product data for selected period</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : topSkus.map((sku, i) => {
+                const convRate = sku.leads > 0 ? (sku.orders / sku.leads) * 100 : 0;
+                const retRate = (sku.orders) > 0 ? (sku.returns / sku.orders) * 100 : 0;
+                return (
+                  <tr key={sku.sku || i} className="hover:bg-[#1c2d3d]/50 transition-colors">
+                    <td className="px-6 py-5">
+                      <span className="text-[10px] font-black text-text-muted/50">#{i + 1}</span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <p className="text-sm font-bold text-white">{sku.name || 'Unknown Product'}</p>
+                      <p className="text-[10px] text-text-muted font-mono mt-0.5">{sku.sku || 'N/A'}</p>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <span className="text-sm font-bold text-text-muted">{sku.leads.toLocaleString()}</span>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <span className="text-sm font-black text-white">{sku.orders.toLocaleString()}</span>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <span className="text-sm font-black text-primary">{formatCurrency(sku.revenue)}</span>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <span className={`text-sm font-black ${retRate > 20 ? 'text-red-400' : retRate > 10 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {retRate.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="w-16 h-1.5 bg-[#1c2d3d] rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(convRate, 100)}%` }}></div>
+                        </div>
+                        <span className="text-xs font-bold text-text-muted w-10 text-right">{convRate.toFixed(0)}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border-dark flex items-center justify-between">
+          <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">REAL-TIME DATA</span>
+          <button className="text-[10px] font-black text-primary hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+            FULL INVENTORY AUDIT
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {metrics.map((metric, i) => (
-          <div key={i} className={`bg-card-dark p-6 rounded-2xl border border-border-dark flex flex-col gap-2 border-l-4 ${metric.border} shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group`}>
-            <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-              <span className="material-symbols-outlined text-[120px]">{metric.icon}</span>
+      {/* ── Status Summary Grid ───────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {[
+          { label: 'Pending Confirmation', count: filtered.filter(o => o.confirmationStatus === 'Pending').length, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: 'pending' },
+          { label: 'Confirmed', count: metrics.confirmLeads, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: 'check_circle' },
+          { label: 'Rejected / Cancelled', count: metrics.rejectLeads, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: 'cancel' },
+          { label: 'In Transit', count: filtered.filter(o => o.orderStatus === 'InTransit').length, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: 'local_shipping' },
+          { label: 'Out for Delivery', count: metrics.outForDelivery, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: 'directions_bike' },
+          { label: 'Delivered', count: metrics.delivered, color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/20', icon: 'verified' },
+          { label: 'Undelivered', count: metrics.undelivered, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: 'assignment_return' },
+          { label: 'Exception / Expired', count: metrics.failed, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: 'error' },
+          { label: 'COD Paid', count: filtered.filter(o => o.paymentStatus === 'Paid').length, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', icon: 'payments' },
+          { label: 'Awaiting Payment', count: filtered.filter(o => o.paymentStatus !== 'Paid').length, color: 'text-text-muted', bg: 'bg-[#1c2d3d]', border: 'border-border-dark', icon: 'hourglass_empty' },
+        ].map(s => (
+          <div key={s.label} className={`${s.bg} border ${s.border} rounded-xl p-4 flex flex-col gap-2`}>
+            <div className="flex items-center justify-between">
+              <span className={`material-symbols-outlined text-[18px] ${s.color}`}>{s.icon}</span>
+              <span className={`text-2xl font-black ${s.color}`}>{s.count.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-start relative z-10">
-              <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">{metric.label}</p>
-              <div className={`size-8 rounded-lg flex items-center justify-center bg-${metric.color}/10 text-${metric.color}`}>
-                <span className="material-symbols-outlined text-[18px]">{metric.icon}</span>
-              </div>
-            </div>
-            <div className="flex items-baseline gap-3 mt-4 relative z-10">
-              <h3 className="text-3xl font-black tracking-tight">{metric.value}</h3>
-              <span className={`text-${metric.color === 'red-500' ? 'red-400' : 'emerald-400'} text-xs font-bold flex items-center bg-${metric.color === 'red-500' ? 'red-500' : 'emerald-500'}/10 px-2 py-0.5 rounded-full`}>
-                {metric.trend}
-              </span>
-            </div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-snug">{s.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 bg-card-dark rounded-2xl border border-border-dark p-6 flex flex-col min-h-[480px] shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Market Share</h3>
-            <button className="material-symbols-outlined text-text-muted hover:text-white transition-colors" style={{ fontSize: '20px' }}>more_horiz</button>
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center relative">
-            <div className="size-64 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={countryData}
-                    innerRadius={75}
-                    outerRadius={105}
-                    paddingAngle={8}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {countryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#111a22', border: '1px solid #233648', borderRadius: '12px' }}
-                    itemStyle={{ color: '#fff', fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-3xl font-black tracking-tighter">
-                  ${(countryData.reduce((acc, curr) => acc + curr.value, 0) / 1000).toFixed(1)}k
-                </span>
-                <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">Revenue</span>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-y-4 gap-x-8 w-full mt-8 px-4">
-              {countryData.map((country, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="size-2.5 rounded-full ring-4 ring-white/5 shadow-sm" style={{ backgroundColor: country.color }}></div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">{country.name}</span>
-                    <span className="text-sm font-bold">${(country.value / 1000).toFixed(0)}k</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2 bg-card-dark rounded-2xl border border-border-dark flex flex-col shadow-sm overflow-hidden">
-          <div className="px-8 py-5 border-b border-border-dark flex items-center justify-between bg-[#14202c]">
-            <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Top Moving SKUs</h3>
-            <div className="flex gap-1.5 p-1 bg-background-dark rounded-lg border border-border-dark">
-              <button className="px-4 py-1.5 text-[10px] font-bold bg-primary text-white rounded-md shadow-sm">Revenue</button>
-              <button className="px-4 py-1.5 text-[10px] font-bold text-text-muted hover:text-white transition-colors">Profit</button>
-            </div>
-          </div>
-          <div className="overflow-x-auto custom-scrollbar flex-1">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#17232f]/50">
-                  <th className="px-8 py-4 text-text-muted font-black text-[10px] uppercase tracking-[0.15em]">Product Details</th>
-                  <th className="px-8 py-4 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-right">Revenue</th>
-                  <th className="px-8 py-4 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-right">Profit</th>
-                  <th className="px-8 py-4 text-text-muted font-black text-[10px] uppercase tracking-[0.15em]">Efficiency</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-dark/50">
-                {productPerformance.map((p, i) => (
-                  <tr key={i} className="hover:bg-primary/[0.02] transition-colors">
-                    <td className="px-8 py-5">
-                      <p className="text-sm font-bold text-white leading-none">{p.name}</p>
-                      <p className="text-[10px] text-text-muted font-medium mt-1.5 opacity-60">Fulfillment: Global</p>
-                    </td>
-                    <td className="px-8 py-5 text-sm font-black text-right">${p.revenue.toLocaleString()}</td>
-                    <td className="px-8 py-5 text-sm font-black text-emerald-400 text-right">${p.profit.toLocaleString()}</td>
-                    <td className="px-8 py-5">
-                      <div className="flex flex-col gap-2 min-w-[100px]">
-                        <div className="flex justify-between items-center text-[10px] font-bold">
-                          <span className="text-text-muted uppercase tracking-tighter">Returns</span>
-                          <span className={parseInt(p.returns) > 6 ? 'text-red-400' : 'text-emerald-400'}>{p.returns}</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-border-dark rounded-full overflow-hidden shadow-inner">
-                          <div className={`h-full ${parseInt(p.returns) > 6 ? 'bg-red-500' : 'bg-emerald-500'} transition-all duration-1000`} style={{ width: p.returns }}></div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-8 py-4 border-t border-border-dark bg-[#17232f]/80 flex justify-between items-center">
-            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest opacity-60">Real-time Data</p>
-            <button className="text-[10px] text-primary font-black uppercase tracking-widest hover:underline underline-offset-4">Full Inventory Audit</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm group hover:border-primary/40 transition-all relative overflow-hidden">
-        <div className="size-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary border border-primary/20 shadow-inner group-hover:scale-110 transition-transform">
-          <span className="material-symbols-outlined text-3xl">auto_graph</span>
-        </div>
-        <div className="flex-1 text-center md:text-left relative z-10">
-          <div className="flex items-center gap-2 justify-center md:justify-start mb-1">
-            <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Operations Forecast</h4>
-          </div>
-          <p className="text-text-muted text-sm leading-relaxed">
-            {aiInsight}
-          </p>
-        </div>
-      </div>
     </div>
   );
 };
