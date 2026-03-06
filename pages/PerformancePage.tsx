@@ -98,31 +98,6 @@ const StatCard: React.FC<{
   </div>
 );
 
-// ─── Funnel Bar ───────────────────────────────────────────────────────────────
-const FunnelBar: React.FC<{ label: string; count: number; max: number; color: string; pct?: number; icon: string }> = ({ label, count, max, color, pct, icon }) => {
-  const width = max > 0 ? (count / max) * 100 : 0;
-  return (
-    <div className="flex items-center gap-4 group">
-      <div className="flex items-center gap-2 w-44 shrink-0">
-        <span className={`material-symbols-outlined text-[16px] ${color}`}>{icon}</span>
-        <span className="text-xs font-bold text-text-muted uppercase tracking-wide truncate">{label}</span>
-      </div>
-      <div className="flex-1 h-8 bg-[#1c2d3d] rounded-lg overflow-hidden relative">
-        <div
-          className={`h-full rounded-lg transition-all duration-700 flex items-center justify-end pr-3 ${color.replace('text-', 'bg-').replace('-400', '-500/20').replace('-500', '-500/20')}`}
-          style={{ width: `${Math.max(width, 2)}%`, borderRight: `2px solid currentColor` }}
-        >
-        </div>
-        <div className="absolute inset-0 flex items-center pl-3">
-          <span className={`text-xs font-black ${color}`}>{count.toLocaleString()}</span>
-        </div>
-      </div>
-      <div className="w-16 text-right shrink-0">
-        <span className="text-xs font-bold text-text-muted">{pct !== undefined ? `${pct.toFixed(1)}%` : ''}</span>
-      </div>
-    </div>
-  );
-};
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 const PerformancePage: React.FC = () => {
@@ -226,22 +201,6 @@ const PerformancePage: React.FC = () => {
     };
   }, [filtered]);
 
-  // ─── Funnel Data ───────────────────────────────────────────────────────────
-  const funnelSteps = useMemo(() => {
-    const steps = [
-      { label: 'All Leads', count: metrics.totalLeads, icon: 'inbox', color: 'text-slate-400' },
-      { label: 'Pending', count: metrics.pending, icon: 'hourglass_empty', color: 'text-yellow-400' },
-      { label: 'Confirm Leads', count: metrics.confirmLeads, icon: 'check_circle', color: 'text-emerald-400' },
-      { label: 'Reject Leads', count: metrics.rejectLeads, icon: 'cancel', color: 'text-red-400' },
-      { label: 'Shipped', count: metrics.shipped, icon: 'local_shipping', color: 'text-blue-400' },
-      { label: 'Out of Delivery', count: metrics.outForDelivery, icon: 'directions_bike', color: 'text-orange-400' },
-      { label: 'Delivered', count: metrics.delivered, icon: 'verified', color: 'text-emerald-400' },
-      { label: 'Undelivered', count: metrics.undelivered, icon: 'package_2', color: 'text-amber-500' },
-      { label: 'Delivery Fail', count: metrics.failed, icon: 'error', color: 'text-red-500' },
-    ];
-    const max = Math.max(...steps.map(s => s.count), 1);
-    return steps.map(s => ({ ...s, max, pct: metrics.totalLeads > 0 ? (s.count / metrics.totalLeads) * 100 : 0 }));
-  }, [metrics]);
 
   // ─── Top SKUs ──────────────────────────────────────────────────────────────
   const topSkus = useMemo(() => {
@@ -418,16 +377,71 @@ const PerformancePage: React.FC = () => {
             </div>
             <span className="text-[10px] text-text-muted font-bold">{filtered.length} total</span>
           </div>
-          <div className="p-6 flex flex-col gap-3">
-            {funnelSteps.map((step, i) => (
-              <div key={i}>
-                <FunnelBar {...step} />
-                {/* connector line between certain steps */}
-                {(i === 2 || i === 4) && (
-                  <div className="ml-[7.5rem] my-1 border-l-2 border-dashed border-border-dark h-3"></div>
-                )}
+          <div className="p-6 flex flex-col md:flex-row items-center justify-evenly gap-12 min-h-[400px]">
+            {/* Pyramid Funnel */}
+            <div className="flex flex-col items-center w-full max-w-xs relative drop-shadow-2xl">
+              {/* STAGE 1: All Leads (Awareness) */}
+              <div className="w-full relative z-40 group">
+                <div className="h-16 sm:h-20 bg-[#a5d8f3] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)' }}>
+                  <span className="text-[#082f49] text-xs sm:text-sm font-black tracking-widest leading-none mt-1">AWARENESS</span>
+                  <span className="text-[#0c4a6e] text-[10px] sm:text-[11px] font-bold mt-1">ALL LEADS: {metrics.totalLeads.toLocaleString()} (100%)</span>
+                </div>
+                {/* 3D lip shadow */}
+                <div className="h-4 bg-[#082f49] w-[80%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 95% 100%, 5% 100%)' }}></div>
               </div>
-            ))}
+
+              {/* STAGE 2: Confirmed (Consideration) */}
+              <div className="w-[80%] relative z-30 group -mt-1.5">
+                <div className="h-16 sm:h-20 bg-[#f7d87c] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 87.5% 100%, 12.5% 100%)' }}>
+                  <span className="text-[#451a03] text-xs sm:text-sm font-black tracking-widest leading-none mt-1">CONSIDERATION</span>
+                  <span className="text-[#78350f] text-[10px] sm:text-[11px] font-bold mt-1">CONFIRMED: {metrics.confirmLeads.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.confirmLeads / metrics.totalLeads * 100) : 0}%)</span>
+                </div>
+                <div className="h-4 bg-[#451a03] w-[75%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 94% 100%, 6% 100%)' }}></div>
+              </div>
+
+              {/* STAGE 3: Shipped (Conversion) */}
+              <div className="w-[60%] relative z-20 group -mt-1.5">
+                <div className="h-16 sm:h-20 bg-[#e29baf] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 83.33% 100%, 16.66% 100%)' }}>
+                  <span className="text-[#4c0519] text-xs sm:text-sm font-black tracking-widest leading-none mt-1">CONVERSION</span>
+                  <span className="text-[#881337] text-[10px] sm:text-[11px] font-bold mt-1">SHIPPED: {metrics.shipped.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.shipped / metrics.totalLeads * 100) : 0}%)</span>
+                </div>
+                <div className="h-4 bg-[#4c0519] w-[66.66%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)' }}></div>
+              </div>
+
+              {/* STAGE 4: Delivered (Loyalty) */}
+              <div className="w-[40%] relative z-10 group -mt-1.5">
+                <div className="h-24 sm:h-32 bg-[#9598e6] flex flex-col items-center justify-start pt-4 transition-transform hover:scale-[1.05] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }}>
+                  <span className="text-[#1e1b4b] text-xs sm:text-[13px] font-black tracking-widest leading-none">LOYALTY</span>
+                  <span className="text-[#312e81] text-[9px] sm:text-[10px] font-bold mt-1.5 px-2 text-center leading-tight">DELIVERED:<br />{metrics.delivered.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.delivered / metrics.totalLeads * 100) : 0}%)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Side Panel: Drop-offs & Other Pipeline Stages */}
+            <div className="w-full max-w-[280px] flex flex-col gap-4 bg-[#17232f] border border-[#233648] p-5 rounded-2xl shadow-xl">
+              <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-dark pb-3 mb-1">Pipeline Drop-offs / Other</h4>
+
+              <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
+                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-yellow-500">hourglass_empty</span><span className="text-text-muted text-xs font-bold">Pending</span></div>
+                <span className="font-black text-white">{metrics.pending}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
+                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-red-400">cancel</span><span className="text-text-muted text-xs font-bold">Rejected Leads</span></div>
+                <span className="font-black text-white">{metrics.rejectLeads}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
+                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-orange-400">directions_bike</span><span className="text-text-muted text-xs font-bold">Out of Delivery</span></div>
+                <span className="font-black text-white">{metrics.outForDelivery}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
+                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-amber-500">assignment_return</span><span className="text-text-muted text-xs font-bold">Undelivered</span></div>
+                <span className="font-black text-white">{metrics.undelivered}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-red-500">error</span><span className="text-text-muted text-xs font-bold">Delivery Fail</span></div>
+                <span className="font-black text-white">{metrics.failed}</span>
+              </div>
+            </div>
           </div>
         </div>
 
