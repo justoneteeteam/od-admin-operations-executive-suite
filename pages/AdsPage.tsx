@@ -61,6 +61,7 @@ const DashboardTab: React.FC = () => {
     const [skuFilter, setSkuFilter] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [dateRangePreset, setDateRangePreset] = useState('All Time');
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
 
     // Global Database filter options
@@ -86,6 +87,68 @@ const DashboardTab: React.FC = () => {
         };
         fetchFilters();
     }, []);
+
+    const handlePresetChange = (preset: string) => {
+        setDateRangePreset(preset);
+        const today = new Date();
+        const formatDate = (date: Date) => {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        };
+
+        switch (preset) {
+            case 'Today':
+                setStartDate(formatDate(today));
+                setEndDate(formatDate(today));
+                break;
+            case 'Yesterday': {
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                setStartDate(formatDate(yesterday));
+                setEndDate(formatDate(yesterday));
+                break;
+            }
+            case 'Last 7 days': {
+                const last7 = new Date(today);
+                last7.setDate(last7.getDate() - 7);
+                setStartDate(formatDate(last7));
+                setEndDate(formatDate(today));
+                break;
+            }
+            case 'This month': {
+                const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                setStartDate(formatDate(firstDayThisMonth));
+                setEndDate(formatDate(today));
+                break;
+            }
+            case 'Last month': {
+                const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                setStartDate(formatDate(firstDayLastMonth));
+                setEndDate(formatDate(lastDayLastMonth));
+                break;
+            }
+            case 'All Time':
+                setStartDate('');
+                setEndDate('');
+                break;
+            case 'Custom':
+                // Keep current start/end dates
+                break;
+        }
+    };
+
+    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setStartDate(e.target.value);
+        setDateRangePreset('Custom');
+    };
+
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEndDate(e.target.value);
+        setDateRangePreset('Custom');
+    };
 
     const fetchDashboard = async () => {
         setLoading(true);
@@ -156,15 +219,32 @@ const DashboardTab: React.FC = () => {
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">From</label>
-                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Date Range</label>
+                    <select value={dateRangePreset} onChange={e => handlePresetChange(e.target.value)}
+                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[140px]">
+                        <option value="All Time">All Time</option>
+                        <option value="Today">Today</option>
+                        <option value="Yesterday">Yesterday</option>
+                        <option value="Last 7 days">Last 7 days</option>
+                        <option value="This month">This month</option>
+                        <option value="Last month">Last month</option>
+                        <option value="Custom">Custom range</option>
+                    </select>
                 </div>
-                <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">To</label>
-                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
-                </div>
+                {dateRangePreset === 'Custom' && (
+                    <>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">From</label>
+                            <input type="date" value={startDate} onChange={handleStartDateChange}
+                                className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">To</label>
+                            <input type="date" value={endDate} onChange={handleEndDateChange}
+                                className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
+                        </div>
+                    </>
+                )}
                 <button onClick={() => setCurrency(c => c === 'EUR' ? 'VND' : 'EUR')}
                     className="h-[38px] px-4 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-bold hover:bg-amber-500/20 transition-all">
                     {currency === 'EUR' ? '€ EUR' : '₫ VND'}
