@@ -6,6 +6,7 @@ import { adsCampaignsService, exchangeRatesService, AdsCampaign, DashboardData, 
 interface StagedRecord {
     date: string; campaign: string; country: string; platform: string;
     sku: string; stage: string; pic: string; spendVnd: number; notes: string;
+    source?: string;
 }
 
 // ─── ADS PAGE ────────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ const DashboardTab: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [countryFilter, setCountryFilter] = useState('');
     const [stageFilter, setStageFilter] = useState('');
+    const [skuFilter, setSkuFilter] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
@@ -65,6 +67,7 @@ const DashboardTab: React.FC = () => {
             const params: any = {};
             if (countryFilter) params.country = countryFilter;
             if (stageFilter) params.stage = stageFilter;
+            if (skuFilter) params.sku = skuFilter;
             if (startDate) params.startDate = startDate;
             if (endDate) params.endDate = endDate;
             const result = await adsCampaignsService.getDashboard(params);
@@ -73,7 +76,7 @@ const DashboardTab: React.FC = () => {
         finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchDashboard(); }, [countryFilter, stageFilter, startDate, endDate]);
+    useEffect(() => { fetchDashboard(); }, [countryFilter, stageFilter, skuFilter, startDate, endDate]);
 
     if (loading) return <div className="text-text-muted text-sm py-12 text-center">Loading dashboard...</div>;
     if (!data) return <div className="text-red-400 text-sm py-12 text-center">Failed to load dashboard data.</div>;
@@ -95,6 +98,7 @@ const DashboardTab: React.FC = () => {
     // Countries for filter
     const countries = [...new Set(data.campaigns.map(c => c.country).filter(Boolean))] as string[];
     const stages = [...new Set(data.campaigns.map(c => c.stage).filter(Boolean))] as string[];
+    const skus = [...new Set(data.campaigns.map(c => c.sku).filter(Boolean))] as string[];
 
     return (
         <div className="flex flex-col gap-6">
@@ -114,6 +118,14 @@ const DashboardTab: React.FC = () => {
                         className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
                         <option value="">All</option>
                         {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">SKU</label>
+                    <select value={skuFilter} onChange={e => setSkuFilter(e.target.value)}
+                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
+                        <option value="">All</option>
+                        {skus.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -273,6 +285,7 @@ const InputTab: React.FC = () => {
                     pic: row['PIC'] || row['pic'] || row['Person'] || '',
                     spendVnd: Number(row['Spend VND'] || row['spend_vnd'] || row['SpendVND'] || row['Spend'] || 0),
                     notes: row['Notes'] || row['notes'] || '',
+                    source: 'upload',
                 };
             }).filter((r: StagedRecord) => r.campaign && r.sku);
 
@@ -289,8 +302,8 @@ const InputTab: React.FC = () => {
             setResult('Date, Campaign, and SKU are required.');
             return;
         }
-        setStaged(prev => [...prev, { ...manual }]);
-        setManual({ date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '' });
+        setStaged(prev => [...prev, { ...manual, source: 'manual' }]);
+        setManual({ date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual' });
         setResult(null);
     };
 

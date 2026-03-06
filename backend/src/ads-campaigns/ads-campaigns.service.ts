@@ -148,6 +148,7 @@ export class AdsCampaignsService {
     async getDashboard(filters?: {
         country?: string;
         stage?: string;
+        sku?: string;
         startDate?: string;
         endDate?: string;
     }) {

@@ -21,10 +21,11 @@ export class AdsCampaignsController {
     getDashboard(
         @Query('country') country?: string,
         @Query('stage') stage?: string,
+        @Query('sku') sku?: string,
         @Query('startDate') startDate?: string,
         @Query('endDate') endDate?: string,
     ) {
-        return this.service.getDashboard({ country, stage, startDate, endDate });
+        return this.service.getDashboard({ country, stage, sku, startDate, endDate });
     }
 
     @Get(':id')

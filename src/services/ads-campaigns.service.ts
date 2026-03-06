@@ -59,7 +59,7 @@ export const adsCampaignsService = {
         return response.data as AdsCampaign[];
     },
 
-    async getDashboard(params?: { country?: string; stage?: string; startDate?: string; endDate?: string }) {
+    async getDashboard(params?: { country?: string; stage?: string; sku?: string; startDate?: string; endDate?: string }) {
         const response = await apiClient.get('/ads-campaigns/dashboard', { params });
         return response.data as DashboardData;
     },
