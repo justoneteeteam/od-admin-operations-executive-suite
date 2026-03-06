@@ -280,17 +280,24 @@ const InputTab: React.FC = () => {
             const ws = wb.Sheets[wb.SheetNames[0]];
             const json: any[] = XLSX.utils.sheet_to_json(ws);
 
-            const records: StagedRecord[] = json.map((row: any) => {
-                // Try to parse date from various formats
+            const records: StagedRecord[] = [];
+            let invalidSkus = 0;
+            let invalidCountries = 0;
+
+            for (const row of json) {
+                // Fuzzy key matching
+                const getVal = (keys: string[]) => {
+                    const foundKey = Object.keys(row).find(k => keys.some(search => k.toLowerCase().includes(search.toLowerCase())));
+                    return foundKey ? row[foundKey] : '';
+                };
+
                 let dateStr = '';
-                const rawDate = row['Date'] || row['date'] || row['DATE'] || '';
+                const rawDate = getVal(['date']);
                 if (rawDate) {
                     if (typeof rawDate === 'number') {
-                        // Excel serial date
                         const d = new Date((rawDate - 25569) * 86400 * 1000);
                         dateStr = d.toISOString().split('T')[0];
                     } else {
-                        // Try DD/MM/YYYY format
                         const parts = String(rawDate).split('/');
                         if (parts.length === 3) {
                             dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
@@ -300,22 +307,49 @@ const InputTab: React.FC = () => {
                     }
                 }
 
-                return {
+                const sku = String(getVal(['sku'])).trim();
+                const country = String(getVal(['country'])).trim();
+                const campaign = String(getVal(['campaign'])).trim();
+
+                if (!campaign || !sku) continue;
+
+                // Validate SKU
+                if (products.length > 0 && !products.some(p => p.sku === sku)) {
+                    invalidSkus++;
+                    continue;
+                }
+
+                // Validate Country
+                if (countries.length > 0 && country && !countries.includes(country)) {
+                    invalidCountries++;
+                    continue;
+                }
+
+                const rawSpend = getVal(['spend']);
+                // Remove all non-numeric characters (commas, dots) for VND
+                const spendVnd = rawSpend ? Number(String(rawSpend).replace(/[^0-9]/g, "")) : 0;
+
+                records.push({
                     date: dateStr,
-                    campaign: row['Campaign'] || row['campaign'] || row['CAMPAIGN'] || '',
-                    country: row['Country'] || row['country'] || row['COUNTRY'] || '',
-                    platform: row['Platform'] || row['platform'] || row['PLATFORM'] || '',
-                    sku: row['SKU'] || row['sku'] || row['Sku'] || '',
-                    stage: row['Stage'] || row['stage'] || row['STAGE'] || '',
-                    pic: row['PIC'] || row['pic'] || row['Person'] || '',
-                    spendVnd: Number(row['Spend VND'] || row['spend_vnd'] || row['SpendVND'] || row['Spend'] || 0),
-                    notes: row['Notes'] || row['notes'] || '',
+                    campaign,
+                    country,
+                    platform: String(getVal(['platform']) || ''),
+                    sku,
+                    stage: String(getVal(['stage']) || ''),
+                    pic: String(getVal(['pic', 'person']) || ''),
+                    spendVnd,
+                    notes: String(getVal(['note']) || ''),
                     source: 'upload',
-                };
-            }).filter((r: StagedRecord) => r.campaign && r.sku);
+                });
+            }
 
             setStaged(records);
-            setResult(`Parsed ${records.length} records from ${file.name}`);
+
+            let resMsg = `✅ Parsed ${records.length} records.`;
+            if (invalidSkus > 0 || invalidCountries > 0) {
+                resMsg = `⚠️ Parsed ${records.length} records. Skipped: ${invalidSkus} invalid SKUs, ${invalidCountries} invalid countries.`;
+            }
+            setResult(resMsg);
         } catch (err) {
             console.error('File parse error:', err);
             setResult('Failed to parse file. Please check the format.');
