@@ -34,7 +34,7 @@ export class TrackingService {
         }
     }
 
-    private async processTrackingItem(item: any) {
+    async processTrackingItem(item: any) {
         const trackingNumber = item.number;
         const subStatus = item.track_info?.latest_status?.sub_status; // "InTransit_Arrival"
 
@@ -90,6 +90,30 @@ export class TrackingService {
             // "PickUp" natively in some 17track docs, but "OutForDelivery" comes through occasionally
             if (order.shippingStatus === 'OutForDelivery') {
                 this.logger.log(`Order ${order.orderNumber} is already 'OutForDelivery'. Skipping duplicate SMS.`);
+                return;
+            }
+
+            // DEDUPLICATION GUARD: Prevent double sending SMS/WhatsApp if already notified via webhook or poll
+            const alreadyNotified = await this.prisma.trackingHistory.findFirst({
+                where: {
+                    orderId: order.id,
+                    status: 'OutForDelivery',
+                }
+            });
+
+            // If history already has it from a previous webhook/poll run, skip SMS
+            // Note: The history we JUST created above is included, so we check if count > 1 OR we check before inserting.
+            // Since we inserted above, findFirst might return the one we just inserted.
+            // Let's count how many OutForDelivery logs exist for this order.
+            const outForDeliveryLogsCount = await this.prisma.trackingHistory.count({
+                where: {
+                    orderId: order.id,
+                    status: 'OutForDelivery',
+                }
+            });
+
+            if (outForDeliveryLogsCount > 1) {
+                this.logger.log(`Already sent OutForDelivery notification for ${order.orderNumber}. Skipping.`);
                 return;
             }
 
@@ -303,6 +327,8 @@ export class TrackingService {
             const data = response.data;
             if (data.code === 0 && data.data?.accepted?.length > 0) {
                 this.logger.log(`Successfully registered tracking number ${trackingNumber} with 17Track.`);
+                // Immediate backfill current state to sync any missed history before registration
+                await this.pullAndProcessCurrentStatus(trackingNumber);
             } else if (data.data?.rejected?.length > 0) {
                 this.logger.warn(`17Track rejected tracking number ${trackingNumber}: ${JSON.stringify(data.data.rejected)}`);
             } else {
@@ -310,6 +336,31 @@ export class TrackingService {
             }
         } catch (error) {
             this.logger.error(`Failed to register tracking number ${trackingNumber} with 17Track: ${error.message}`, error.stack);
+        }
+    }
+
+    async pullAndProcessCurrentStatus(trackingNumber: string) {
+        try {
+            const apiKey = process.env.TRACK17_API_KEY;
+            if (!apiKey) return;
+            const axios = require('axios');
+
+            this.logger.log(`Pulling current backfill status for tracking number: ${trackingNumber}`);
+            const response = await axios.post(
+                'https://api.17track.net/track/v2.2/gettrackinfo',
+                [{ number: trackingNumber }],
+                { headers: { '17token': apiKey, 'Content-Type': 'application/json' } }
+            );
+
+            const accepted = response.data?.data?.accepted;
+            if (!accepted?.length) return;
+
+            const item = accepted[0];
+            if (item.track_info) {
+                await this.processTrackingItem(item);
+            }
+        } catch (error) {
+            this.logger.error(`Failed to pull backfill status for ${trackingNumber}: ${error.message}`);
         }
     }
 }
