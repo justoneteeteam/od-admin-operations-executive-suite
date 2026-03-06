@@ -59,6 +59,9 @@ const DashboardLayout: React.FC = () => {
             <SidebarItem to="/fulfillment" icon="local_shipping" label="Fulfillment Center" active={location.pathname === '/fulfillment'} />
             <SidebarItem to="/suppliers" icon="factory" label="Suppliers" active={location.pathname === '/suppliers'} />
 
+            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">Marketing</p>
+            <SidebarItem to="/ads" icon="campaign" label="Ads Analytics" active={location.pathname === '/ads'} />
+
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">System</p>
             <SidebarItem to="/settings" icon="settings" label="Settings" active={location.pathname === '/settings'} />
           </nav>
@@ -87,6 +90,7 @@ const DashboardLayout: React.FC = () => {
               {location.pathname === '/fulfillment' && 'Logistics & Fulfillment'}
               {location.pathname === '/suppliers' && 'Supply Chain Manager'}
               {location.pathname === '/settings' && 'Platform Settings'}
+              {location.pathname === '/ads' && 'Ads Campaign Analytics'}
             </h2>
             <div className="hidden lg:flex h-10 items-stretch rounded-lg bg-border-dark min-w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
               <div className="text-text-muted flex items-center justify-center pl-4">

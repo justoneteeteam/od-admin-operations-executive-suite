@@ -825,3 +825,46 @@ model LoqateAddressCache {
 
   @@map("loqate_address_cache")
 }
+
+model AdsCampaign {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  date      DateTime @db.Date
+  campaign  String   @db.VarChar(255)
+  country   String?  @db.VarChar(10)
+  platform  String?  @db.VarChar(50)
+  sku       String   @db.VarChar(50)
+  stage     String?  @db.VarChar(50)
+  pic       String?  @db.VarChar(100)
+  spendVnd  Decimal  @map("spend_vnd") @db.Decimal(15, 2)
+  notes     String?
+  source    String?  @default("upload") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([date])
+  @@index([sku])
+  @@index([country])
+  @@map("ads_campaigns")
+}
+
+model ExchangeRate {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  date      DateTime @unique @db.Date
+  vndToEur  Decimal  @map("vnd_to_eur") @db.Decimal(15, 10)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("exchange_rates")
+}
+
+model AdsCampaignChangeLog {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  adsCampaignId  String   @map("ads_campaign_id") @db.Uuid
+  fieldName      String   @map("field_name") @db.VarChar(50)
+  oldValue       String?  @map("old_value")
+  newValue       String?  @map("new_value")
+  changedBy      String?  @map("changed_by") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("ads_campaign_change_logs")
+}
