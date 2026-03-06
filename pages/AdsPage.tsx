@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { adsCampaignsService, exchangeRatesService, AdsCampaign, DashboardData, ChangeLogEntry, ExchangeRate } from '../src/services/ads-campaigns.service';
+import { productsService } from '../src/services/products.service';
+import { customersService } from '../src/services/customers.service';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface StagedRecord {
@@ -240,8 +242,31 @@ const InputTab: React.FC = () => {
 
     // Manual entry state
     const [manual, setManual] = useState<StagedRecord>({
-        date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '',
+        date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual'
     });
+
+    const [products, setProducts] = useState<any[]>([]);
+    const [countries, setCountries] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchValidationData = async () => {
+            try {
+                const [prodsRes, custsRes] = await Promise.all([
+                    productsService.getAll(),
+                    customersService.getAll()
+                ]);
+                const prods = Array.isArray(prodsRes) ? prodsRes : (prodsRes.data || []);
+                setProducts(prods);
+
+                const custs = Array.isArray(custsRes) ? custsRes : (custsRes.data || []);
+                const uniqueCountries = [...new Set(custs.map((c: any) => c.country).filter(Boolean))] as string[];
+                setCountries(uniqueCountries);
+            } catch (err) {
+                console.error("Failed to fetch validation data", err);
+            }
+        };
+        fetchValidationData();
+    }, []);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -299,12 +324,19 @@ const InputTab: React.FC = () => {
 
     const addManualRecord = () => {
         if (!manual.campaign || !manual.sku || !manual.date) {
-            setResult('Date, Campaign, and SKU are required.');
+            setResult('❌ Date, Campaign, and SKU are required.');
             return;
         }
+
+        const skuExists = products.some(p => p.sku === manual.sku);
+        if (!skuExists && products.length > 0) {
+            setResult('❌ Invalid - SKU not in the database');
+            return;
+        }
+
         setStaged(prev => [...prev, { ...manual, source: 'manual' }]);
         setManual({ date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual' });
-        setResult(null);
+        setResult('✅ successfully');
     };
 
     const removeStaged = (index: number) => {
@@ -348,8 +380,11 @@ const InputTab: React.FC = () => {
                         className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Date" />
                     <input value={manual.campaign} onChange={e => setManual(m => ({ ...m, campaign: e.target.value }))}
                         className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Campaign Name" />
-                    <input value={manual.country} onChange={e => setManual(m => ({ ...m, country: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Country (e.g. IT)" />
+                    <select value={manual.country} onChange={e => setManual(m => ({ ...m, country: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
+                        <option value="">Country</option>
+                        {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
                     <input value={manual.sku} onChange={e => setManual(m => ({ ...m, sku: e.target.value }))}
                         className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="SKU" />
                     <input value={manual.platform} onChange={e => setManual(m => ({ ...m, platform: e.target.value }))}
