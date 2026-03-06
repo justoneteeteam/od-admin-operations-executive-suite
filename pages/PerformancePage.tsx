@@ -351,18 +351,14 @@ const PerformancePage: React.FC = () => {
       </div>
 
       {/* ── KPI Cards ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
         <StatCard label="Total Revenue" value={formatK(metrics.totalRevenue)} sub={`${metrics.totalLeads} total leads`} icon="payments" iconColor="bg-primary/15 text-primary" spark={dailyData} />
         <StatCard label="Confirmed Revenue" value={formatK(metrics.confirmedRevenue)} sub={`${metrics.confirmLeads} confirmed orders`} icon="verified" iconColor="bg-emerald-500/15 text-emerald-400" />
-        <StatCard label="COD Collected" value={formatK(metrics.collectedRevenue)} sub="Payment status: Paid" icon="wallet" iconColor="bg-blue-500/15 text-blue-400" />
-        <StatCard label="Delivery Rate" value={`${metrics.deliveryRate.toFixed(1)}%`} sub={`${metrics.delivered} delivered`} icon="local_shipping" iconColor="bg-amber-500/15 text-amber-400" />
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Confirm Rate" value={`${metrics.confirmRate.toFixed(1)}%`} sub={`${metrics.confirmLeads} / ${metrics.totalLeads}`} icon="check_circle" iconColor="bg-emerald-500/15 text-emerald-400" />
-        <StatCard label="Return / Fail Rate" value={`${metrics.returnRate.toFixed(1)}%`} sub={`${metrics.undelivered} undelivered`} icon="undo" iconColor="bg-red-500/15 text-red-400" />
         <StatCard label="Total Orders" value={metrics.totalLeads.toLocaleString()} sub={`${selectedCountry !== 'All' ? selectedCountry : 'All countries'}`} icon="package_2" iconColor="bg-violet-500/15 text-violet-400" />
         <StatCard label="Delivered" value={metrics.delivered.toLocaleString()} sub={`${metrics.failed} failed/exception`} icon="task_alt" iconColor="bg-teal-500/15 text-teal-400" />
+        <StatCard label="Return / Fail Rate" value={`${metrics.returnRate.toFixed(1)}%`} sub={`${metrics.undelivered} undelivered`} icon="undo" iconColor="bg-red-500/15 text-red-400" />
+        <StatCard label="COD Collected" value={formatK(metrics.collectedRevenue)} sub="Payment status: Paid" icon="wallet" iconColor="bg-blue-500/15 text-blue-400" />
       </div>
 
       {/* ── Two-Column: Funnel + Market Share ─────────────────────────────────── */}
@@ -378,41 +374,50 @@ const PerformancePage: React.FC = () => {
             <span className="text-[10px] text-text-muted font-bold">{filtered.length} total</span>
           </div>
           <div className="p-6 flex flex-col md:flex-row items-center justify-evenly gap-12 min-h-[400px]">
-            {/* Pyramid Funnel */}
+            {/* Pyramid Funnel (5 Stages) */}
             <div className="flex flex-col items-center w-full max-w-xs relative drop-shadow-2xl">
-              {/* STAGE 1: All Leads (Awareness) */}
-              <div className="w-full relative z-40 group">
-                <div className="h-16 sm:h-20 bg-[#a5d8f3] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)' }}>
-                  <span className="text-[#082f49] text-xs sm:text-sm font-black tracking-widest leading-none mt-1">AWARENESS</span>
-                  <span className="text-[#0c4a6e] text-[10px] sm:text-[11px] font-bold mt-1">ALL LEADS: {metrics.totalLeads.toLocaleString()} (100%)</span>
+              {/* STAGE 1: All Leads */}
+              <div className="w-full relative z-50 group">
+                <div className="h-14 sm:h-16 bg-[#a5d8f3] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)' }}>
+                  <span className="text-[#0c4a6e] text-xs sm:text-[13px] font-black tracking-widest leading-none mt-1">ALL LEADS</span>
+                  <span className="text-[#082f49] text-[10px] font-bold mt-1">{metrics.totalLeads.toLocaleString()} (100%)</span>
                 </div>
                 {/* 3D lip shadow */}
                 <div className="h-4 bg-[#082f49] w-[80%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 95% 100%, 5% 100%)' }}></div>
               </div>
 
-              {/* STAGE 2: Confirmed (Consideration) */}
-              <div className="w-[80%] relative z-30 group -mt-1.5">
-                <div className="h-16 sm:h-20 bg-[#f7d87c] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 87.5% 100%, 12.5% 100%)' }}>
-                  <span className="text-[#451a03] text-xs sm:text-sm font-black tracking-widest leading-none mt-1">CONSIDERATION</span>
-                  <span className="text-[#78350f] text-[10px] sm:text-[11px] font-bold mt-1">CONFIRMED: {metrics.confirmLeads.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.confirmLeads / metrics.totalLeads * 100) : 0}%)</span>
+              {/* STAGE 2: Confirm Leads */}
+              <div className="w-[80%] relative z-40 group -mt-1.5">
+                <div className="h-14 sm:h-16 bg-[#f7d87c] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 87.5% 100%, 12.5% 100%)' }}>
+                  <span className="text-[#78350f] text-xs sm:text-[13px] font-black tracking-widest leading-none mt-1">CONFIRM LEADS</span>
+                  <span className="text-[#451a03] text-[10px] font-bold mt-1">{metrics.confirmLeads.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.confirmLeads / metrics.totalLeads * 100) : 0}%)</span>
                 </div>
                 <div className="h-4 bg-[#451a03] w-[75%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 94% 100%, 6% 100%)' }}></div>
               </div>
 
-              {/* STAGE 3: Shipped (Conversion) */}
-              <div className="w-[60%] relative z-20 group -mt-1.5">
-                <div className="h-16 sm:h-20 bg-[#e29baf] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 83.33% 100%, 16.66% 100%)' }}>
-                  <span className="text-[#4c0519] text-xs sm:text-sm font-black tracking-widest leading-none mt-1">CONVERSION</span>
-                  <span className="text-[#881337] text-[10px] sm:text-[11px] font-bold mt-1">SHIPPED: {metrics.shipped.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.shipped / metrics.totalLeads * 100) : 0}%)</span>
+              {/* STAGE 3: Shipped */}
+              <div className="w-[60%] relative z-30 group -mt-1.5">
+                <div className="h-14 sm:h-16 bg-[#e29baf] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 83.33% 100%, 16.66% 100%)' }}>
+                  <span className="text-[#881337] text-xs sm:text-[13px] font-black tracking-widest leading-none mt-1">SHIPPED</span>
+                  <span className="text-[#4c0519] text-[10px] font-bold mt-1">{metrics.shipped.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.shipped / metrics.totalLeads * 100) : 0}%)</span>
                 </div>
                 <div className="h-4 bg-[#4c0519] w-[66.66%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 10% 100%)' }}></div>
               </div>
 
-              {/* STAGE 4: Delivered (Loyalty) */}
-              <div className="w-[40%] relative z-10 group -mt-1.5">
-                <div className="h-24 sm:h-32 bg-[#9598e6] flex flex-col items-center justify-start pt-4 transition-transform hover:scale-[1.05] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }}>
-                  <span className="text-[#1e1b4b] text-xs sm:text-[13px] font-black tracking-widest leading-none">LOYALTY</span>
-                  <span className="text-[#312e81] text-[9px] sm:text-[10px] font-bold mt-1.5 px-2 text-center leading-tight">DELIVERED:<br />{metrics.delivered.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.delivered / metrics.totalLeads * 100) : 0}%)</span>
+              {/* STAGE 4: Out Of Delivery */}
+              <div className="w-[40%] relative z-20 group -mt-1.5">
+                <div className="h-14 sm:h-16 bg-[#b8a1de] flex flex-col items-center justify-center transition-transform hover:scale-[1.03] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 75% 100%, 25% 100%)' }}>
+                  <span className="text-[#3b2161] text-[11px] sm:text-xs font-black tracking-widest leading-none mt-1">OUT OF DELIVERY</span>
+                  <span className="text-[#26153f] text-[10px] font-bold mt-1">{metrics.outForDelivery.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.outForDelivery / metrics.totalLeads * 100) : 0}%)</span>
+                </div>
+                <div className="h-4 bg-[#26153f] w-[50%] mx-auto -mt-2 opacity-70" style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 15% 100%)' }}></div>
+              </div>
+
+              {/* STAGE 5: Delivered */}
+              <div className="w-[20%] relative z-10 group -mt-1.5">
+                <div className="h-20 sm:h-24 bg-[#9598e6] flex flex-col items-center justify-start pt-3 transition-transform hover:scale-[1.05] cursor-default" style={{ clipPath: 'polygon(0 0, 100% 0, 50% 100%)' }}>
+                  <span className="text-[#1e1b4b] text-[10px] sm:text-xs font-black tracking-widest leading-none text-center">DELIVERED</span>
+                  <span className="text-[#312e81] text-[9px] font-bold mt-1">{metrics.delivered.toLocaleString()} ({metrics.totalLeads ? Math.round(metrics.delivered / metrics.totalLeads * 100) : 0}%)</span>
                 </div>
               </div>
             </div>
@@ -430,15 +435,11 @@ const PerformancePage: React.FC = () => {
                 <span className="font-black text-white">{metrics.rejectLeads}</span>
               </div>
               <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
-                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-orange-400">directions_bike</span><span className="text-text-muted text-xs font-bold">Out of Delivery</span></div>
-                <span className="font-black text-white">{metrics.outForDelivery}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
                 <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-amber-500">assignment_return</span><span className="text-text-muted text-xs font-bold">Undelivered</span></div>
                 <span className="font-black text-white">{metrics.undelivered}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-red-500">error</span><span className="text-text-muted text-xs font-bold">Delivery Fail</span></div>
+                <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-red-500">error</span><span className="text-text-muted text-xs font-bold">Delivery Fail / Expired</span></div>
                 <span className="font-black text-white">{metrics.failed}</span>
               </div>
             </div>
