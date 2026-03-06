@@ -210,9 +210,10 @@ const PerformancePage: React.FC = () => {
     const failed = filtered.filter(o => ['Exception', 'Expired', 'Cancelled'].includes(o.orderStatus)).length;
     const pending = filtered.filter(o => o.confirmationStatus === 'Pending' || o.orderStatus === 'Pending').length;
 
-    const totalRevenue = filtered.reduce((s, o) => s + (o.totalAmount || 0), 0);
-    const confirmedRevenue = filtered.filter(o => o.confirmationStatus === 'Confirmed').reduce((s, o) => s + (o.totalAmount || 0), 0);
-    const collectedRevenue = filtered.filter(o => o.paymentStatus === 'Paid').reduce((s, o) => s + (o.totalAmount || 0), 0);
+    const totalRevenue = filtered.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const confirmedRevenue = filtered.filter(o => o.confirmationStatus === 'Confirmed').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const collectedRevenue = filtered.filter(o => o.orderStatus === 'Delivered').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const totalProfit = filtered.reduce((sum, o) => sum + Number(o.profitMargin || 0), 0);
     const confirmRate = totalLeads > 0 ? (confirmLeads / totalLeads) * 100 : 0;
     const deliveryRate = confirmLeads > 0 ? (delivered / confirmLeads) * 100 : 0;
     const returnRate = (delivered + undelivered) > 0 ? (undelivered / (delivered + undelivered)) * 100 : 0;
@@ -220,7 +221,7 @@ const PerformancePage: React.FC = () => {
     return {
       totalLeads, confirmLeads, rejectLeads, shipped, delivered,
       undelivered, outForDelivery, failed, pending,
-      totalRevenue, confirmedRevenue, collectedRevenue,
+      totalRevenue, confirmedRevenue, collectedRevenue, totalProfit,
       confirmRate, deliveryRate, returnRate,
     };
   }, [filtered]);
@@ -251,7 +252,7 @@ const PerformancePage: React.FC = () => {
         const existing = map.get(key) || { name: item.productName, sku: item.sku, leads: 0, orders: 0, revenue: 0, returns: 0 };
         existing.leads += 1;
         if (o.confirmationStatus === 'Confirmed') existing.orders += 1;
-        if (o.confirmationStatus === 'Confirmed') existing.revenue += (item.unitPrice || 0) * (item.quantity || 1);
+        if (o.confirmationStatus === 'Confirmed') existing.revenue += Number(item.unitPrice || 0) * Number(item.quantity || 1);
         if (o.orderStatus === 'Undelivered') existing.returns += 1;
         map.set(key, existing);
       }
@@ -265,8 +266,8 @@ const PerformancePage: React.FC = () => {
   const dailyData = useMemo(() => {
     const map = new Map<string, number>();
     for (const o of filtered) {
-      const day = o.orderDate?.split('T')[0] || '';
-      map.set(day, (map.get(day) || 0) + (o.totalAmount || 0));
+      const day = typeof o.orderDate === 'string' ? o.orderDate.split('T')[0] : (o.orderDate ? new Date(o.orderDate).toISOString().split('T')[0] : '');
+      map.set(day, (map.get(day) || 0) + Number(o.totalAmount || 0));
     }
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
   }, [filtered]);
@@ -347,16 +348,35 @@ const PerformancePage: React.FC = () => {
 
         {/* Custom date picker */}
         {showCalendar && (
-          <div className="flex items-center gap-3 bg-[#1c2d3d] border border-border-dark rounded-xl p-4 w-fit">
+          <div className="flex items-center gap-3 bg-[#1c2d3d] border border-border-dark rounded-xl p-4">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black text-text-muted uppercase">From</label>
-              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+              <input
+                type="date"
+                value={!isNaN(dateRange.from.getTime()) ? dateRange.from.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  setDatePreset('custom');
+                  const d = new Date(e.target.value);
+                  if (!isNaN(d.getTime())) {
+                    setDateRange(prev => ({ ...prev, from: d }));
+                  }
+                }}
                 className="bg-[#17232f] border border-border-dark text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
             </div>
             <span className="text-text-muted mt-5">→</span>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black text-text-muted uppercase">To</label>
-              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+              <input
+                type="date"
+                value={!isNaN(dateRange.to.getTime()) ? dateRange.to.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  setDatePreset('custom');
+                  const d = new Date(e.target.value);
+                  if (!isNaN(d.getTime())) {
+                    d.setHours(23, 59, 59, 999);
+                    setDateRange(prev => ({ ...prev, to: d }));
+                  }
+                }}
                 className="bg-[#17232f] border border-border-dark text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
             </div>
             <button onClick={applyCustomRange}
@@ -430,7 +450,7 @@ const PerformancePage: React.FC = () => {
                 const cMap = new Map<string, number>();
                 for (const o of filtered) {
                   if (o.confirmationStatus === 'Confirmed') {
-                    cMap.set(o.shippingCountry || 'Unknown', (cMap.get(o.shippingCountry || 'Unknown') || 0) + (o.totalAmount || 0));
+                    cMap.set(o.shippingCountry || 'Unknown', (cMap.get(o.shippingCountry || 'Unknown') || 0) + Number(o.totalAmount || 0));
                   }
                 }
                 const sorted = Array.from(cMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
