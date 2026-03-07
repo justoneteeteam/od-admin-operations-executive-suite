@@ -193,6 +193,17 @@ export class TrackingService {
                 });
                 this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'InTransit'`);
             }
+        } else if (mainStatus === 'Shipped' || mainStatus === 'InfoReceived' || mainStatus === 'Pending') {
+            if (order.shippingStatus !== 'Shipped' && order.shippingStatus !== 'InTransit' && order.shippingStatus !== 'OutForDelivery' && order.shippingStatus !== 'Delivered') {
+                await this.prisma.order.update({
+                    where: { id: order.id },
+                    data: {
+                        shippingStatus: 'Shipped',
+                        orderStatus: 'Shipped',
+                    },
+                });
+                this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'Shipped'`);
+            }
         } else if (mainStatus === 'Delivered' || (subStatus && subStatus.startsWith('Delivered'))) {
             // Package was delivered - update order to Delivered
             if (order.shippingStatus !== 'Delivered') {
