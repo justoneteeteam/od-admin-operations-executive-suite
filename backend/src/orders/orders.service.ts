@@ -320,6 +320,205 @@ export class OrdersService {
         }
     }
 
+    async importOrders(data: any[], skipRiskAssessment: boolean, skipInventory: boolean) {
+        const results = {
+            created: 0,
+            updated: 0,
+            skipped: 0,
+            errors: [] as { row: number, reason: string }[]
+        };
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            return results;
+        }
+
+        // Group rows by order number to handle multi-item orders
+        const ordersMap = new Map<string, any[]>();
+        const blankOrders: any[][] = []; // Rows without an order number
+
+        data.forEach((row, index) => {
+            const rowNum = index + 1; // 1-indexed for user display (excluding header)
+
+            // Add original row number for error tracking
+            row._originalRow = rowNum;
+
+            let orderNumStr = row.order_number?.toString()?.trim();
+
+            if (!orderNumStr) {
+                blankOrders.push([row]); // Each blank row is a unique order
+            } else {
+                if (!ordersMap.has(orderNumStr)) {
+                    ordersMap.set(orderNumStr, []);
+                }
+                ordersMap.get(orderNumStr)!.push(row);
+            }
+        });
+
+        const allOrderGroups = [...Array.from(ordersMap.values()), ...blankOrders];
+
+        for (const orderGroup of allOrderGroups) {
+            const firstRow = orderGroup[0];
+            const rowNum = firstRow._originalRow;
+            const providedOrderNumber = firstRow.order_number?.toString()?.trim();
+
+            try {
+                // 1. Process Customer (Match by phone, block if rejected, create if missing)
+                let customerId: string | null = null;
+                const phoneData = firstRow.customer_phone?.toString()?.trim();
+                const nameData = firstRow.customer_name?.toString()?.trim() || 'Unknown Customer';
+
+                if (!phoneData) {
+                    throw new Error("Missing 'customer_phone'.");
+                }
+
+                let customer = await this.prisma.customer.findFirst({
+                    where: { phone: phoneData }
+                });
+
+                if (customer) {
+                    if (customer.isBlocked) {
+                        throw new Error(`Customer is blocked (Phone: ${phoneData}).`);
+                    }
+                    customerId = customer.id;
+                } else {
+                    customer = await this.prisma.customer.create({
+                        data: {
+                            name: nameData,
+                            phone: phoneData,
+                            email: firstRow.customer_email?.toString()?.trim(),
+                            country: firstRow.shipping_country?.toString()?.trim() || 'Unknown'
+                        }
+                    });
+                    customerId = customer.id;
+                }
+
+                // 2. Process Items & Strict SKU Lookup
+                const itemsToCreate: any[] = [];
+                let calculatedSubtotal = 0;
+
+                for (const row of orderGroup) {
+                    const sku = row.sku?.toString()?.trim();
+                    if (!sku) {
+                        throw new Error(`Row ${row._originalRow}: Missing SKU.`);
+                    }
+
+                    const product = await this.prisma.product.findFirst({
+                        where: { sku: sku }
+                    });
+
+                    if (!product) {
+                        throw new Error(`Row ${row._originalRow}: Strict Product Match Failed - SKU '${sku}' not found.`);
+                    }
+
+                    const quantity = parseInt(row.quantity?.toString() || '1', 10);
+                    const unitPrice = parseFloat(row.price?.toString() || product.sellingPrice?.toString() || '0');
+                    const subtotal = quantity * unitPrice;
+                    calculatedSubtotal += subtotal;
+
+                    itemsToCreate.push({
+                        productName: product.name,
+                        sku: product.sku,
+                        quantity,
+                        unitPrice,
+                        subtotal,
+                        product: { connect: { id: product.id } }
+                    });
+                }
+
+                // 3. Upsert Order Logic
+                const shippingFee = parseFloat(firstRow.shipping_fee?.toString() || '0');
+                const taxCollected = parseFloat(firstRow.tax?.toString() || '0');
+                const discountGiven = parseFloat(firstRow.discount?.toString() || '0');
+                const totalAmount = calculatedSubtotal + shippingFee + taxCollected - discountGiven;
+
+                const orderPayloadData = {
+                    customerId,
+                    storeId: firstRow.store_id?.toString()?.trim() || 'import-default',
+                    orderDate: firstRow.order_date ? new Date(firstRow.order_date) : new Date(),
+                    orderStatus: firstRow.order_status?.toString()?.trim() || 'Pending',
+                    confirmationStatus: firstRow.confirmation_status?.toString()?.trim() || 'Pending',
+                    paymentMethod: firstRow.payment_method?.toString()?.trim() || 'COD',
+                    paymentStatus: firstRow.payment_status?.toString()?.trim() || 'Pending',
+                    shippingAddressLine1: firstRow.shipping_address?.toString()?.trim() || '',
+                    shippingCity: firstRow.shipping_city?.toString()?.trim() || '',
+                    shippingState: firstRow.shipping_state?.toString()?.trim() || '',
+                    shippingCountry: firstRow.shipping_country?.toString()?.trim() || 'Unknown',
+                    subtotal: calculatedSubtotal,
+                    shippingFee,
+                    taxCollected,
+                    discountGiven,
+                    totalAmount,
+                    notes: firstRow.notes?.toString()?.trim() || 'Imported via CSV',
+                    trackingNumber: firstRow.tracking_number?.toString()?.trim() || null,
+                    courier: firstRow.courier?.toString()?.trim() || null
+                };
+
+                let existingOrder: any = null;
+                if (providedOrderNumber) {
+                    existingOrder = await this.prisma.order.findUnique({
+                        where: { orderNumber: providedOrderNumber }
+                    });
+                }
+
+                let finalOrderId: string;
+
+                if (existingOrder) {
+                    // UPDATE existing (delete old items, replace with new)
+                    const updatedOrder = await this.prisma.order.update({
+                        where: { id: existingOrder.id },
+                        data: {
+                            ...orderPayloadData,
+                            items: {
+                                deleteMany: {}, // Clear existing items
+                                create: itemsToCreate
+                            }
+                        }
+                    });
+                    finalOrderId = updatedOrder.id;
+                    results.updated++;
+                } else {
+                    // CREATE new
+                    const finalOrderNumber = providedOrderNumber || `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+                    const newOrder = await this.prisma.order.create({
+                        data: {
+                            ...orderPayloadData,
+                            orderNumber: finalOrderNumber,
+                            items: {
+                                create: itemsToCreate
+                            }
+                        }
+                    });
+                    finalOrderId = newOrder.id;
+                    results.created++;
+                }
+
+                // 4. Apply skip rules
+                if (!skipInventory) {
+                    await this.inventoryService.reserveStock(finalOrderId);
+                }
+
+                if (!skipRiskAssessment) {
+                    try {
+                        await this.riskScoringService.assessOrder(finalOrderId);
+                    } catch (riskError) {
+                        console.error(`Risk assessment failed for imported order ${finalOrderId}:`, riskError);
+                    }
+                }
+
+            } catch (error: any) {
+                // Determine if this was a multi-line failure or single-line
+                const rowsAffected = orderGroup.map(r => r._originalRow).join(', ');
+                results.errors.push({
+                    row: rowNum, // The anchor row causing error
+                    reason: `[Rows ${rowsAffected}]: ${error.message}`
+                });
+                results.skipped += orderGroup.length; // Skip the entire order payload
+            }
+        }
+
+        return results;
+    }
+
     async remove(id: string) {
         try {
             return await this.prisma.order.delete({

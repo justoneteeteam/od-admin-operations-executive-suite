@@ -5,6 +5,7 @@ import { productsService, Product } from '../src/services/products.service';
 import { fulfillmentService, FulfillmentCenter } from '../src/services/fulfillment.service';
 import storeSettingsService, { StoreName } from '../src/services/settings.service';
 import { CustomerSearch } from '../src/components/CustomerSearch';
+import * as XLSX from 'xlsx';
 
 const MOCK_LOGS = [
   { date: 'Dec 12, 2024 - 14:20', status: 'Order Created', note: 'Order manually created by Admin' },
@@ -47,6 +48,15 @@ const OrdersPage: React.FC = () => {
   const [showDrawer, setShowDrawer] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
+
+  // Import Modal State
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importStep, setImportStep] = useState(1);
+  const [importData, setImportData] = useState<any[]>([]);
+  const [skipRiskAssessment, setSkipRiskAssessment] = useState(false);
+  const [skipInventory, setSkipInventory] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ created: number; updated: number; skipped: number; errors: any[] } | null>(null);
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -368,6 +378,86 @@ const OrdersPage: React.FC = () => {
     return true;
   });
 
+  // ========== IMPORT LOGIC ========== //
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false }); // Format dates/numbers
+
+        setImportData(jsonData);
+        setImportStep(2);
+      } catch (err) {
+        console.error("Failed to parse file", err);
+        alert("Failed to parse file. Please ensure it's a valid CSV/XLSX.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = ''; // reset input
+  };
+
+  const downloadTemplate = () => {
+    const headers = [
+      "order_number", "customer_name", "customer_phone", "customer_email",
+      "sku", "quantity", "price", "shipping_fee", "tax", "discount",
+      "order_date", "order_status", "confirmation_status", "payment_method", "payment_status",
+      "shipping_address", "shipping_city", "shipping_state", "shipping_country",
+      "store_id", "tracking_number", "courier", "notes"
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "bulk_orders_template.xlsx");
+  };
+
+  const executeImport = async () => {
+    setIsImporting(true);
+    setImportStep(3);
+    try {
+      const results = await ordersService.importOrders(importData, skipRiskAssessment, skipInventory);
+      setImportResults(results);
+      if (results.created > 0 || results.updated > 0) {
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error("Import failed:", err);
+      // Fallback rough error
+      setImportResults({
+        created: 0, updated: 0, skipped: importData.length,
+        errors: [{ row: 0, reason: "Fatal Server Error during Batch Process" }]
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const downloadErrorReport = () => {
+    if (!importResults?.errors || importResults.errors.length === 0) return;
+    const ws = XLSX.utils.json_to_sheet(importResults.errors);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Errors");
+    XLSX.writeFile(wb, "import_error_report.xlsx");
+  };
+
+  const closeImportModal = () => {
+    setShowImportModal(false);
+    setTimeout(() => {
+      setImportStep(1);
+      setImportData([]);
+      setImportResults(null);
+      setSkipRiskAssessment(false);
+      setSkipInventory(false);
+    }, 300);
+  };
+  // ================================== //
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -394,6 +484,13 @@ const OrdersPage: React.FC = () => {
             <button className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-[#233648] text-white text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all">
               <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>cloud_download</span>
               Export XLS
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex flex-[2] md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-[#1c2d3d] text-emerald-400 text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all"
+            >
+              <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>upload_file</span>
+              Import Orders
             </button>
             <button
               onClick={() => navigate('/orders/create')}
@@ -1304,6 +1401,251 @@ const OrdersPage: React.FC = () => {
           </div>
         )
       }
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={closeImportModal} />
+          <div className="bg-card w-full max-w-4xl max-h-[90vh] rounded-2xl border border-border flex flex-col relative shadow-2xl overflow-hidden animate-fade-in-up">
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-card-dark">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined">upload_file</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white tracking-tight">Bulk Import Orders</h2>
+                  <p className="text-sm font-medium text-text-muted mt-0.5">
+                    {importStep === 1 && "Upload your CSV or Excel file"}
+                    {importStep === 2 && "Preview and map your data"}
+                    {importStep === 3 && "Import results"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeImportModal}
+                disabled={isImporting}
+                className="size-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-text-muted transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+              {/* STEP 1: UPLOAD */}
+              {importStep === 1 && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-[#1c2d3d] rounded-xl p-4 border border-[#2d445a]">
+                      <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
+                        <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">Create New</h3>
+                      <p className="text-[11px] text-text-muted leading-relaxed">Leave <code className="text-emerald-400 bg-emerald-400/10 px-1 rounded">order_number</code> blank to securely auto-generate an ID.</p>
+                    </div>
+                    <div className="bg-[#1c2d3d] rounded-xl p-4 border border-[#2d445a]">
+                      <div className="size-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3">
+                        <span className="material-symbols-outlined text-[18px]">update</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">Update Existing</h3>
+                      <p className="text-[11px] text-text-muted leading-relaxed">Match an existing <code className="text-blue-400 bg-blue-400/10 px-1 rounded">order_number</code> to overwrite its components.</p>
+                    </div>
+                    <div className="bg-[#1c2d3d] rounded-xl p-4 border border-[#2d445a]">
+                      <div className="size-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
+                        <span className="material-symbols-outlined text-[18px]">layers</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">Multi-Item</h3>
+                      <p className="text-[11px] text-text-muted leading-relaxed">Duplicate the <code className="text-purple-400 bg-purple-400/10 px-1 rounded">order_number</code> across multiple rows for nested cart items.</p>
+                    </div>
+                  </div>
+
+                  <div className="border-2 border-dashed border-[#2d445a] rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-[#1c2d3d]/50 hover:bg-[#1c2d3d] transition-colors relative group">
+                    <input
+                      type="file"
+                      accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                      onChange={handleFileUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <span className="material-symbols-outlined text-3xl">upload_file</span>
+                    </div>
+                    <h3 className="text-lg font-black text-white mb-2">Drag & Drop your file here</h3>
+                    <p className="text-sm font-medium text-text-muted max-w-sm mb-6">
+                      Support for standard .CSV or .XLSX spreadsheets. Ensure your column names strictly match the system headers.
+                    </p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); downloadTemplate(); }}
+                      className="relative z-20 flex items-center justify-center rounded-lg h-10 px-6 bg-[#233648] text-white text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all"
+                    >
+                      <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>download</span>
+                      Download Template File
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: PREVIEW */}
+              {importStep === 2 && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-end">
+                    <div>
+                      <h3 className="text-lg font-black text-white">Data Preview</h3>
+                      <p className="text-sm font-medium text-text-muted">Total rows detected: {importData.length}</p>
+                    </div>
+                    <div className="flex flex-col gap-2 bg-[#1c2d3d] p-4 rounded-xl border border-[#2d445a]">
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={skipRiskAssessment}
+                            onChange={(e) => setSkipRiskAssessment(e.target.checked)}
+                            className="peer appearance-none size-5 rounded-md border-2 border-border-dark bg-card-dark checked:bg-orange-500 checked:border-orange-500 transition-all"
+                          />
+                          <span className="material-symbols-outlined absolute text-white text-[16px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
+                        </div>
+                        <span className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">Skip Risk Assessment (Twilio Calls)</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={skipInventory}
+                            onChange={(e) => setSkipInventory(e.target.checked)}
+                            className="peer appearance-none size-5 rounded-md border-2 border-border-dark bg-card-dark checked:bg-orange-500 checked:border-orange-500 transition-all"
+                          />
+                          <span className="material-symbols-outlined absolute text-white text-[16px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
+                        </div>
+                        <span className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">Skip Inventory Deductions</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="border border-border-dark rounded-xl overflow-x-auto bg-[#1c2d3d] max-h-[400px]">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                      <thead className="bg-[#233648] sticky top-0 z-10">
+                        <tr>
+                          {importData.length > 0 && Object.keys(importData[0]).map((key) => (
+                            <th key={key} className="px-4 py-3 text-xs font-bold text-text-muted uppercase tracking-wider border-b border-border-dark">
+                              {key}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importData.slice(0, 5).map((row, i) => (
+                          <tr key={i} className="border-b border-border-dark/50 hover:bg-white/5">
+                            {Object.values(row).map((val: any, j) => (
+                              <td key={j} className={`px-4 py-3 text-sm ${!val && i === 0 ? 'text-red-400 font-bold bg-red-500/10' : 'text-white'}`}>
+                                {val?.toString() || '-'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-center text-xs font-medium text-text-muted">Showing first 5 rows for validation...</p>
+                </div>
+              )}
+
+              {/* STEP 3: RESULTS */}
+              {importStep === 3 && (
+                <div className="flex flex-col items-center justify-center py-10 space-y-8 animate-fade-in">
+
+                  {isImporting ? (
+                    <div className="flex flex-col items-center max-w-md text-center">
+                      <div className="size-16 border-4 border-[#2d445a] border-t-primary rounded-full animate-spin mb-6"></div>
+                      <h3 className="text-xl font-black text-white mb-2">Processing Data...</h3>
+                      <p className="text-sm font-medium text-text-muted">We are safely upserting {importData.length} rows. Please do not close your browser.</p>
+                      <div className="w-full bg-[#1c2d3d] rounded-full h-2.5 mt-6 overflow-hidden">
+                        <div className="bg-primary h-2.5 rounded-full w-full animate-pulse"></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-6">
+                      <div className="flex flex-col items-center max-w-md mx-auto text-center mb-8">
+                        <div className={`size-16 rounded-full flex items-center justify-center text-3xl mb-4 ${(importResults?.errors?.length || 0) > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                          <span className="material-symbols-outlined">{(importResults?.errors?.length || 0) > 0 ? 'warning' : 'check_circle'}</span>
+                        </div>
+                        <h3 className="text-xl font-black text-white mb-2">Import Finished</h3>
+                        <p className="text-sm font-medium text-text-muted">The dataset has been completely processed.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                          <div className="text-2xl font-black text-emerald-400 mb-1">{importResults?.created || 0}</div>
+                          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Created</div>
+                        </div>
+                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                          <div className="text-2xl font-black text-blue-400 mb-1">{importResults?.updated || 0}</div>
+                          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Updated</div>
+                        </div>
+                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                          <div className="text-2xl font-black text-white mb-1">{importResults?.skipped || 0}</div>
+                          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Skipped</div>
+                        </div>
+                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                          <div className="text-2xl font-black text-red-400 mb-1">{importResults?.errors?.length || 0}</div>
+                          <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Errors</div>
+                        </div>
+                      </div>
+
+                      {(importResults?.errors?.length || 0) > 0 && (
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
+                          <div>
+                            <h4 className="text-sm font-bold text-red-500 mb-1">Rows Failed to Import</h4>
+                            <p className="text-xs font-medium text-red-400/80">Some rows did not pass validation (e.g. strict SKU check failure, blocked customer).</p>
+                          </div>
+                          <button
+                            onClick={downloadErrorReport}
+                            className="flex items-center justify-center rounded-lg h-10 px-6 bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-all whitespace-nowrap"
+                          >
+                            Download Log
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {!isImporting && (
+              <div className="p-4 border-t border-border-dark bg-[#1c2d3d] flex justify-end gap-3">
+                {importStep < 3 && (
+                  <button
+                    onClick={closeImportModal}
+                    className="h-10 px-6 rounded-lg font-bold text-sm text-white bg-transparent hover:bg-white/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+                {importStep === 2 && (
+                  <button
+                    onClick={executeImport}
+                    className="h-10 px-8 rounded-lg font-bold text-sm text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                  >
+                    Confirm Import
+                  </button>
+                )}
+                {importStep === 3 && (
+                  <button
+                    onClick={closeImportModal}
+                    className="h-10 px-8 rounded-lg font-bold text-sm text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
     </div >
   );
 };

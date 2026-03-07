@@ -85,5 +85,15 @@ export const ordersService = {
     async getStoreNames(): Promise<StoreName[]> {
         return storeSettingsService.getStoreNames();
     },
+
+    async importOrders(data: any[], skipRiskAssessment: boolean = false, skipInventory: boolean = false) {
+        const response = await apiClient.post('/orders/import', data, {
+            params: {
+                skipRiskAssessment,
+                skipInventory
+            }
+        });
+        return response.data;
+    }
 };
 

@@ -21,6 +21,17 @@ export class OrdersController {
         return this.ordersService.create(createOrderDto);
     }
 
+    @Post('import')
+    importOrders(
+        @Body() data: any[],
+        @Query('skipRiskAssessment') skipRiskStr?: string,
+        @Query('skipInventory') skipInvStr?: string,
+    ) {
+        const skipRisk = skipRiskStr === 'true';
+        const skipInv = skipInvStr === 'true';
+        return this.ordersService.importOrders(data, skipRisk, skipInv);
+    }
+
     @Get()
     findAll(
         @Query('orderStatus') orderStatus?: string,
