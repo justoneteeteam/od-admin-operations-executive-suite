@@ -332,12 +332,33 @@ export class OrdersService {
             return results;
         }
 
+        // Helper: Convert European decimal strings (e.g. "37,49" to 37.49)
+        const parseEuropeanNumber = (val: any): number => {
+            if (val === undefined || val === null || val === '') return 0;
+            const cleaned = val.toString().replace(/\./g, '').replace(',', '.');
+            return parseFloat(cleaned) || 0;
+        };
+
+        // Helper: Normalize phone numbers for strict matching
+        const normalizePhone = (phone: any): string => {
+            if (!phone) return '';
+            const digits = phone.toString().replace(/[\s\-().]/g, '');
+            if (digits.startsWith('+') || digits.startsWith('00')) return digits;
+            if (digits.length >= 10) return '+' + digits;
+            return digits;
+        };
+
         // Group rows by order number to handle multi-item orders
         const ordersMap = new Map<string, any[]>();
         const blankOrders: any[][] = []; // Rows without an order number
 
-        data.forEach((row, index) => {
+        data.forEach((rawRow, index) => {
             const rowNum = index + 1; // 1-indexed for user display (excluding header)
+
+            // Trim all fields (handles \r CRLF line endings)
+            const row: any = Object.fromEntries(
+                Object.entries(rawRow).map(([k, v]) => [k.trim(), String(v ?? '').trim()])
+            );
 
             // Add original row number for error tracking
             row._originalRow = rowNum;
@@ -364,7 +385,7 @@ export class OrdersService {
             try {
                 // 1. Process Customer (Match by phone, block if rejected, create if missing)
                 let customerId: string | null = null;
-                const phoneData = firstRow.customer_phone?.toString()?.trim();
+                const phoneData = normalizePhone(firstRow.customer_phone);
                 const nameData = firstRow.customer_name?.toString()?.trim() || 'Unknown Customer';
 
                 if (!phoneData) {
@@ -411,7 +432,7 @@ export class OrdersService {
                     }
 
                     const quantity = parseInt(row.quantity?.toString() || '1', 10);
-                    const unitPrice = parseFloat(row.price?.toString() || product.sellingPrice?.toString() || '0');
+                    const unitPrice = parseEuropeanNumber(row.price) || parseFloat(product.sellingPrice?.toString() || '0');
                     const subtotal = quantity * unitPrice;
                     calculatedSubtotal += subtotal;
 
@@ -426,9 +447,9 @@ export class OrdersService {
                 }
 
                 // 3. Upsert Order Logic
-                const shippingFee = parseFloat(firstRow.shipping_fee?.toString() || '0');
-                const taxCollected = parseFloat(firstRow.tax?.toString() || '0');
-                const discountGiven = parseFloat(firstRow.discount?.toString() || '0');
+                const shippingFee = parseEuropeanNumber(firstRow.shipping_fee);
+                const taxCollected = parseEuropeanNumber(firstRow.tax);
+                const discountGiven = parseEuropeanNumber(firstRow.discount);
                 const totalAmount = calculatedSubtotal + shippingFee + taxCollected - discountGiven;
 
                 const orderPayloadData = {
@@ -478,11 +499,10 @@ export class OrdersService {
                     results.updated++;
                 } else {
                     // CREATE new
-                    const finalOrderNumber = providedOrderNumber || `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
                     const newOrder = await this.prisma.order.create({
                         data: {
                             ...orderPayloadData,
-                            orderNumber: finalOrderNumber,
+                            orderNumber: providedOrderNumber || `ORD-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`, // Use provided or generate new
                             items: {
                                 create: itemsToCreate
                             }
