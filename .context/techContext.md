@@ -12,6 +12,7 @@
 - **Stats/Charts**: Recharts
 - **HTTP Client**: Axios (custom wrapper with Interceptors)
 - **State Management**: React Context / Hooks
+- **Data Tables**: Custom implementations with Bulk Select support.
 
 ### External Services
 - **Shipment Tracking**: 17Track API (Webhook Listener Active)
@@ -30,7 +31,11 @@ To enable these features, the following credentials are required in the `.env` f
 ### 2. 17Track (Tracking)
 - `TRACK17_API_KEY`: API Key for Shipment tracking
 
-### 3. Database (Supabase)
+### 3. Backend Specifics
+- `APP_URL`: Base URL for the production API.
+- `SUPABASE_URL`: Supabase project URL for client-side integration.
+
+### 4. Database (Supabase)
 - `DATABASE_URL`: Prisma connection string
 - `JWT_SECRET`: Secret key for signing tokens
 

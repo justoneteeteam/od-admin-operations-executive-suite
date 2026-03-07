@@ -79,6 +79,21 @@ Current structure places source files directly in the root or specifically:
   3.  **Map**: Maps Sheet columns to `Order` entity fields.
   4.  **Upsert**: Creates new orders or updates existing ones based on Order ID.
 
+### 8. Robust CSV Parsing
+- **Pattern**: Defensive Data Transformation
+- **Implementation**:
+  - **Decimal Normalization**: Converts European "comma" decimals (e.g., `37,49`) to standard floats using regex and locale-aware parsing.
+  - **Sanitization**: Trims all fields to remove `\r` (CRLF) characters and hidden whitespace.
+  - **Normalization**: Prepends `+` to phone numbers and maps raw CSV headers to internal DB fields.
+
+### 9. Ads Performance Data Mapping
+- **Pattern**: Metric Aggregation Layer
+- **Implementation**:
+  - **Spend/Revenue**: Direct query from `AdsCampaigns` and `Orders`.
+  - **Leads**: Defined as `confirmationStatus = 'Confirmed'`.
+  - **Orders**: Defined as `status = 'Delivered'`.
+  - **Derived KPIs**: Calculation of ROAS, CVR, CPL, and CPO performed in the frontend service layer for real-time responsiveness.
+
 ### 7. Data Schema Design (Core Entities)
 - **Users**: Admin accounts (email, password_hash, role)
 - **Orders**: Full lifecycle (Pending to Returned), tracking numbers, costs, and profits.

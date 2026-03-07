@@ -1,16 +1,18 @@
 # Active Context
 
 ## Current Focus
-**Finishing Version 1 & Preparing Version 2**
-- **Version 1 Cleanup**: Implementing Bulk Actions, Filter Tree, and expanding Google Sheets sync (Suppliers/FCs).
-- **Version 2 Planning**: Designing the Risk Orchestration Workflow and Address Verification logic.
-- **Maintenance**: Monitoring Production Deployment.
+**Version 2 Optimization & Advanced Operations**
+- **V2 Optimization**: Migrating WhatsApp logic and optimizing performance.
+- **Advanced Operations**: Refining Ads Dashboard and Purchase Order workflows for scale.
+- **Maintenance**: Monitoring Production Deployment on Railway.
 
 ## Recent Accomplishments
-- **Twilio Call Logic**: Implemented unified call confirmation flow with `MAX_ATTEMPTS=1` and automatic "No Answer" status transition.
-- **Enhanced Timeline**: Integrated Twilio call logs (with duration/intent/speech results) and deduplicated 17Track tracking updates in the order history.
-- **WhatsApp Cache Optimization**: Excluded `.wwebjs_auth` from version control and Railway to speed up deployments and prevent session conflicts.
-- **Deployment**: Production Live on Railway with latest source code and optimized `.railwayignore`.
+- **Purchase Order System**: Fixed critical bugs (date mapping, loading leaks) and enhanced data queries to include nested product details.
+- **Ads Dashboard**: Rearranged KPI sequence (Spend, Leads, Orders, Revenue...) and connected 'Leads' and 'Orders' to validated backend data.
+- **Twilio Risk-Based Calls**: Implemented mapping of risk actions (`auto_reject`, `call_center`) to adaptive call lengths and intents.
+- **Robust CSV Import**: Fixed European decimal parsing (comma handling), CRLF line ending issues, and automated phone number normalization.
+- **Enhanced Timeline**: Integrated Twilio call logs (with duration/intent/speech results) and deduplicated 17Track tracking updates.
+- **Deployment**: Production Live on Railway with optimized WhatsApp session handling and `.railwayignore`.
 
 ## Immediate Goals
 1.  **V1 Wrap-up**:

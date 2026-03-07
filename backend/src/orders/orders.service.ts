@@ -8,6 +8,7 @@ import { ProfitsService } from '../profits/profits.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { RiskScoringService } from '../risk-scoring/risk-scoring.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { TwilioVoiceService } from '../twilio-voice/twilio-voice.service';
 
 @Injectable()
 export class OrdersService {
@@ -16,7 +17,8 @@ export class OrdersService {
         private profitsService: ProfitsService,
         private inventoryService: InventoryService,
         private riskScoringService: RiskScoringService,
-        private trackingService: TrackingService
+        private trackingService: TrackingService,
+        private twilioVoiceService: TwilioVoiceService
     ) { }
 
     async create(createOrderDto: CreateOrderDto) {
@@ -97,11 +99,17 @@ export class OrdersService {
             // Risk Assessment
             try {
                 await this.riskScoringService.assessOrder(newOrder.id);
-                // Return fresh order object with risk fields
-                return await this.prisma.order.findUnique({
+
+                // Fetch fresh order with updated riskAction
+                const freshOrder = await this.prisma.order.findUnique({
                     where: { id: newOrder.id },
-                    include: { items: true, customer: true, fulfillmentCenter: true }
+                    include: { items: true, customer: true, fulfillmentCenter: true },
                 });
+
+                // Auto-trigger Twilio call for NO-SKU orders
+                await this.triggerCallIfEligible(freshOrder);
+
+                return freshOrder;
             } catch (riskError) {
                 console.error(`Risk assessment failed for order ${newOrder.id}:`, riskError);
                 return newOrder;
@@ -111,6 +119,71 @@ export class OrdersService {
             fs.appendFileSync('error.log', new Date().toISOString() + ': ' + JSON.stringify(error, Object.getOwnPropertyNames(error), 2) + '\n');
             console.error('Order creation error:', error);
             throw error;
+        }
+    }
+
+    private async triggerCallIfEligible(order: any): Promise<void> {
+        try {
+            // 1. Only trigger for orders that have at least one NO-SKU item
+            const hasNoSkuItem = order.items?.some(
+                (item: any) => item.sku?.startsWith('NO-SKU-')
+            );
+            if (!hasNoSkuItem) return;
+
+            // 2. Check that Twilio calls are enabled for this store
+            const storeSettings = await this.prisma.storeSettings.findFirst({
+                where: { id: order.storeId },
+                select: { enableTwilioCalls: true },
+            });
+            if (!storeSettings?.enableTwilioCalls) {
+                console.log(`Order ${order.orderNumber}: Twilio calls disabled for store. Skipping.`);
+                return;
+            }
+
+            // 3. Map riskAction to call script type
+            const riskAction = order.riskAction;
+            let scriptType: 'short' | 'long' | null = null;
+
+            if (riskAction === 'twilio_short') {
+                scriptType = 'short';
+            } else if (riskAction === 'twilio_long') {
+                scriptType = 'long';
+            } else if (riskAction === 'auto_reject') {
+                // Already handled by risk scoring — no call needed
+                console.log(`Order ${order.orderNumber}: auto_reject — no call triggered.`);
+                return;
+            } else if (riskAction === 'call_center') {
+                // Skip automated call, escalate directly to call center
+                await this.twilioVoiceService.forwardToCallCenter(
+                    order.id,
+                    null,
+                    null,
+                    'High risk NO-SKU order — direct call center escalation',
+                );
+                return;
+            } else {
+                // No riskAction set or unrecognised — default to short call for all NO-SKU orders
+                console.log(`Order ${order.orderNumber}: No riskAction set, defaulting to short call.`);
+                scriptType = 'short';
+            }
+
+            // 4. Fire-and-forget with a 2s delay so:
+            //    - The HTTP response returns to the frontend immediately
+            //    - The DB idempotency key write is fully committed before the call starts
+            setTimeout(async () => {
+                try {
+                    console.log(
+                        `Order ${order.orderNumber}: Auto-triggering Twilio '${scriptType}' call for NO-SKU item.`
+                    );
+                    await this.twilioVoiceService.initiateConfirmationCall(order.id, scriptType);
+                } catch (err: any) {
+                    console.error(`Order ${order.orderNumber}: Auto-call failed: ${err.message}`);
+                }
+            }, 2000);
+
+        } catch (err) {
+            // Never crash order creation — this block is non-blocking
+            console.error(`triggerCallIfEligible error for order ${order?.id}:`, err);
         }
     }
 
