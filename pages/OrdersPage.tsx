@@ -442,6 +442,8 @@ const OrdersPage: React.FC = () => {
               <option>All Status</option>
               <option value="Pending">Pending</option>
               <option value="Processing">Processing</option>
+              <option value="InfoReceived">Info Received</option>
+              <option value="Shipped">Shipped</option>
               <option value="NotFound">Not Found</option>
               <option value="InTransit">In transit</option>
               <option value="OutForDelivery">Pickup (Out of delivery)</option>
@@ -584,7 +586,7 @@ const OrdersPage: React.FC = () => {
                           <span className={`size-1.5 rounded-full ${order.orderStatus === 'Delivered' ? 'bg-emerald-500' :
                             (order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered') ? 'bg-red-500' :
                               order.orderStatus === 'OutForDelivery' ? 'bg-orange-500' :
-                                (order.orderStatus === 'InTransit' || order.orderStatus === 'Processing') ? 'bg-blue-400' :
+                                (order.orderStatus === 'InTransit' || order.orderStatus === 'Shipped' || order.orderStatus === 'Processing' || order.orderStatus === 'InfoReceived') ? 'bg-blue-400' :
                                   order.orderStatus === 'NotFound' ? 'bg-gray-500' :
                                     'bg-primary/60'
                             }`}></span>
@@ -594,10 +596,12 @@ const OrdersPage: React.FC = () => {
                             }`}>
                             {
                               order.orderStatus === 'InTransit' ? 'In transit' :
-                                order.orderStatus === 'OutForDelivery' ? 'Pickup (Out of delivery)' :
-                                  order.orderStatus === 'NotFound' ? 'Not Found' :
-                                    order.orderStatus === 'Cancelled' ? 'Cancel' :
-                                      order.orderStatus
+                                order.orderStatus === 'Shipped' ? 'Shipped' :
+                                  order.orderStatus === 'InfoReceived' ? 'Info Received' :
+                                    order.orderStatus === 'OutForDelivery' ? 'Pickup (Out of delivery)' :
+                                      order.orderStatus === 'NotFound' ? 'Not Found' :
+                                        order.orderStatus === 'Cancelled' ? 'Cancel' :
+                                          order.orderStatus
                             }
                           </span>
                         </div>
@@ -1054,6 +1058,8 @@ const OrdersPage: React.FC = () => {
                           >
                             <option value="Pending">Pending</option>
                             <option value="Processing">Processing</option>
+                            <option value="InfoReceived">Info Received</option>
+                            <option value="Shipped">Shipped</option>
                             <option value="NotFound">Not Found</option>
                             <option value="InTransit">In transit</option>
                             <option value="OutForDelivery">Pickup (Out of delivery)</option>
