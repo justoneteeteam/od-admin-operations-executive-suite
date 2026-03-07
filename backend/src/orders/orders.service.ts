@@ -461,6 +461,7 @@ export class OrdersService {
                     paymentMethod: firstRow.payment_method?.toString()?.trim() || 'COD',
                     paymentStatus: firstRow.payment_status?.toString()?.trim() || 'Pending',
                     shippingAddressLine1: firstRow.shipping_address?.toString()?.trim() || '',
+                    shippingPostalCode: firstRow.shipping_zipcode?.toString()?.trim() || null,
                     shippingCity: firstRow.shipping_city?.toString()?.trim() || '',
                     shippingState: firstRow.shipping_state?.toString()?.trim() || '',
                     shippingCountry: firstRow.shipping_country?.toString()?.trim() || 'Unknown',

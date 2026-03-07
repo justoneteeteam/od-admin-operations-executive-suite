@@ -408,7 +408,7 @@ const OrdersPage: React.FC = () => {
       "order_number", "customer_name", "customer_phone", "customer_email",
       "sku", "quantity", "price", "shipping_fee", "tax", "discount",
       "order_date", "order_status", "confirmation_status", "payment_method", "payment_status",
-      "shipping_address", "shipping_city", "shipping_state", "shipping_country",
+      "shipping_address", "shipping_zipcode", "shipping_city", "shipping_state", "shipping_country",
       "store_id", "tracking_number", "courier", "notes"
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers]);
