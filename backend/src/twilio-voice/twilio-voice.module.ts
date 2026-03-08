@@ -3,11 +3,12 @@ import { TwilioVoiceService } from './twilio-voice.service';
 import { TwilioVoiceController } from './twilio-voice.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { TwilioCallSchedulerService } from './twilio-call-scheduler.service';
 
 @Module({
     imports: [PrismaModule, NotificationsModule],
     controllers: [TwilioVoiceController],
-    providers: [TwilioVoiceService],
+    providers: [TwilioVoiceService, TwilioCallSchedulerService],
     exports: [TwilioVoiceService],
 })
 export class TwilioVoiceModule { }
