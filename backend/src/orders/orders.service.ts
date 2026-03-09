@@ -525,18 +525,37 @@ export class OrdersService {
                 const discountGiven = parseEuropeanNumber(firstRow.discount);
                 const totalAmount = calculatedSubtotal + shippingFee + taxCollected - discountGiven;
 
+                // ── Resolve storeId (FIX 3) ──
+                const providedStoreId = firstRow.store_id?.toString()?.trim();
+                const providedStoreName = firstRow.store_name?.toString()?.trim();
+
+                let resolvedStoreId: string;
+                if (providedStoreId) {
+                    const storeExists = await this.prisma.storeSettings.findUnique({ where: { id: providedStoreId } });
+                    if (!storeExists) throw new Error(`store_id '${providedStoreId}' not found in store_settings.`);
+                    resolvedStoreId = providedStoreId;
+                } else if (providedStoreName) {
+                    const storeByName = await this.prisma.storeSettings.findFirst({ where: { storeName: { contains: providedStoreName, mode: 'insensitive' } } });
+                    if (!storeByName) throw new Error(`Store '${providedStoreName}' not found.`);
+                    resolvedStoreId = storeByName.id;
+                } else {
+                    const defaultStore = await this.prisma.storeSettings.findFirst({ orderBy: { createdAt: 'asc' } });
+                    if (!defaultStore) throw new Error(`No stores found. Please create a store first.`);
+                    resolvedStoreId = defaultStore.id;
+                }
+
                 const orderPayloadData = {
                     customerId,
-                    storeId: firstRow.store_id?.toString()?.trim() || 'import-default',
+                    storeId: resolvedStoreId,                                          // FIX 3
                     orderDate: firstRow.order_date ? new Date(firstRow.order_date) : new Date(),
                     orderStatus: firstRow.order_status?.toString()?.trim() || 'Pending',
                     confirmationStatus: firstRow.confirmation_status?.toString()?.trim() || 'Pending',
-                    paymentMethod: firstRow.payment_method?.toString()?.trim() || 'COD',
+                    // REMOVED: paymentMethod — column does not exist on Order model   // FIX 1
                     paymentStatus: firstRow.payment_status?.toString()?.trim() || 'Pending',
                     shippingAddressLine1: firstRow.shipping_address?.toString()?.trim() || '',
                     shippingPostalCode: firstRow.shipping_zipcode?.toString()?.trim() || null,
                     shippingCity: firstRow.shipping_city?.toString()?.trim() || '',
-                    shippingState: firstRow.shipping_state?.toString()?.trim() || '',
+                    shippingProvince: firstRow.shipping_state?.toString()?.trim() || '', // FIX 2
                     shippingCountry: firstRow.shipping_country?.toString()?.trim() || 'Unknown',
                     subtotal: calculatedSubtotal,
                     shippingFee,

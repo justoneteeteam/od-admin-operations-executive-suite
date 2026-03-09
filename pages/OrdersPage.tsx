@@ -407,11 +407,66 @@ const OrdersPage: React.FC = () => {
     const headers = [
       "order_number", "customer_name", "customer_phone", "customer_email",
       "sku", "quantity", "price", "shipping_fee", "tax", "discount",
-      "order_date", "order_status", "confirmation_status", "payment_method", "payment_status",
+      "order_date", "order_status", "confirmation_status", "payment_status",
       "shipping_address", "shipping_zipcode", "shipping_city", "shipping_state", "shipping_country",
       "store_id", "tracking_number", "courier", "notes"
     ];
-    const ws = XLSX.utils.aoa_to_sheet([headers]);
+
+    // Example rows so users know what valid values look like
+    const exampleRow1 = [
+      "",                           // order_number → blank = CREATE new
+      "John Smith",                 // customer_name
+      "+34612345678",               // customer_phone (international format)
+      "john@example.com",           // customer_email
+      "-LM-2659",                   // sku → must exactly match a product SKU
+      "1",                          // quantity
+      "29.99",                      // price (use dot, not comma)
+      "4.99",                       // shipping_fee
+      "0",                          // tax
+      "0",                          // discount
+      "2025-03-01",                 // order_date (YYYY-MM-DD)
+      "Pending",                    // order_status: Pending / Shipped / Delivered
+      "Pending",                    // confirmation_status: Pending / Confirmed / Declined
+      "Pending",                    // payment_status: Pending / Paid / Refused
+      "Calle Mayor 12",             // shipping_address
+      "28001",                      // shipping_zipcode
+      "Madrid",                     // shipping_city
+      "Community of Madrid",        // shipping_state (province)
+      "Spain",                      // shipping_country
+      "",                           // store_id → blank = auto-assign default store
+      "",                           // tracking_number
+      "",                           // courier
+      "Historic import"             // notes
+    ];
+
+    const exampleRow2 = [
+      "#1441",                      // order_number → existing number = UPDATE
+      "Maria Garcia",
+      "+39333123456",
+      "maria@email.it",
+      "NO-SKU-59131818180689",      // sku (NO-SKU product)
+      "2",
+      "37.49",
+      "4.99",
+      "0",
+      "0",
+      "2025-02-15",
+      "Pending",
+      "Pending",
+      "Pending",
+      "Via Roma 5",
+      "00100",
+      "Roma",
+      "Lazio",
+      "Italy",
+      "",
+      "",
+      "",
+      ""
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow1, exampleRow2]);
+    ws['!cols'] = headers.map(() => ({ wch: 22 }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "bulk_orders_template.xlsx");
