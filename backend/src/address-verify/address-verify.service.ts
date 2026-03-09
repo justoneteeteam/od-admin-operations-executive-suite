@@ -112,7 +112,10 @@ export class AddressVerifyService {
 
             return result;
         } catch (error) {
-            this.logger.warn(`loqate_fallback_error — ${error.message}`);
+            this.logger.error(
+                `loqate_fallback_error — Loqate API call failed: ${error.message}`,
+                error.stack,
+            );
             return this.buildResultFromRegex(address, country);
         }
     }
