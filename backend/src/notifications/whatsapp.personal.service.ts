@@ -13,6 +13,7 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
     public isConnected: boolean = false;
     public clientPhone: string | null = null;
     public pairingCode: string | null = null;
+    private isReconnecting: boolean = false;
 
     constructor(@Inject(PrismaService) private prisma: PrismaService) { }
 
@@ -34,7 +35,15 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
         const isServer = !!(process.env.RAILWAY_ENVIRONMENT || process.env.PUPPETEER_EXECUTABLE_PATH || process.env.NODE_ENV === 'production');
         const puppeteerConfig: any = {
             headless: isServer,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--single-process',
+                '--no-zygote',
+                '--memory-pressure-off',
+            ],
         };
 
         // On Railway/Docker, use the system-installed Chromium
@@ -74,18 +83,36 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
         });
 
         // 4. Client disconnected or logged out
-        this.client.on('disconnected', (reason) => {
+        this.client.on('disconnected', async (reason) => {
             this.logger.warn(`WhatsApp disconnected: ${reason}`);
             this.isConnected = false;
             this.clientPhone = null;
-            this.clientInitialized = false;
 
-            this.logger.log('Re-initializing WhatsApp client...');
-            this.client.destroy().then(() => {
+            // Prevent overlapping reconnect attempts
+            if (this.isReconnecting) {
+                this.logger.warn('Already reconnecting, skipping duplicate attempt');
+                return;
+            }
+            this.isReconnecting = true;
+
+            if (reason === 'LOGOUT') {
+                // User explicitly logged out — full reinit needed, session is gone
+                this.logger.error('🔴 WhatsApp LOGOUT detected — admin needs to re-pair the device!');
+                try {
+                    await this.client.destroy();
+                } catch (err) {
+                    this.logger.error('Failed to destroy client after LOGOUT', err);
+                }
+                this.clientInitialized = false;
+            }
+            // For temporary disconnects (network blip, timeout), keep session files intact
+
+            // Wait before reconnecting to avoid rapid loop
+            this.logger.log('Scheduling WhatsApp client re-initialization in 5 seconds...');
+            setTimeout(() => {
+                this.isReconnecting = false;
                 this.initializeClient();
-            }).catch(err => {
-                this.logger.error('Failed to destroy client during restart', err);
-            });
+            }, 5000);
         });
 
         // 5. Catch initialization errors (e.g., missing chromium)
