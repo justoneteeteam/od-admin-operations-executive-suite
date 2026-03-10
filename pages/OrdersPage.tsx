@@ -1149,7 +1149,7 @@ const OrdersPage: React.FC = () => {
                                       label.textContent = '✓ Already registered';
                                       label.style.color = '#22c55e';
                                       btn.disabled = false;
-                                    } else {
+                                    } else if (res.status === 'registered') {
                                       label.textContent = '✓ Registered! Refreshing...';
                                       label.style.color = '#22c55e';
                                       // Wait for 17Track to process, then refresh order data
@@ -1162,6 +1162,10 @@ const OrdersPage: React.FC = () => {
                                           btn.disabled = false;
                                         } catch { btn.disabled = false; }
                                       }, 8000);
+                                    } else {
+                                      label.textContent = `✗ ${res.detail || res.status || 'Error'}`;
+                                      label.style.color = '#ef4444';
+                                      btn.disabled = false;
                                     }
                                   } catch (err) {
                                     label.textContent = '✗ Failed';
