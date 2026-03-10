@@ -305,19 +305,17 @@ export class TrackingService {
     }
 
     // Register tracking number with 17Track (Phase 2)
-    async registerTracking(trackingNumber: string, carrierCode?: string) {
+    async registerTracking(trackingNumber: string, carrierCode?: string): Promise<{ status: 'registered' | 'already_registered' | 'rejected' | 'error'; detail?: string }> {
         this.logger.log(`Registering tracking: ${trackingNumber} (${carrierCode || 'auto-detect'})`);
 
         try {
             const apiKey = process.env.TRACK17_API_KEY;
             if (!apiKey) {
                 this.logger.warn('TRACK17_API_KEY is not set in environment variables. Cannot register tracking.');
-                return;
+                return { status: 'error', detail: 'TRACK17_API_KEY not configured' };
             }
 
-            // Note: Use dynamic import or require for axios if it's not imported at the top level, 
-            // but we can just import it at the top of the file since we installed it.
-            const axios = require('axios'); // CommonJS require to avoid top-level import issues strictly here, or we can use fetch since it's Node 18+
+            const axios = require('axios');
 
             const payload: any = { number: trackingNumber };
             if (carrierCode) {
@@ -340,13 +338,24 @@ export class TrackingService {
                 this.logger.log(`Successfully registered tracking number ${trackingNumber} with 17Track.`);
                 // Immediate backfill current state to sync any missed history before registration
                 await this.pullAndProcessCurrentStatus(trackingNumber);
+                return { status: 'registered' };
             } else if (data.data?.rejected?.length > 0) {
+                const rejection = data.data.rejected[0];
+                const errCode = rejection?.error?.code;
+                // 17Track error code -18019901 = "already tracking"
+                if (errCode === -18019901) {
+                    this.logger.log(`Tracking number ${trackingNumber} is already registered with 17Track.`);
+                    return { status: 'already_registered' };
+                }
                 this.logger.warn(`17Track rejected tracking number ${trackingNumber}: ${JSON.stringify(data.data.rejected)}`);
+                return { status: 'rejected', detail: JSON.stringify(rejection?.error || rejection) };
             } else {
                 this.logger.warn(`Unexpected response from 17Track register API: ${JSON.stringify(data)}`);
+                return { status: 'error', detail: 'Unexpected API response' };
             }
         } catch (error) {
             this.logger.error(`Failed to register tracking number ${trackingNumber} with 17Track: ${error.message}`, error.stack);
+            return { status: 'error', detail: error.message };
         }
     }
 
