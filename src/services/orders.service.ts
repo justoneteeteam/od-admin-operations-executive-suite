@@ -94,6 +94,11 @@ export const ordersService = {
             }
         });
         return response.data;
+    },
+
+    async syncTracking(trackingNumber: string, carrierCode?: string) {
+        const response = await apiClient.post('/tracking/register', { trackingNumber, carrierCode });
+        return response.data;
     }
 };
 

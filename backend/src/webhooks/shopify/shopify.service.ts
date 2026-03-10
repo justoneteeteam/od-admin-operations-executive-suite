@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OrdersService } from '../../orders/orders.service';
 import { StoreSettingsService } from '../../store-settings/store-settings.service';
+import { TrackingService } from '../../tracking/tracking.service';
 import { CreateOrderDto } from '../../orders/dto/create-order.dto';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class ShopifyService {
         private prisma: PrismaService,
         private ordersService: OrdersService,
         private storeSettingsService: StoreSettingsService,
+        private trackingService: TrackingService,
     ) { }
 
     async processOrderWebhook(payload: any, shopDomain: string) {
@@ -191,6 +193,10 @@ export class ShopifyService {
                         status: 'Shipped',
                     }
                 });
+
+                // Register with 17Track
+                this.trackingService.registerTracking(trackingNumber, trackingCompany)
+                    .catch(e => this.logger.error(`Tracking Register Error for ${order.orderNumber}: ${e.message}`));
 
                 this.logger.log(`Successfully attached Tracking Number ${trackingNumber} to Internal Order ${order.orderNumber}`);
             } else {

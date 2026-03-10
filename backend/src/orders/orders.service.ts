@@ -605,6 +605,14 @@ export class OrdersService {
                     results.created++;
                 }
 
+                // Register tracking with 17Track for imported orders
+                const finalTrackingNumber = orderPayloadData.trackingNumber;
+                if (finalTrackingNumber && finalTrackingNumber.trim() !== '') {
+                    const courier = orderPayloadData.courier || undefined;
+                    this.trackingService.registerTracking(finalTrackingNumber, courier)
+                        .catch(e => console.error('Import Tracking Register Error:', e));
+                }
+
                 // 4. Apply skip rules
                 if (!skipInventory) {
                     await this.inventoryService.reserveStock(finalOrderId);

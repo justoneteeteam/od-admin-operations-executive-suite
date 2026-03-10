@@ -1124,16 +1124,38 @@ const OrdersPage: React.FC = () => {
                         <div className="flex justify-between items-center ml-1 mb-1">
                           <label className="text-[10px] font-black text-text-muted uppercase">Tracking Number</label>
                           {editOrder.trackingNumber && (
-                            <a
-                              href={`https://t.17track.net/en#nums=${editOrder.trackingNumber}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[10px] text-primary hover:text-white flex items-center gap-1 transition-colors font-semibold"
-                              title="Track package on 17Track"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                              Track Package
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`https://t.17track.net/en#nums=${editOrder.trackingNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-primary hover:text-white flex items-center gap-1 transition-colors font-semibold"
+                                title="Track package on 17Track"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                                Track Package
+                              </a>
+                              <span className="text-text-muted/30">|</span>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const res = await ordersService.syncTracking(editOrder.trackingNumber!, editOrder.courier || undefined);
+                                    if (res.status === 'already_registered') {
+                                      alert('It registered');
+                                    } else {
+                                      alert('Successfully, wait 10s');
+                                    }
+                                  } catch (e) {
+                                    alert('Sync failed. Please try again.');
+                                  }
+                                }}
+                                className="text-[10px] text-amber-400 hover:text-white flex items-center gap-1 transition-colors font-semibold"
+                                title="Sync tracking with 17Track"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">sync</span>
+                                Sync 17Track
+                              </button>
+                            </div>
                           )}
                         </div>
                         <input
