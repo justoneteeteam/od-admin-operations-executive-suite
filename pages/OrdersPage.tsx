@@ -1137,23 +1137,43 @@ const OrdersPage: React.FC = () => {
                               </a>
                               <span className="text-text-muted/30">|</span>
                               <button
-                                onClick={async () => {
+                                id="sync-17track-btn"
+                                onClick={async (e) => {
+                                  const btn = e.currentTarget;
+                                  const label = btn.querySelector('.sync-label') as HTMLElement;
+                                  btn.disabled = true;
+                                  label.textContent = 'Syncing...';
                                   try {
                                     const res = await ordersService.syncTracking(editOrder.trackingNumber!, editOrder.courier || undefined);
                                     if (res.status === 'already_registered') {
-                                      alert('It registered');
+                                      label.textContent = '✓ Already registered';
+                                      label.style.color = '#22c55e';
+                                      btn.disabled = false;
                                     } else {
-                                      alert('Successfully, wait 10s');
+                                      label.textContent = '✓ Registered! Refreshing...';
+                                      label.style.color = '#22c55e';
+                                      // Wait for 17Track to process, then refresh order data
+                                      setTimeout(async () => {
+                                        try {
+                                          const refreshed = await ordersService.getById(editOrder.id);
+                                          setEditOrder(refreshed);
+                                          label.textContent = 'Sync 17Track';
+                                          label.style.color = '';
+                                          btn.disabled = false;
+                                        } catch { btn.disabled = false; }
+                                      }, 8000);
                                     }
-                                  } catch (e) {
-                                    alert('Sync failed. Please try again.');
+                                  } catch (err) {
+                                    label.textContent = '✗ Failed';
+                                    label.style.color = '#ef4444';
+                                    btn.disabled = false;
                                   }
                                 }}
-                                className="text-[10px] text-amber-400 hover:text-white flex items-center gap-1 transition-colors font-semibold"
+                                className="text-[10px] text-amber-400 hover:text-white flex items-center gap-1 transition-colors font-semibold disabled:opacity-50 disabled:cursor-wait"
                                 title="Sync tracking with 17Track"
                               >
                                 <span className="material-symbols-outlined text-[14px]">sync</span>
-                                Sync 17Track
+                                <span className="sync-label">Sync 17Track</span>
                               </button>
                             </div>
                           )}
