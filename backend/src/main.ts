@@ -19,5 +19,12 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`🚀 Backend running on port ${port}`);
+
+  // Log outbound IP for debugging IP whitelisting issues
+  try {
+    const resp = await fetch('https://api.ipify.org');
+    const ip = await resp.text();
+    console.log(`🌐 Outbound IP: ${ip}`);
+  } catch (e) { console.log('Could not resolve outbound IP'); }
 }
 bootstrap();
