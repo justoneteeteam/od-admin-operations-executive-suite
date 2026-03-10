@@ -310,6 +310,7 @@ export class TrackingService {
 
         try {
             const apiKey = process.env.TRACK17_API_KEY;
+            this.logger.log(`[DEBUG] TRACK17_API_KEY length=${apiKey?.length}, val=${apiKey?.substring(0, 4)}...${apiKey?.substring((apiKey?.length || 0) - 4)}`);
             if (!apiKey) {
                 this.logger.warn('TRACK17_API_KEY is not set in environment variables. Cannot register tracking.');
                 return { status: 'error', detail: 'TRACK17_API_KEY not configured' };
