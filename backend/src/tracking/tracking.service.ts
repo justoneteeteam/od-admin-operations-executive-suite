@@ -355,8 +355,10 @@ export class TrackingService {
                 return { status: 'error', detail: 'Unexpected API response' };
             }
         } catch (error) {
-            this.logger.error(`Failed to register tracking number ${trackingNumber} with 17Track: ${error.message}`, error.stack);
-            return { status: 'error', detail: error.message };
+            const respData = error?.response?.data ? JSON.stringify(error.response.data) : 'no response body';
+            const respStatus = error?.response?.status || 'no status';
+            this.logger.error(`Failed to register ${trackingNumber} with 17Track: ${error.message} | status=${respStatus} | body=${respData}`, error.stack);
+            return { status: 'error', detail: `${error.message} | body: ${respData}` };
         }
     }
 
