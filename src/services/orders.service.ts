@@ -48,6 +48,10 @@ export interface Order {
     notes?: string;
     trackingHistory?: any[];
     customerResponses?: any[];
+    callLogs?: any[];
+    riskScore?: number;
+    riskLevel?: string;
+    riskAction?: string;
 }
 
 export const ordersService = {
