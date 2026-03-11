@@ -73,31 +73,52 @@ export interface PurchaseItem {
   taxAmount: number;
   unitCost: number;
   totalCost: number;
+  // New shipping/parcel fields
+  domesticShippingFeeCny?: number;
+  vndCurrencyRate?: number;
+  parcelKg?: number;
+  internationalShippingFeeCny?: number;
+  internationalShippingFeeVnd?: number;
   // Mapped from backend
   purchase_price?: number;
-  purchaseTaxAmount?: number; // Renamed
-  purchaseDiscountAmount?: number; // Renamed
+  purchaseTaxAmount?: number;
+  purchaseDiscountAmount?: number;
 }
 
 export interface Purchase {
   id: string;
   supplierName: string;
-  supplierId?: string; // Add source fields for editing
+  supplierId?: string;
   fulfillmentCenterId?: string;
   warehouseId?: string;
-  orderDate: string; // Map from backend 'orderDate'
-  purchaseOrderNumber: string; // Map from backend
-  purchaseTaxAmount?: number; // Renamed
+  orderDate: string;
+  purchaseOrderNumber: string;
+  fulfillmentRef?: string;
+  trackingNumber?: string;
+  purchaseTaxAmount?: number;
   purchaseDiscountAmount?: number;
-  purchaseShippingCost?: number; // Renamed
+  purchaseShippingCost?: number;
   notes?: string;
   reference: string;
   date: string;
-  purchaseStatus: PurchaseStatus; // Renamed from status
+  purchaseStatus: PurchaseStatus;
   total: number;
+  totalAmount?: number;
   paid: number;
   due: number;
   items?: PurchaseItem[];
+  supplier?: { name: string };
+  logisticCompanies?: Array<{ logisticCompany: LogisticCompany }>;
+}
+
+export interface LogisticCompany {
+  id: string;
+  name: string;
+  address?: string;
+  phone?: string;
+  contactPerson?: string;
+  email?: string;
+  status?: string;
 }
 
 export type FulfillmentStatus = 'Processing' | 'Packed' | 'Shipped' | 'Delivered' | 'Returned';

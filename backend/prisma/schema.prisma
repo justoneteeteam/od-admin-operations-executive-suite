@@ -147,6 +147,10 @@ model Product {
   isFeatured            Boolean?               @default(false) @map("is_featured")
   primaryImageUrl       String?                @map("primary_image_url")
   imagesUrls            String?                @map("images_urls")
+  specification         String?                @db.VarChar(500)
+  hsCode                String?                @map("hs_code") @db.VarChar(20)
+  material              String?                @db.VarChar(100)
+  productUse            String?                @map("product_use") @db.VarChar(100)
   createdAt             DateTime?              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime?              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   weightedAverageCost   Decimal?               @map("weighted_average_cost") @db.Decimal(10, 2)
@@ -453,11 +457,13 @@ model Purchase {
   createdAt              DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt              DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   otherCosts             Decimal?  @default(0) @map("other_costs") @db.Decimal(10, 2)
+  fulfillmentRef         String?   @map("fulfillment_ref") @db.VarChar(100)
 
-  warehouse         Warehouse?        @relation(fields: [warehouseId], references: [id])
-  supplier          Supplier          @relation(fields: [supplierId], references: [id])
-  fulfillmentCenter FulfillmentCenter @relation(fields: [fulfillmentCenterId], references: [id])
-  items             PurchaseItem[]
+  warehouse           Warehouse?               @relation(fields: [warehouseId], references: [id])
+  supplier            Supplier                 @relation(fields: [supplierId], references: [id])
+  fulfillmentCenter   FulfillmentCenter        @relation(fields: [fulfillmentCenterId], references: [id])
+  items               PurchaseItem[]
+  logisticCompanies   PurchaseLogisticCompany[]
 
   @@map("purchases")
 }
@@ -474,7 +480,12 @@ model PurchaseItem {
   purchasePrice          Decimal   @default(0) @map("purchase_price") @db.Decimal(10, 2)
   purchaseTaxAmount      Decimal?  @default(0) @map("tax_amount") @db.Decimal(10, 2)
   purchaseDiscountAmount Decimal?  @default(0) @map("discount_amount") @db.Decimal(10, 2)
-  landedCost             Decimal?  @map("landed_cost") @db.Decimal(10, 2)
+  landedCost                    Decimal?  @map("landed_cost") @db.Decimal(10, 2)
+  domesticShippingFeeCny        Decimal?  @default(0) @map("domestic_shipping_fee_cny") @db.Decimal(10, 2)
+  vndCurrencyRate               Decimal?  @default(0) @map("vnd_currency_rate") @db.Decimal(15, 2)
+  parcelKg                      Decimal?  @default(0) @map("parcel_kg") @db.Decimal(8, 2)
+  internationalShippingFeeCny   Decimal?  @default(0) @map("intl_shipping_fee_cny") @db.Decimal(10, 2)
+  internationalShippingFeeVnd   Decimal?  @default(0) @map("intl_shipping_fee_vnd") @db.Decimal(12, 2)
 
   purchase Purchase @relation(fields: [purchaseId], references: [id])
   product  Product  @relation(fields: [productId], references: [id])
@@ -981,4 +992,33 @@ model IncidentWorkflow {
   updater User? @relation("WorkflowUpdater", fields: [updatedBy], references: [id])
 
   @@map("incident_workflows")
+}
+
+model LogisticCompany {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name          String   @db.VarChar(255)
+  address       String?
+  phone         String?  @db.VarChar(50)
+  contactPerson String?  @map("contact_person") @db.VarChar(255)
+  email         String?  @db.VarChar(255)
+  status        String?  @default("Active") @db.VarChar(20)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  purchases PurchaseLogisticCompany[]
+
+  @@map("logistic_companies")
+}
+
+model PurchaseLogisticCompany {
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  purchaseId        String   @map("purchase_id") @db.Uuid
+  logisticCompanyId String   @map("logistic_company_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  purchase        Purchase        @relation(fields: [purchaseId], references: [id])
+  logisticCompany LogisticCompany @relation(fields: [logisticCompanyId], references: [id])
+
+  @@unique([purchaseId, logisticCompanyId])
+  @@map("purchase_logistic_companies")
 }

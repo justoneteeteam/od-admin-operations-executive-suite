@@ -11,7 +11,7 @@ export class PurchasesService {
     ) { }
 
     async create(data: any) {
-        const { items, ...purchaseData } = data;
+        const { items, logisticCompanyIds, ...purchaseData } = data;
 
         // Generate unique purchase order number
         const purchaseOrderNumber = `PO-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
@@ -33,12 +33,17 @@ export class PurchasesService {
                     productId: item.productId,
                     quantity: item.quantity,
                     unitCost: item.unitCost,
-                    purchasePrice: item.purchasePrice || item.unitCost, // Default to unitCost if purchasePrice missing
+                    purchasePrice: item.purchasePrice || item.unitCost,
                     taxPercent: item.taxPercent,
                     purchaseTaxAmount: item.purchaseTaxAmount || item.taxAmount,
                     discountPercent: item.discountPercent,
                     purchaseDiscountAmount: item.purchaseDiscountAmount || item.discountAmount,
                     subtotal: item.quantity * item.unitCost,
+                    domesticShippingFeeCny: item.domesticShippingFeeCny || 0,
+                    vndCurrencyRate: item.vndCurrencyRate || 0,
+                    parcelKg: item.parcelKg || 0,
+                    internationalShippingFeeCny: item.internationalShippingFeeCny || 0,
+                    internationalShippingFeeVnd: item.internationalShippingFeeVnd || 0,
                 }))
                 : [];
 
@@ -68,12 +73,20 @@ export class PurchasesService {
                     items: {
                         create: processedItems
                     },
+                    ...(logisticCompanyIds?.length > 0 && {
+                        logisticCompanies: {
+                            create: logisticCompanyIds.map((lcId: string) => ({
+                                logisticCompanyId: lcId,
+                            })),
+                        },
+                    }),
                 },
                 include: {
-                    items: true,
+                    items: { include: { product: true } },
                     supplier: true,
                     fulfillmentCenter: true,
                     warehouse: true,
+                    logisticCompanies: { include: { logisticCompany: true } },
                 },
             });
 
@@ -113,6 +126,7 @@ export class PurchasesService {
                             product: true,
                         },
                     },
+                    logisticCompanies: { include: { logisticCompany: true } },
                 },
                 orderBy: { orderDate: 'desc' },
                 skip,
@@ -144,6 +158,7 @@ export class PurchasesService {
                         product: true,
                     },
                 },
+                logisticCompanies: { include: { logisticCompany: true } },
             },
         });
 
@@ -155,17 +170,31 @@ export class PurchasesService {
     }
 
     async update(id: string, data: any) {
-        const { items, ...purchaseData } = data;
+        const { items, logisticCompanyIds, ...purchaseData } = data;
 
         try {
+            // If logisticCompanyIds provided, delete existing and re-create
+            if (logisticCompanyIds !== undefined) {
+                await this.prisma.purchaseLogisticCompany.deleteMany({ where: { purchaseId: id } });
+                if (logisticCompanyIds.length > 0) {
+                    await this.prisma.purchaseLogisticCompany.createMany({
+                        data: logisticCompanyIds.map((lcId: string) => ({
+                            purchaseId: id,
+                            logisticCompanyId: lcId,
+                        })),
+                    });
+                }
+            }
+
             return await this.prisma.purchase.update({
                 where: { id },
                 data: purchaseData,
                 include: {
-                    items: true,
+                    items: { include: { product: true } },
                     supplier: true,
                     fulfillmentCenter: true,
                     warehouse: true,
+                    logisticCompanies: { include: { logisticCompany: true } },
                 },
             });
         } catch (error) {
