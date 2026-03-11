@@ -101,8 +101,13 @@ const PurchasesPage: React.FC = () => {
         productId: item.productId,
         productName: item.product?.name || item.productName || 'Unknown',
         sku: item.product?.sku || item.sku || 'N/A',
-        qty: item.quantity,
-        totalCost: item.subtotal
+        qty: Number(item.quantity) || 0,
+        purchasePrice: Number(item.purchasePrice) || 0,
+        discount: Number(item.purchaseDiscountAmount || item.discount) || 0,
+        taxPercent: Number(item.taxPercent) || 0,
+        taxAmount: Number(item.purchaseTaxAmount || item.taxAmount) || 0,
+        unitCost: Number(item.unitCost) || 0,
+        totalCost: Number(item.subtotal || item.totalCost) || 0
       })),
       globalTax: Number(purchase.purchaseTaxAmount) || 0,
       globalDiscount: Number(purchase.purchaseDiscountAmount || 0), // Assuming not mapped in type but backend has it
@@ -126,12 +131,12 @@ const PurchasesPage: React.FC = () => {
       productName: product.name,
       sku: product.sku,
       qty: 1,
-      purchasePrice: product.unitCost || 0,
+      purchasePrice: Number(product.unitCost) || 0,
       discount: 0,
       taxPercent: 0,
       taxAmount: 0,
-      unitCost: product.unitCost || 0, // Synced Cost
-      totalCost: product.unitCost || 0
+      unitCost: Number(product.unitCost) || 0, // Synced Cost
+      totalCost: Number(product.unitCost) || 0
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
   };
@@ -145,12 +150,12 @@ const PurchasesPage: React.FC = () => {
       productName: product.name,
       sku: product.sku,
       qty: 1,
-      purchasePrice: product.unitCost || 0,
+      purchasePrice: Number(product.unitCost) || 0,
       discount: 0,
       taxPercent: 0,
       taxAmount: 0,
-      unitCost: product.unitCost || 0,
-      totalCost: product.unitCost || 0
+      unitCost: Number(product.unitCost) || 0,
+      totalCost: Number(product.unitCost) || 0
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
   };
@@ -160,15 +165,15 @@ const PurchasesPage: React.FC = () => {
       const newItems = [...prev.items];
       const item = { ...newItems[index], [field]: value };
 
-      // Recalculate
+      // Recalculate (ensure Number() for Prisma Decimal safety)
       // Net Price = Purchase Price - Discount
-      const netPrice = item.purchasePrice - item.discount;
+      const netPrice = Number(item.purchasePrice) - Number(item.discount);
       // Tax Amount = Net Price * (Tax% / 100)
-      item.taxAmount = netPrice * (item.taxPercent / 100);
+      item.taxAmount = netPrice * (Number(item.taxPercent) / 100);
       // Unit Cost = Net Price + Tax Amount
       item.unitCost = netPrice + item.taxAmount;
       // Total Cost = Unit Cost * Qty
-      item.totalCost = item.unitCost * item.qty;
+      item.totalCost = item.unitCost * Number(item.qty);
 
       newItems[index] = item;
       return { ...prev, items: newItems };
@@ -458,9 +463,9 @@ const PurchasesPage: React.FC = () => {
                                 onChange={e => updateItem(index, 'taxPercent', parseFloat(e.target.value) || 0)}
                               />
                             </td>
-                            <td className="px-4 py-3 text-sm text-text-muted">${item.taxAmount.toFixed(2)}</td>
-                            <td className="px-4 py-3 text-sm text-text-muted">${item.unitCost.toFixed(2)}</td>
-                            <td className="px-4 py-3 text-sm font-bold text-white">${item.totalCost.toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-text-muted">${Number(item.taxAmount).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-text-muted">${Number(item.unitCost).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm font-bold text-white">${Number(item.totalCost).toFixed(2)}</td>
                             <td className="px-4 py-3 text-center">
                               <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-400">
                                 <span className="material-symbols-outlined text-lg">delete</span>
