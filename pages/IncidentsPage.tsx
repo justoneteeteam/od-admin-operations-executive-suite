@@ -606,9 +606,10 @@ const IncidentsPage: React.FC = () => {
     const [composeSubject, setComposeSubject] = useState('');
     const [composeSending, setComposeSending] = useState(false);
     const [showCannedPicker, setShowCannedPicker] = useState(false);
+    const [editingTemplate, setEditingTemplate] = useState<{ channel: string; idx: number; label: string; subject: string; body: string } | null>(null);
 
-    // ─── CANNED RESPONSE TEMPLATES ──────────────────────────────────
-    const CANNED_RESPONSES: Record<string, { label: string; subject?: string; body: string }[]> = {
+    // ─── CANNED RESPONSE TEMPLATES (persisted in localStorage) ──────
+    const DEFAULT_CANNED: Record<string, { label: string; subject?: string; body: string }[]> = {
         sms: [
             { label: '📦 Delivery attempt failed', body: 'Hi {{name}}, your order #{{order}} delivery was attempted but unsuccessful. Please confirm your availability or updated address. Reply to this message or call us. — JustOneTee' },
             { label: '📍 Address confirmation', body: 'Hi {{name}}, we need to verify the delivery address for order #{{order}}. Please reply with your full address including apartment/door number. — JustOneTee' },
@@ -638,11 +639,40 @@ const IncidentsPage: React.FC = () => {
         ],
     };
 
+    const loadCannedResponses = (): Record<string, { label: string; subject?: string; body: string }[]> => {
+        try {
+            const saved = localStorage.getItem('od_canned_responses');
+            if (saved) return JSON.parse(saved);
+        } catch { /* ignore */ }
+        return DEFAULT_CANNED;
+    };
+
+    const [cannedResponses, setCannedResponses] = useState(loadCannedResponses);
+
+    const handleSaveTemplate = () => {
+        if (!editingTemplate) return;
+        try {
+            const updated = { ...cannedResponses };
+            const ch = editingTemplate.channel;
+            if (!updated[ch]) updated[ch] = [];
+            updated[ch][editingTemplate.idx] = {
+                label: editingTemplate.label,
+                ...(editingTemplate.subject ? { subject: editingTemplate.subject } : {}),
+                body: editingTemplate.body,
+            };
+            localStorage.setItem('od_canned_responses', JSON.stringify(updated));
+            setCannedResponses(updated);
+            setEditingTemplate(null);
+            setMessage({ type: 'success', text: '✅ Template saved successfully!' });
+        } catch {
+            setMessage({ type: 'error', text: '❌ Failed to save template' });
+        }
+    };
+
     const applyCannedTemplate = (template: { label: string; subject?: string; body: string }) => {
         const t = selectedTicket;
         let body = template.body;
         let subject = template.subject || '';
-        // Replace tokens with ticket data
         const replacements: Record<string, string> = {
             '{{name}}': t?.customer?.name || 'Customer',
             '{{order}}': t?.order?.orderNumber || '—',
@@ -1020,15 +1050,23 @@ const IncidentsPage: React.FC = () => {
                                         {/* Canned Templates Picker */}
                                         {showCannedPicker && composeChannel && (
                                             <div className="bg-[#0f1923] rounded-xl border border-border-dark max-h-48 overflow-y-auto custom-scrollbar">
-                                                {(CANNED_RESPONSES[composeChannel] || []).map((tpl, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => applyCannedTemplate(tpl)}
-                                                        className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-primary/5 transition-colors border-b border-border-dark/30 last:border-0"
-                                                    >
-                                                        <span className="text-[11px] font-bold text-white leading-tight">{tpl.label}</span>
-                                                        <span className="text-[10px] text-text-muted leading-tight line-clamp-1 flex-1 ml-auto">{tpl.body.substring(0, 60)}...</span>
-                                                    </button>
+                                                {(cannedResponses[composeChannel] || []).map((tpl, idx) => (
+                                                    <div key={idx} className="flex items-center border-b border-border-dark/30 last:border-0 hover:bg-primary/5 transition-colors">
+                                                        <button
+                                                            onClick={() => applyCannedTemplate(tpl)}
+                                                            className="flex-1 flex items-start gap-2.5 px-3 py-2.5 text-left"
+                                                        >
+                                                            <span className="text-[11px] font-bold text-white leading-tight">{tpl.label}</span>
+                                                            <span className="text-[10px] text-text-muted leading-tight line-clamp-1 flex-1 ml-auto">{tpl.body.substring(0, 60)}...</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setEditingTemplate({ channel: composeChannel, idx, label: tpl.label, subject: tpl.subject || '', body: tpl.body }); }}
+                                                            className="px-2 py-2 text-text-muted hover:text-primary transition-colors shrink-0"
+                                                            title="Edit template"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>edit</span>
+                                                        </button>
+                                                    </div>
                                                 ))}
                                             </div>
                                         )}
@@ -1047,7 +1085,7 @@ const IncidentsPage: React.FC = () => {
                                                 onChange={e => setComposeBody(e.target.value)}
                                                 rows={composeBody.includes('\n') ? 5 : 2}
                                                 placeholder={composeChannel === 'call' ? 'Write call script here...' : `Type ${composeChannel} message...`}
-                                                className="flex-1 bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none resize-none"
+                                                className={`flex-1 bg-[#1a2332] border rounded-lg px-3 py-2 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none resize-none ${composeChannel === 'sms' && composeBody.length > 160 ? 'border-red-500/50' : 'border-border-dark'}`}
                                             />
                                             <button
                                                 onClick={handleComposeSend}
@@ -1057,12 +1095,100 @@ const IncidentsPage: React.FC = () => {
                                                 {composeSending ? '...' : composeChannel === 'call' ? 'Log Call' : 'Send'}
                                             </button>
                                         </div>
+                                        {/* SMS Character Warning */}
+                                        {composeChannel === 'sms' && composeBody.length > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-[10px] font-bold ${composeBody.length > 160 ? 'text-red-400' : composeBody.length > 140 ? 'text-orange-400' : 'text-text-muted'}`}>
+                                                    {composeBody.length} / 160 characters
+                                                    {composeBody.length > 160 && ` — ${Math.ceil(composeBody.length / 153)} SMS segments`}
+                                                </span>
+                                                {composeBody.length > 160 && (
+                                                    <span className="flex items-center gap-1 text-[10px] text-red-400 font-bold">
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 13 }}>warning</span>
+                                                        Over 160 chars — will be split into multiple SMS
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Edit Template Modal */}
+                {editingTemplate && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditingTemplate(null)}>
+                        <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="p-5 border-b border-border-dark flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>edit_note</span>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Edit Template</h3>
+                                    <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">{editingTemplate.channel.toUpperCase()}</span>
+                                </div>
+                                <button onClick={() => setEditingTemplate(null)} className="text-text-muted hover:text-white">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                            <div className="p-5 space-y-4">
+                                <div>
+                                    <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Template Name</label>
+                                    <input
+                                        value={editingTemplate.label}
+                                        onChange={e => setEditingTemplate({ ...editingTemplate, label: e.target.value })}
+                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                    />
+                                </div>
+                                {editingTemplate.channel === 'email' && (
+                                    <div>
+                                        <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Subject Line</label>
+                                        <input
+                                            value={editingTemplate.subject}
+                                            onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })}
+                                            className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                            placeholder="Email subject..."
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-[10px] text-text-muted font-bold uppercase">Content</label>
+                                        <span className="text-[9px] text-text-muted">Use {'{{name}}'}, {'{{order}}'}, {'{{phone}}'} as tokens</span>
+                                    </div>
+                                    <textarea
+                                        value={editingTemplate.body}
+                                        onChange={e => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
+                                        rows={8}
+                                        className={`w-full bg-[#1a2332] border rounded-lg px-3 py-2 text-xs text-white focus:border-primary outline-none resize-none ${editingTemplate.channel === 'sms' && editingTemplate.body.length > 160 ? 'border-red-500/50' : 'border-border-dark'}`}
+                                    />
+                                    {editingTemplate.channel === 'sms' && (
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className={`text-[10px] font-bold ${editingTemplate.body.length > 160 ? 'text-red-400' : editingTemplate.body.length > 140 ? 'text-orange-400' : 'text-text-muted'}`}>
+                                                {editingTemplate.body.length} / 160 characters
+                                            </span>
+                                            {editingTemplate.body.length > 160 && (
+                                                <span className="flex items-center gap-1 text-[10px] text-red-400 font-bold">
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>warning</span>
+                                                    Over 160 chars
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0 flex justify-end gap-3">
+                                <button onClick={() => setEditingTemplate(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                                <button
+                                    onClick={handleSaveTemplate}
+                                    className="px-6 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
+                                >
+                                    Save Template
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };
