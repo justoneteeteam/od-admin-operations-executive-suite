@@ -23,7 +23,7 @@ const PurchasesPage: React.FC = () => {
     supplierId: '',
     fulfillmentCenterId: '',
     warehouseId: '',
-    date: new Date().toISOString().split('T')[0],
+    orderDate: new Date().toISOString().split('T')[0],
     reference: '',
     items: [] as PurchaseItem[],
     globalTax: 0,
@@ -73,7 +73,7 @@ const PurchasesPage: React.FC = () => {
       supplierId: '',
       fulfillmentCenterId: '',
       warehouseId: '',
-      date: new Date().toISOString().split('T')[0],
+      orderDate: new Date().toISOString().split('T')[0],
       reference: '',
       items: [],
       globalTax: 0,
@@ -93,11 +93,14 @@ const PurchasesPage: React.FC = () => {
       supplierId: purchase.supplierId,
       fulfillmentCenterId: purchase.fulfillmentCenterId,
       warehouseId: purchase.warehouseId || '',
-      date: new Date(purchase.orderDate).toISOString().split('T')[0],
+      orderDate: new Date(purchase.orderDate).toISOString().split('T')[0],
       reference: purchase.purchaseOrderNumber,
       items: (purchase.items as any[]).map(item => ({
         ...item,
         id: item.id,
+        productId: item.productId,
+        productName: item.product?.name || item.productName || 'Unknown',
+        sku: item.product?.sku || item.sku || 'N/A',
         qty: item.quantity,
         totalCost: item.subtotal
       })),
@@ -193,22 +196,24 @@ const PurchasesPage: React.FC = () => {
   }, [formData.items, formData.shippingCost, formData.globalDiscount, formData.globalTax]);
 
   const handleSave = async () => {
-    setIsLoading(true); // Reusing loading state or create new one
+    // Validate before setting loading state so early returns don't leak
+    if (!formData.supplierId) { alert("Select Supplier"); return; }
+    if (!formData.fulfillmentCenterId) { alert("Select Fulfillment Center"); return; }
+    if (formData.items.length === 0) { alert("Add at least one product"); return; }
+
+    setIsLoading(true);
     setIsSaving(true);
     try {
-      // Validate
-      if (!formData.supplierId) { alert("Select Supplier"); return; }
-      if (!formData.fulfillmentCenterId) { alert("Select Fulfillment Center"); return; }
-      if (formData.items.length === 0) { alert("Add at least one product"); return; }
+      const { globalTax, globalDiscount, shippingCost, reference, ...rest } = formData;
 
       const payload = {
-        ...formData,
+        ...rest,
         subtotal: totals.subtotal,
         totalAmount: totals.total,
-        purchaseTaxAmount: formData.globalTax,
-        purchaseDiscountAmount: formData.globalDiscount,
-        purchaseShippingCost: formData.shippingCost, // Add this if missing
-        purchaseStatus: formData.purchaseStatus, // Use purchaseStatus
+        purchaseTaxAmount: globalTax,
+        purchaseDiscountAmount: globalDiscount,
+        purchaseShippingCost: shippingCost,
+        purchaseStatus: formData.purchaseStatus,
         // Backend expects 'items' with mapped fields
         items: formData.items.map(item => ({
           productId: (item as any).productId,
@@ -369,8 +374,8 @@ const PurchasesPage: React.FC = () => {
                   <input
                     type="date"
                     className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
-                    value={formData.date}
-                    onChange={e => setFormData({ ...formData, date: e.target.value })}
+                    value={formData.orderDate}
+                    onChange={e => setFormData({ ...formData, orderDate: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">

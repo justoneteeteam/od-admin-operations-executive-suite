@@ -108,7 +108,11 @@ export class PurchasesService {
                     supplier: true,
                     fulfillmentCenter: true,
                     warehouse: true,
-                    items: true,
+                    items: {
+                        include: {
+                            product: true,
+                        },
+                    },
                 },
                 orderBy: { orderDate: 'desc' },
                 skip,

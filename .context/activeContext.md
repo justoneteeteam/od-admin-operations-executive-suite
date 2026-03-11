@@ -1,29 +1,37 @@
 # Active Context
 
 ## Current Focus
-**Version 2 Optimization & Advanced Operations**
-- **V2 Optimization**: Migrating WhatsApp logic and optimizing performance.
-- **Advanced Operations**: Refining Ads Dashboard and Purchase Order workflows for scale.
+**Version 2: Risk Orchestration & Incident Management**
+- **Risk Scoring**: Fully operational two-layer scoring (Base + Loqate address verification) with automated action triggers.
+- **Incident Management**: Auto-created tickets from 17Track delivery failures, SLA tracking (72 business-hour deadline), canned response templates for multi-channel replies.
+- **Notifications**: SMS/WhatsApp Out-of-Delivery messages, Twilio call scheduler with risk-based call durations.
 - **Maintenance**: Monitoring Production Deployment on Railway.
 
 ## Recent Accomplishments
-- **Purchase Order System**: Fixed critical bugs (date mapping, loading leaks) and enhanced data queries to include nested product details.
-- **Ads Dashboard**: Rearranged KPI sequence (Spend, Leads, Orders, Revenue...) and connected 'Leads' and 'Orders' to validated backend data.
-- **Twilio Risk-Based Calls**: Implemented mapping of risk actions (`auto_reject`, `call_center`) to adaptive call lengths and intents.
-- **Robust CSV Import**: Fixed European decimal parsing (comma handling), CRLF line ending issues, and automated phone number normalization.
-- **Enhanced Timeline**: Integrated Twilio call logs (with duration/intent/speech results) and deduplicated 17Track tracking updates.
-- **Deployment**: Production Live on Railway with optimized WhatsApp session handling and `.railwayignore`.
+- **Risk Scoring System**: Implemented two-layer scoring — base scoring (blocked status, item count, order value, frequency, history, address regex) + Loqate address verification refinement. Risk levels (LOW/MEDIUM/HIGH/BLOCKED) trigger automated actions (twilio_short, twilio_long, call_center, auto_reject).
+- **Loqate Address Verification**: Integrated Loqate API for postal code + house number validation with in-memory caching. Added `LoqateRetryService` cron (every 6h) to retry `local_fallback` orders and daily cache purge.
+- **Incident/Ticket System**: Full CRUD tickets module with auto-creation from 17Track delivery failures (`IncidentAutoService`), SLA deadline calculation (72 business-hours, skipping weekends), SLA breach checker (every 15 min), resolution workflows (return_to_warehouse, reshipment, resolved, cancelled), PIC assignment, and timeline events.
+- **Incident Google Sheets Sync**: `IncidentSheetsService` syncs open/resolved tickets to Google Sheets for external visibility.
+- **Canned Response Templates**: Added pre-written SMS/WhatsApp/Email/Voice templates with token replacement (`{{name}}`, `{{order}}`, `{{phone}}`) in the ticket reply compose bar.
+- **Twilio Call Scheduler**: Cron-based service to batch-process eligible orders for confirmation calls.
+- **Shopify Webhooks**: `ShopifyController` processes incoming Shopify order webhooks for automatic store sync.
+- **SMS/WhatsApp Delivery Notifications**: `SmsWhatsappDeliveryService` sends template-based messages via Twilio with GSM-7 encoding, status callbacks, and `CustomerResponse` logging.
+- **Performance Page**: New `PerformancePage.tsx` for operator/team performance analytics.
+- **Purchase Order Fixes**: Fixed date mapping (`orderDate`), loading state leaks, nested product data in queries.
+- **CSV Import Hardening**: European decimal parsing, CRLF handling, phone normalization, zipcode support.
 
 ## Immediate Goals
 1.  **V1 Wrap-up**:
     -   Implement **Bulk Select** for Orders.
     -   Build **Filter Tree** (Status/Date/Country).
     -   Add **Suppliers** & **Fulfillment Centers** to Google Sheets Sync.
-2.  **V2 Optimization**: Migrate WhatsApp `LocalAuth` to `RemoteAuth` (DB-backed sessions) to allow multi-instance support.
+2.  **V2 Hardening**: Migrate WhatsApp `LocalAuth` to `RemoteAuth` (DB-backed sessions) for multi-instance support.
+3.  **Incident Automation**: Enable auto-sequence workflows per case type (multi-step SMS → WhatsApp → Voice escalation).
 
 ## Prerequisites & Blocking Issues
-- **User Data**: Customers must have valid international phone numbers (e.g., `+1...`) for WhatsApp to work.
+- **User Data**: Customers must have valid international phone numbers (E.164 format) for WhatsApp/SMS/Voice to work.
 - **17Track Config**: User needs to update their 17Track Webhook URL to the production link.
+- **Loqate API Key**: `LOQATE_API_KEY` environment variable required for address verification (falls back to regex without it).
 
 ## Active Tasks
 - Monitoring Railway logs for any runtime anomalies.

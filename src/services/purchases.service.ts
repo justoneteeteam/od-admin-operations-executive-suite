@@ -26,7 +26,7 @@ export const purchasesService = {
     },
 
     async updateStatus(id: string, status: string) {
-        const response = await apiClient.patch(`/purchases/${id}/status`, { status });
+        const response = await apiClient.patch(`/purchases/${id}/status`, { purchaseStatus: status });
         return response.data;
     },
 

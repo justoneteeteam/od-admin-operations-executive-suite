@@ -207,8 +207,10 @@ export class OrdersService {
         if (where.customerId) whereClause.customerId = where.customerId;
 
         if (where.search) {
+            const searchTerm = where.search.replace(/^#/, ''); // Strip leading '#'
             whereClause.OR = [
-                { orderNumber: { contains: where.search, mode: 'insensitive' } },
+                { orderNumber: { contains: searchTerm, mode: 'insensitive' } },
+                { id: { contains: searchTerm, mode: 'insensitive' } },
                 {
                     customer: {
                         name: { contains: where.search, mode: 'insensitive' }

@@ -8,36 +8,11 @@
 - **Language**: TypeScript
 - **Routing**: React Router v7
 - **Styling**: Tailwind CSS (Utility-first CSS framework)
-- **Icons**: Material Symbols Outlined
+- **Icons**: Material Symbols Outlined, Lucide React
 - **Stats/Charts**: Recharts
 - **HTTP Client**: Axios (custom wrapper with Interceptors)
 - **State Management**: React Context / Hooks
 - **Data Tables**: Custom implementations with Bulk Select support.
-
-### External Services
-- **Shipment Tracking**: 17Track API (Webhook Listener Active)
-- **Notifications**: Twilio (WhatsApp Business API & Voice API - Active)
-- **Data Sync**: Google Sheets API (via generic HTTP or client library)
-- **Scheduling**: Node-cron (for periodic sync jobs)
-
-## Configuration & Environment Variables
-To enable these features, the following credentials are required in the `.env` file:
-
-### 1. Twilio (WhatsApp)
-- `TWILIO_ACCOUNT_SID`: Account Service ID
-- `TWILIO_AUTH_TOKEN`: Authentication Token
-- `TWILIO_WHATSAPP_NUMBER`: Sending number (e.g., `whatsapp:+14155238886`)
-
-### 2. 17Track (Tracking)
-- `TRACK17_API_KEY`: API Key for Shipment tracking
-
-### 3. Backend Specifics
-- `APP_URL`: Base URL for the production API.
-- `SUPABASE_URL`: Supabase project URL for client-side integration.
-
-### 4. Database (Supabase)
-- `DATABASE_URL`: Prisma connection string
-- `JWT_SECRET`: Secret key for signing tokens
 
 ### Backend (Verified Stack)
 - **Runtime**: Node.js
@@ -45,7 +20,39 @@ To enable these features, the following credentials are required in the `.env` f
 - **Database**: Supabase (PostgreSQL Managed)
 - **ORM**: Prisma v7
 - **Auth**: Passport.js (JWT) + bcrypt
-- **API**: REST (Fully implemented for Orders, Customers, Products, Fulfillment, Suppliers, Purchases)
+- **API**: REST (Fully implemented for Orders, Customers, Products, Fulfillment, Suppliers, Purchases, Tickets, Notifications, Risk Scoring, Ads Campaigns, Analytics)
+- **Scheduling**: `@nestjs/schedule` (Cron-based jobs for Loqate retry, SLA breach checks, undelivered order sync, Twilio call scheduling)
+- **Validation**: class-validator / class-transformer (DTOs)
+
+### External Services
+- **Shipment Tracking**: 17Track API (Webhook Listener Active)
+- **Notifications**: Twilio (WhatsApp Business API, Voice API, SMS — Active)
+- **Data Sync**: Google Sheets API (via `google-spreadsheet` library)
+- **Address Verification**: Loqate API (with in-memory caching & retry cron)
+- **E-commerce**: Shopify (Inbound Order Webhooks)
+
+## Configuration & Environment Variables
+To enable these features, the following credentials are required in the `.env` file:
+
+### 1. Twilio (WhatsApp / SMS / Voice)
+- `TWILIO_ACCOUNT_SID`: Account Service ID
+- `TWILIO_AUTH_TOKEN`: Authentication Token
+- `TWILIO_WHATSAPP_NUMBER`: Sending number (e.g., `whatsapp:+14155238886`)
+- `TWILIO_PHONE_NUMBER`: SMS/Voice number (E.164 format)
+
+### 2. 17Track (Tracking)
+- `TRACK17_API_KEY`: API Key for Shipment tracking
+
+### 3. Loqate (Address Verification)
+- `LOQATE_API_KEY`: API Key for address verification (optional — falls back to regex validation without it)
+
+### 4. Backend Specifics
+- `APP_URL`: Base URL for the production API.
+- `SUPABASE_URL`: Supabase project URL for client-side integration.
+
+### 5. Database (Supabase)
+- `DATABASE_URL`: Prisma connection string
+- `JWT_SECRET`: Secret key for signing tokens
 
 ### DevOps & Tools
 - **Package Manager**: npm
@@ -62,6 +69,36 @@ To enable these features, the following credentials are required in the `.env` f
 - `react-router-dom`
 - `recharts`
 - `lucide-react`
-- `@nestjs/core`, `@nestjs/common`, `@nestjs/jwt`, `@nestjs/passport`
+- `@nestjs/core`, `@nestjs/common`, `@nestjs/jwt`, `@nestjs/passport`, `@nestjs/schedule`
 - `@prisma/client`, `passport-jwt`, `bcrypt`
 - `google-spreadsheet`, `google-auth-library`
+- `twilio`
+- `class-validator`, `class-transformer`
+
+## Backend Module Directory (`backend/src/`)
+| Module | Description |
+|---|---|
+| `address-verify/` | Loqate API integration for postal code + house number validation |
+| `ads-campaigns/` | Ads performance data CRUD |
+| `analytics/` | Analytics and reporting endpoints |
+| `auth/` | JWT authentication, Passport strategies |
+| `customers/` | Customer CRUD and profile management |
+| `exchange-rates/` | Currency conversion service |
+| `fulfillment-centers/` | Fulfillment center management |
+| `google-sheets/` | Two-way Google Sheets sync for orders + call center queue |
+| `inventory/` | Inventory tracking and stock levels |
+| `notifications/` | SMS/WhatsApp delivery service, WhatsApp Personal (wwebjs), Twilio callbacks |
+| `orders/` | Order CRUD, status management, CSV import |
+| `prisma/` | Prisma client service |
+| `products/` | Product catalog management |
+| `profits/` | Financial calculations and profit tracking |
+| `purchases/` | Purchase order management |
+| `risk-scoring/` | Two-layer risk assessment + Loqate retry cron |
+| `scripts/` | Utility and migration scripts |
+| `store-settings/` | Multi-store configuration and credentials |
+| `suppliers/` | Supplier management |
+| `tickets/` | Incident tickets, auto-create from 17Track, SLA, workflows, sheets sync |
+| `tracking/` | 17Track webhook handler, tracking history CRUD |
+| `twilio-voice/` | Voice call service, call scheduler cron, pre-call SMS |
+| `users/` | User management |
+| `webhooks/shopify/` | Shopify inbound order webhooks |
