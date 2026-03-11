@@ -63,11 +63,16 @@ export class TicketsService {
         const ticketNumber = await this.generateTicketNumber();
         const slaDeadlineAt = this.calculateSlaDeadline(new Date());
 
+        // Sanitize empty strings to undefined for UUID fields
+        const orderId = dto.orderId?.trim() || undefined;
+        const customerId = dto.customerId?.trim() || undefined;
+        const picId = dto.picId?.trim() || undefined;
+
         // Check for duplicate auto ticket
-        if (dto.orderId) {
+        if (orderId) {
             const existing = await this.prisma.ticket.findFirst({
                 where: {
-                    orderId: dto.orderId,
+                    orderId,
                     source: '17track_auto',
                     deletedAt: null,
                 },
@@ -85,9 +90,9 @@ export class TicketsService {
                 caseType: dto.caseType || 'other',
                 priority: dto.priority || 'medium',
                 source: 'manual',
-                orderId: dto.orderId,
-                customerId: dto.customerId,
-                picId: dto.picId,
+                orderId,
+                customerId,
+                picId,
                 picName: dto.picName,
                 country: dto.country,
                 slaDeadlineAt: slaDeadlineAt,

@@ -35,7 +35,7 @@ function slaRemaining(deadlineStr?: string): { label: string; color: string; urg
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────
 const IncidentsPage: React.FC = () => {
-    const [activeView, setActiveView] = useState<'board' | 'list' | 'report' | 'workflow'>('board');
+    const [activeView, setActiveView] = useState<'board' | 'list' | 'workflow'>('board');
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [stats, setStats] = useState<TicketStats | null>(null);
     const [workflows, setWorkflows] = useState<IncidentWorkflow[]>([]);
@@ -53,8 +53,15 @@ const IncidentsPage: React.FC = () => {
     const [newTicket, setNewTicket] = useState({ title: '', description: '', caseType: 'other', priority: 'medium', orderId: '', customerId: '' });
     const [creating, setCreating] = useState(false);
 
-    // Message
+    // Message with auto-dismiss
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    useEffect(() => {
+        if (message) {
+            const timer = setTimeout(() => setMessage(null), 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [message]);
 
     // ─── FETCH DATA ──────────────────────────────────────────────────
     const fetchData = async () => {
@@ -97,18 +104,27 @@ const IncidentsPage: React.FC = () => {
         }
     };
 
-    // ─── CREATE TICKET ───────────────────────────────────────────────
     const handleCreate = async () => {
         if (!newTicket.title) return;
         try {
             setCreating(true);
-            await ticketsService.create(newTicket);
+            // Strip empty strings for optional UUID fields
+            const payload: any = {
+                title: newTicket.title,
+                description: newTicket.description || undefined,
+                caseType: newTicket.caseType,
+                priority: newTicket.priority,
+            };
+            if (newTicket.orderId?.trim()) payload.orderId = newTicket.orderId.trim();
+            if (newTicket.customerId?.trim()) payload.customerId = newTicket.customerId.trim();
+
+            await ticketsService.create(payload);
             setShowNewModal(false);
             setNewTicket({ title: '', description: '', caseType: 'other', priority: 'medium', orderId: '', customerId: '' });
-            setMessage({ type: 'success', text: 'Ticket created successfully' });
+            setMessage({ type: 'success', text: '✅ Ticket created successfully!' });
             fetchData();
         } catch (err: any) {
-            setMessage({ type: 'error', text: err?.response?.data?.message || 'Failed to create' });
+            setMessage({ type: 'error', text: '❌ ' + (err?.response?.data?.message || 'Failed to create ticket') });
         } finally {
             setCreating(false);
         }
@@ -305,43 +321,72 @@ const IncidentsPage: React.FC = () => {
         </div>
     );
 
-    // ─── RENDER: REPORT VIEW ─────────────────────────────────────────
-    const renderReport = () => (
-        <div className="flex flex-col gap-6">
-            {renderKPIs()}
-            <div className="bg-card-dark rounded-xl border border-border-dark p-6">
-                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-4">Case Type Breakdown</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {stats?.caseTypeBreakdown.map(ct => {
-                        const opt = CASE_TYPE_OPTIONS.find(c => c.value === ct.caseType);
-                        return (
-                            <div key={ct.caseType} className="flex items-center gap-3 bg-[#1a2332] rounded-lg p-3 border border-border-dark">
-                                <span className="material-symbols-outlined" style={{ fontSize: 20, color: opt?.color || '#6b7280' }}>{opt?.icon || 'help'}</span>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-white">{opt?.label || ct.caseType}</p>
-                                    <p className="text-lg font-black text-white">{ct.count}</p>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-
     // ─── RENDER: WORKFLOW EDITOR ─────────────────────────────────────
+    const [editingWorkflow, setEditingWorkflow] = useState<IncidentWorkflow | null>(null);
+    const [wfSaving, setWfSaving] = useState(false);
+
+    const CHANNEL_OPTIONS = [
+        { value: 'whatsapp', label: 'WhatsApp', icon: 'chat', color: '#22c55e' },
+        { value: 'sms', label: 'SMS', icon: 'sms', color: '#3b82f6' },
+        { value: 'email', label: 'Email', icon: 'mail', color: '#f97316' },
+        { value: 'call', label: 'Call', icon: 'call', color: '#a855f7' },
+    ];
+
+    const handleSaveWorkflow = async () => {
+        if (!editingWorkflow) return;
+        try {
+            setWfSaving(true);
+            await ticketsService.updateWorkflow(editingWorkflow.caseType, {
+                title: editingWorkflow.title,
+                description: editingWorkflow.description,
+                channelOrder: editingWorkflow.channelOrder,
+                steps: editingWorkflow.steps,
+                isActive: editingWorkflow.isActive,
+            });
+            setMessage({ type: 'success', text: '✅ Workflow saved!' });
+            setEditingWorkflow(null);
+            fetchWorkflows();
+        } catch (err: any) {
+            setMessage({ type: 'error', text: '❌ ' + (err?.response?.data?.message || 'Failed to save workflow') });
+        } finally {
+            setWfSaving(false);
+        }
+    };
+
+    const addStepToWorkflow = () => {
+        if (!editingWorkflow) return;
+        const newStep = { channel: 'whatsapp', trigger: 'auto', delayMinutes: 0, content: '' };
+        setEditingWorkflow({ ...editingWorkflow, steps: [...(editingWorkflow.steps || []), newStep] });
+    };
+
+    const removeStepFromWorkflow = (idx: number) => {
+        if (!editingWorkflow) return;
+        setEditingWorkflow({ ...editingWorkflow, steps: editingWorkflow.steps.filter((_: any, i: number) => i !== idx) });
+    };
+
+    const updateStep = (idx: number, field: string, value: any) => {
+        if (!editingWorkflow) return;
+        const updated = [...editingWorkflow.steps];
+        updated[idx] = { ...updated[idx], [field]: value };
+        setEditingWorkflow({ ...editingWorkflow, steps: updated });
+    };
+
     const renderWorkflow = () => (
         <div className="flex flex-col gap-4">
-            <p className="text-xs text-text-muted">Configure automated workflow sequences for each incident category. Each workflow defines the steps (WhatsApp → SMS → Call) and timing.</p>
+            <p className="text-xs text-text-muted">Configure automated workflow sequences for each incident category. Click a card to edit its steps.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {workflows.map(wf => {
                     const opt = CASE_TYPE_OPTIONS.find(c => c.value === wf.caseType);
                     return (
-                        <div key={wf.id} className="bg-card-dark rounded-xl border border-border-dark p-5 flex flex-col gap-3">
+                        <div
+                            key={wf.id}
+                            onClick={() => setEditingWorkflow(JSON.parse(JSON.stringify(wf)))}
+                            className="bg-card-dark rounded-xl border border-border-dark p-5 flex flex-col gap-3 cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group"
+                        >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined" style={{ fontSize: 18, color: opt?.color || '#6b7280' }}>{opt?.icon || 'help'}</span>
-                                    <span className="text-sm font-bold text-white">{wf.title}</span>
+                                    <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{wf.title}</span>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${wf.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                                     {wf.isActive ? 'Active' : 'Inactive'}
@@ -350,9 +395,14 @@ const IncidentsPage: React.FC = () => {
                             <p className="text-xs text-text-muted">{wf.description || 'No description'}</p>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-text-muted font-bold">Channels:</span>
-                                {(wf.channelOrder || []).map((ch: string) => (
-                                    <span key={ch} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 font-bold">{ch}</span>
-                                ))}
+                                {(wf.channelOrder || []).map((ch: string) => {
+                                    const chOpt = CHANNEL_OPTIONS.find(c => c.value === ch);
+                                    return (
+                                        <span key={ch} className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: chOpt?.color || '#6b7280', borderColor: (chOpt?.color || '#6b7280') + '30', backgroundColor: (chOpt?.color || '#6b7280') + '10' }}>
+                                            {chOpt?.label || ch}
+                                        </span>
+                                    );
+                                })}
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-text-muted font-bold">Steps:</span>
@@ -362,6 +412,189 @@ const IncidentsPage: React.FC = () => {
                     );
                 })}
             </div>
+
+            {/* Workflow Edit Modal */}
+            {editingWorkflow && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditingWorkflow(null)}>
+                    <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="p-6 border-b border-border-dark flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined" style={{ fontSize: 22, color: CASE_TYPE_OPTIONS.find(c => c.value === editingWorkflow.caseType)?.color }}>
+                                    {CASE_TYPE_OPTIONS.find(c => c.value === editingWorkflow.caseType)?.icon || 'help'}
+                                </span>
+                                <div>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Edit Workflow</h3>
+                                    <p className="text-xs text-text-muted">{caseLabel(editingWorkflow.caseType)}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setEditingWorkflow(null)} className="text-text-muted hover:text-white">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {/* Title & Description */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Title</label>
+                                    <input
+                                        value={editingWorkflow.title}
+                                        onChange={e => setEditingWorkflow({ ...editingWorkflow, title: e.target.value })}
+                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Description</label>
+                                    <input
+                                        value={editingWorkflow.description || ''}
+                                        onChange={e => setEditingWorkflow({ ...editingWorkflow, description: e.target.value })}
+                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Active Toggle */}
+                            <div className="flex items-center gap-3">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editingWorkflow.isActive}
+                                        onChange={e => setEditingWorkflow({ ...editingWorkflow, isActive: e.target.checked })}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                                <span className="text-xs text-white font-bold">Workflow Active</span>
+                            </div>
+
+                            {/* Channel Order */}
+                            <div>
+                                <label className="text-[10px] text-text-muted font-bold uppercase block mb-2">Channel Order</label>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {CHANNEL_OPTIONS.map(ch => {
+                                        const isSelected = (editingWorkflow.channelOrder || []).includes(ch.value);
+                                        return (
+                                            <button
+                                                key={ch.value}
+                                                onClick={() => {
+                                                    const current = editingWorkflow.channelOrder || [];
+                                                    const updated = isSelected ? current.filter((c: string) => c !== ch.value) : [...current, ch.value];
+                                                    setEditingWorkflow({ ...editingWorkflow, channelOrder: updated });
+                                                }}
+                                                className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${
+                                                    isSelected
+                                                        ? 'border-primary/40 bg-primary/10 text-white'
+                                                        : 'border-border-dark bg-[#1a2332] text-text-muted hover:border-border-dark/80'
+                                                }`}
+                                            >
+                                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: ch.color }}>{ch.icon}</span>
+                                                {ch.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Steps */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-[10px] text-text-muted font-bold uppercase">Automation Steps</label>
+                                    <button
+                                        onClick={addStepToWorkflow}
+                                        className="flex items-center gap-1 text-[10px] text-primary font-bold hover:text-primary/80 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add</span>
+                                        Add Step
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {(editingWorkflow.steps || []).map((step: any, idx: number) => {
+                                        const chOpt = CHANNEL_OPTIONS.find(c => c.value === step.channel);
+                                        return (
+                                            <div key={idx} className="bg-[#1a2332] rounded-xl border border-border-dark p-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-text-muted">Step {idx + 1}</span>
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: chOpt?.color }}>{chOpt?.icon || 'help'}</span>
+                                                    </div>
+                                                    <button onClick={() => removeStepFromWorkflow(idx)} className="text-red-400 hover:text-red-300">
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                                                    </button>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Channel</label>
+                                                        <select
+                                                            value={step.channel}
+                                                            onChange={e => updateStep(idx, 'channel', e.target.value)}
+                                                            className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                        >
+                                                            {CHANNEL_OPTIONS.map(ch => (
+                                                                <option key={ch.value} value={ch.value}>{ch.label}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Trigger</label>
+                                                        <select
+                                                            value={step.trigger || 'auto'}
+                                                            onChange={e => updateStep(idx, 'trigger', e.target.value)}
+                                                            className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                        >
+                                                            <option value="auto">Auto (Timer)</option>
+                                                            <option value="manual">Manual</option>
+                                                            <option value="on_no_response">On No Response</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Delay (min)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={step.delayMinutes || 0}
+                                                            onChange={e => updateStep(idx, 'delayMinutes', parseInt(e.target.value) || 0)}
+                                                            className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                            min={0}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3">
+                                                    <label className="text-[10px] text-text-muted font-bold block mb-1">Content / Template</label>
+                                                    <textarea
+                                                        value={step.content || ''}
+                                                        onChange={e => updateStep(idx, 'content', e.target.value)}
+                                                        rows={2}
+                                                        className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none resize-none"
+                                                        placeholder={`Message template for ${chOpt?.label || 'channel'}...`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {(editingWorkflow.steps || []).length === 0 && (
+                                        <div className="text-center py-6 text-text-muted text-xs italic border border-dashed border-border-dark rounded-xl">
+                                            No steps configured. Click "Add Step" to create an automation sequence.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 pt-0 flex justify-end gap-3">
+                            <button onClick={() => setEditingWorkflow(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                            <button
+                                onClick={handleSaveWorkflow}
+                                disabled={wfSaving}
+                                className="px-6 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                            >
+                                {wfSaving ? 'Saving...' : 'Save Workflow'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 
@@ -635,7 +868,6 @@ const IncidentsPage: React.FC = () => {
                     {[
                         { key: 'board', label: 'Board', icon: 'view_kanban' },
                         { key: 'list', label: 'List', icon: 'list' },
-                        { key: 'report', label: 'Report', icon: 'bar_chart' },
                         { key: 'workflow', label: 'Workflows', icon: 'account_tree' },
                     ].map(tab => (
                         <button
@@ -689,7 +921,6 @@ const IncidentsPage: React.FC = () => {
                 <>
                     {activeView === 'board' && renderBoard()}
                     {activeView === 'list' && renderList()}
-                    {activeView === 'report' && renderReport()}
                     {activeView === 'workflow' && renderWorkflow()}
                 </>
             )}
