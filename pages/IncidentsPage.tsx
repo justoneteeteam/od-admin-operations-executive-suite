@@ -605,6 +605,57 @@ const IncidentsPage: React.FC = () => {
     const [composeBody, setComposeBody] = useState('');
     const [composeSubject, setComposeSubject] = useState('');
     const [composeSending, setComposeSending] = useState(false);
+    const [showCannedPicker, setShowCannedPicker] = useState(false);
+
+    // ─── CANNED RESPONSE TEMPLATES ──────────────────────────────────
+    const CANNED_RESPONSES: Record<string, { label: string; subject?: string; body: string }[]> = {
+        sms: [
+            { label: '📦 Delivery attempt failed', body: 'Hi {{name}}, your order #{{order}} delivery was attempted but unsuccessful. Please confirm your availability or updated address. Reply to this message or call us. — JustOneTee' },
+            { label: '📍 Address confirmation', body: 'Hi {{name}}, we need to verify the delivery address for order #{{order}}. Please reply with your full address including apartment/door number. — JustOneTee' },
+            { label: '🔄 Reshipment notification', body: 'Hi {{name}}, a reshipment for your order #{{order}} has been scheduled. You will receive a new tracking number shortly. — JustOneTee' },
+            { label: '📞 Call follow-up', body: 'Hi {{name}}, we tried calling you about order #{{order}}. Please call us back or reply to this message so we can resolve your delivery issue. — JustOneTee' },
+            { label: '⏰ Last chance before return', body: 'Hi {{name}}, your order #{{order}} will be returned to warehouse if we cannot reach you within 24h. Please reply ASAP with your delivery preference. — JustOneTee' },
+        ],
+        whatsapp: [
+            { label: '👋 Initial contact — delivery issue', body: 'Hello {{name}}! 👋\n\nWe\'re reaching out about your order #{{order}}.\n\nOur courier reported an issue with your delivery. Could you please confirm:\n1. Your full delivery address\n2. A time when someone will be available to receive the package\n\nWe\'ll get this sorted within 24 hours! 🙏\n\n— JustOneTee Customer Service' },
+            { label: '📸 Request photos (damaged)', body: 'Hi {{name}},\n\nWe\'re sorry to hear about the issue with your order #{{order}}.\n\nTo help resolve this quickly, could you please send us:\n📸 Photos of the damaged packaging\n📸 Photos of the product condition\n\nWe\'ll respond within 2 hours with a solution. 🙏\n\nThank you!\n— JustOneTee' },
+            { label: '🔄 Reshipment confirmed', body: 'Great news, {{name}}! 🎉\n\nYour replacement order for #{{order}} has been confirmed. You\'ll receive a new tracking number within 24-48 hours.\n\nThank you for your patience! 💚\n— JustOneTee' },
+            { label: '📍 Address update request', body: 'Hi {{name}},\n\nThe courier was unable to deliver your order #{{order}} due to an address issue.\n\nCould you please confirm your complete delivery address including:\n🏠 Street + house/apt number\n📮 Postal code\n🏙️ City\n📱 Phone number for courier\n\nWe\'ll reschedule delivery immediately!\n— JustOneTee' },
+            { label: '❌ Refused delivery follow-up', body: 'Hi {{name}},\n\nWe noticed that the delivery for order #{{order}} was refused.\n\nCould you let us know what happened? We want to make it right:\n• 🔄 Reschedule delivery\n• 💰 Process a refund\n• 📦 Reship to a different address\n\nPlease reply with your preference.\n— JustOneTee' },
+        ],
+        call: [
+            { label: '📞 Standard delivery issue script', body: 'Hello, am I speaking with {{name}}?\n\nThis is [Agent Name] from JustOneTee. We are calling about your order number {{order}}.\n\nWe noticed there was an issue with your delivery. [Describe issue]\n\nCan you confirm your delivery address and a preferred time?\n\n[If confirmed] Great! We\'ll reschedule the delivery.\n[If no answer] Press 1 to confirm delivery, Press 2 to reschedule.' },
+            { label: '📍 Address verification script', body: 'Hello {{name}}, this is JustOneTee customer service.\n\nWe\'re calling about your order #{{order}}. The courier reported that the delivery address may be incomplete or incorrect.\n\nCould you please confirm your full address including:\n- Street name and house number\n- Apartment or door number\n- Postal code\n\n[Record the confirmed address]\n\nThank you! We\'ll update this and reschedule your delivery.' },
+            { label: '📦 Damaged package script', body: 'Hello {{name}}, this is JustOneTee support.\n\nWe received a report that your order #{{order}} may have been damaged during shipping.\n\nCan you describe the condition of:\n1. The outer packaging\n2. The product inside\n\n[If damaged] We\'re very sorry. We can offer:\n- A full replacement shipped today\n- A refund to your original payment method\n\nWhich would you prefer?' },
+            { label: '🔄 Reshipment confirmation script', body: 'Hello {{name}}, calling from JustOneTee.\n\nGood news about your order #{{order}} — we\'ve arranged a reshipment.\n\nI just need to confirm the delivery address:\n[Read current address]\n\nIs this still correct? Any additional instructions for the courier?\n\n[Confirm] Perfect, you\'ll receive new tracking info within 24-48 hours.' },
+        ],
+        email: [
+            { label: '📧 Delivery issue notification', subject: 'Order #{{order}} — Delivery Issue', body: 'Dear {{name}},\n\nWe are writing to inform you about a delivery issue with your order #{{order}}.\n\nOur courier has reported the following: [describe issue]\n\nTo resolve this, we kindly ask you to:\n1. Confirm your current delivery address\n2. Let us know a preferred delivery time\n\nPlease reply to this email or contact us directly.\n\nBest regards,\nJustOneTee Customer Service\ncod@justonetee.org' },
+            { label: '📸 Damage claim — photo request', subject: 'Order #{{order}} — We Need Your Help', body: 'Dear {{name}},\n\nWe\'re sorry to hear about the issue with your order #{{order}}.\n\nTo process your claim, we need the following:\n- Photos of the outer packaging\n- Photos of the damaged product\n- Brief description of the damage\n\nOnce received, we\'ll process your claim within 24 hours and offer either a replacement or refund.\n\nWe sincerely apologize for the inconvenience.\n\nBest regards,\nJustOneTee Customer Service' },
+            { label: '🔄 Reshipment confirmation', subject: 'Order #{{order}} — Reshipment Confirmed', body: 'Dear {{name}},\n\nWe\'re happy to confirm that a reshipment for your order #{{order}} has been arranged.\n\nYou will receive a new tracking number via email within 24-48 hours.\n\nIf you have any questions, don\'t hesitate to reach out.\n\nThank you for your patience!\n\nBest regards,\nJustOneTee Customer Service' },
+            { label: '⏰ SLA warning — action required', subject: 'URGENT: Order #{{order}} — Action Required', body: 'Dear {{name}},\n\nWe\'ve been trying to reach you regarding your order #{{order}}.\n\nUnfortunately, if we don\'t hear back from you within the next 24 hours, the package will be returned to our warehouse.\n\nPlease reply to this email or call us at your earliest convenience to arrange redelivery.\n\nBest regards,\nJustOneTee Customer Service\ncod@justonetee.org' },
+            { label: '✅ Issue resolved', subject: 'Order #{{order}} — Issue Resolved', body: 'Dear {{name}},\n\nWe\'re pleased to inform you that the delivery issue with your order #{{order}} has been resolved.\n\n[Describe resolution]\n\nIf you have any further questions, please don\'t hesitate to reach out.\n\nThank you for choosing JustOneTee!\n\nBest regards,\nJustOneTee Customer Service' },
+        ],
+    };
+
+    const applyCannedTemplate = (template: { label: string; subject?: string; body: string }) => {
+        const t = selectedTicket;
+        let body = template.body;
+        let subject = template.subject || '';
+        // Replace tokens with ticket data
+        const replacements: Record<string, string> = {
+            '{{name}}': t?.customer?.name || 'Customer',
+            '{{order}}': t?.order?.orderNumber || '—',
+            '{{phone}}': t?.customer?.phone || '—',
+        };
+        Object.entries(replacements).forEach(([token, val]) => {
+            body = body.replace(new RegExp(token.replace(/[{}]/g, '\\$&'), 'g'), val);
+            subject = subject.replace(new RegExp(token.replace(/[{}]/g, '\\$&'), 'g'), val);
+        });
+        setComposeBody(body);
+        if (subject) setComposeSubject(subject);
+        setShowCannedPicker(false);
+    };
 
     const TIMELINE_CHANNEL_MAP: Record<string, { icon: string; color: string; bg: string }> = {
         whatsapp: { icon: 'chat', color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
@@ -616,7 +667,6 @@ const IncidentsPage: React.FC = () => {
     };
 
     const getTimelineStyle = (ev: any) => {
-        // Map eventType + channel to icon/color
         if (ev.eventType === 'status_change') return { icon: 'swap_horiz', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' };
         if (ev.eventType === 'escalation') return { icon: 'warning', color: '#ef4444', bg: 'rgba(239,68,68,.12)' };
         if (ev.eventType === 'call_center_update') return { icon: 'call', color: '#a855f7', bg: 'rgba(168,85,247,.12)' };
@@ -628,7 +678,6 @@ const IncidentsPage: React.FC = () => {
         if (!selectedTicket || !composeChannel || !composeBody.trim()) return;
         try {
             setComposeSending(true);
-            // Add a timeline event recording what was sent
             await ticketsService.addTimelineEvent(selectedTicket.id, {
                 eventType: 'outbound',
                 channel: composeChannel,
@@ -642,6 +691,7 @@ const IncidentsPage: React.FC = () => {
             setComposeBody('');
             setComposeSubject('');
             setComposeChannel(null);
+            setShowCannedPicker(false);
             openDetail(selectedTicket.id);
         } catch (err: any) {
             setMessage({ type: 'error', text: '❌ ' + (err?.response?.data?.message || 'Failed to send') });
@@ -953,10 +1003,36 @@ const IncidentsPage: React.FC = () => {
                                                 <span className="text-xs font-bold text-white">{composeChannel === 'call' ? 'Call Script' : composeChannel.charAt(0).toUpperCase() + composeChannel.slice(1)}</span>
                                                 <span className="text-[10px] text-text-muted">→ {t.customer?.phone || t.customer?.name || 'Customer'}</span>
                                             </div>
-                                            <button onClick={() => { setComposeChannel(null); setComposeBody(''); setComposeSubject(''); }} className="text-text-muted hover:text-white">
-                                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setShowCannedPicker(!showCannedPicker)}
+                                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${showCannedPicker ? 'bg-primary/10 text-primary border-primary/30' : 'bg-[#1a2332] text-text-muted border-border-dark hover:text-white hover:border-primary/20'}`}
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>auto_awesome</span>
+                                                    Templates
+                                                </button>
+                                                <button onClick={() => { setComposeChannel(null); setComposeBody(''); setComposeSubject(''); setShowCannedPicker(false); }} className="text-text-muted hover:text-white">
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+                                                </button>
+                                            </div>
                                         </div>
+
+                                        {/* Canned Templates Picker */}
+                                        {showCannedPicker && composeChannel && (
+                                            <div className="bg-[#0f1923] rounded-xl border border-border-dark max-h-48 overflow-y-auto custom-scrollbar">
+                                                {(CANNED_RESPONSES[composeChannel] || []).map((tpl, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => applyCannedTemplate(tpl)}
+                                                        className="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-primary/5 transition-colors border-b border-border-dark/30 last:border-0"
+                                                    >
+                                                        <span className="text-[11px] font-bold text-white leading-tight">{tpl.label}</span>
+                                                        <span className="text-[10px] text-text-muted leading-tight line-clamp-1 flex-1 ml-auto">{tpl.body.substring(0, 60)}...</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         {composeChannel === 'email' && (
                                             <input
                                                 value={composeSubject}
@@ -969,7 +1045,7 @@ const IncidentsPage: React.FC = () => {
                                             <textarea
                                                 value={composeBody}
                                                 onChange={e => setComposeBody(e.target.value)}
-                                                rows={2}
+                                                rows={composeBody.includes('\n') ? 5 : 2}
                                                 placeholder={composeChannel === 'call' ? 'Write call script here...' : `Type ${composeChannel} message...`}
                                                 className="flex-1 bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none resize-none"
                                             />
