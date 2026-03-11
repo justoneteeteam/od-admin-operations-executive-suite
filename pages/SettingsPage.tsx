@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import storeSettingsService, { StoreSettings } from '../src/services/settings.service';
-import { logisticCompaniesService, LogisticCompany } from '../src/services/logistic-companies.service';
 
-type ActiveTab = 'connection' | 'create' | 'whatsapp' | 'email' | 'logistics';
+type ActiveTab = 'connection' | 'create' | 'whatsapp' | 'email';
 
 const STORE_COLORS = [
   { bg: 'bg-indigo-100', text: 'text-indigo-600' },
@@ -49,13 +48,6 @@ const SettingsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  // Logistic Companies State
-  const [lcList, setLcList] = useState<LogisticCompany[]>([]);
-  const [lcLoading, setLcLoading] = useState(false);
-  const [lcShowModal, setLcShowModal] = useState(false);
-  const [lcEditId, setLcEditId] = useState<string | null>(null);
-  const [lcForm, setLcForm] = useState<Partial<LogisticCompany>>({ name: '', address: '', phone: '', contactPerson: '', email: '' });
-
   // WhatsApp State
   const [waConnected, setWaConnected] = useState(false);
   const [waPhone, setWaPhone] = useState<string | null>(null);
@@ -97,7 +89,6 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     fetchStores();
-    fetchLogisticCompanies();
   }, []);
 
   // Close action menu on outside click
@@ -348,169 +339,6 @@ const SettingsPage: React.FC = () => {
     (s.gsSheetName || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ─── LOGISTICS FUNCTIONS ────────────────────────────────────────────
-  const fetchLogisticCompanies = async () => {
-    setLcLoading(true);
-    try {
-      const data = await logisticCompaniesService.getAll();
-      setLcList(data);
-    } catch (err) {
-      console.error('Failed to load logistic companies', err);
-    } finally {
-      setLcLoading(false);
-    }
-  };
-
-  const handleLcSave = async () => {
-    if (!lcForm.name?.trim()) return;
-    try {
-      if (lcEditId) {
-        await logisticCompaniesService.update(lcEditId, lcForm);
-      } else {
-        await logisticCompaniesService.create(lcForm);
-      }
-      setLcShowModal(false);
-      setLcEditId(null);
-      setLcForm({ name: '', address: '', phone: '', contactPerson: '', email: '' });
-      fetchLogisticCompanies();
-    } catch (err) {
-      console.error('Failed to save logistic company', err);
-    }
-  };
-
-  const handleLcDelete = async (id: string) => {
-    if (!confirm('Delete this logistic company?')) return;
-    try {
-      await logisticCompaniesService.remove(id);
-      fetchLogisticCompanies();
-    } catch (err) {
-      console.error('Failed to delete', err);
-    }
-  };
-
-  const renderLogisticsTab = () => (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-black text-white">Logistic / Shipping Companies</h3>
-          <p className="text-xs text-text-muted mt-1">Manage companies that handle shipping from suppliers to fulfillment centers.</p>
-        </div>
-        <button
-          onClick={() => { setLcEditId(null); setLcForm({ name: '', address: '', phone: '', contactPerson: '', email: '' }); setLcShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add_circle</span>
-          Add Company
-        </button>
-      </div>
-
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-border-dark bg-[#1a2332]">
-              <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Name</th>
-              <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Contact</th>
-              <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Phone</th>
-              <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Email</th>
-              <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Address</th>
-              <th className="py-4 px-6 w-20"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-dark">
-            {lcList.length === 0 ? (
-              <tr><td colSpan={6} className="py-12 text-center text-text-muted text-sm italic">No logistic companies yet</td></tr>
-            ) : (
-              lcList.map(lc => (
-                <tr key={lc.id} className="hover:bg-[#1a2332] transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="size-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-amber-400" style={{ fontSize: 18 }}>local_shipping</span>
-                      </div>
-                      <span className="text-sm font-bold text-white">{lc.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-text-muted">{lc.contactPerson || '\u2014'}</td>
-                  <td className="py-4 px-6 text-sm text-text-muted">{lc.phone || '\u2014'}</td>
-                  <td className="py-4 px-6 text-sm text-text-muted">{lc.email || '\u2014'}</td>
-                  <td className="py-4 px-6 text-sm text-text-muted truncate max-w-[200px]">{lc.address || '\u2014'}</td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => { setLcEditId(lc.id); setLcForm({ name: lc.name, address: lc.address || '', phone: lc.phone || '', contactPerson: lc.contactPerson || '', email: lc.email || '' }); setLcShowModal(true); }}
-                        className="text-text-muted hover:text-white transition-colors"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleLcDelete(lc.id)}
-                        className="text-text-muted hover:text-red-400 transition-colors"
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Logistics Company Modal */}
-      {lcShowModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setLcShowModal(false)}></div>
-          <div className="relative bg-card-dark border border-border-dark rounded-2xl w-full max-w-lg p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
-            <h3 className="text-lg font-black text-white mb-4">{lcEditId ? 'Edit Company' : 'Add Company'}</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Company Name *</label>
-                <input value={lcForm.name || ''} onChange={e => setLcForm({ ...lcForm, name: e.target.value })}
-                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
-                  placeholder="e.g., BAOHAI Express" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Contact Person</label>
-                  <input value={lcForm.contactPerson || ''} onChange={e => setLcForm({ ...lcForm, contactPerson: e.target.value })}
-                    className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
-                    placeholder="John Doe" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Phone</label>
-                  <input value={lcForm.phone || ''} onChange={e => setLcForm({ ...lcForm, phone: e.target.value })}
-                    className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
-                    placeholder="+86 138 0000 0000" />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Email</label>
-                <input value={lcForm.email || ''} onChange={e => setLcForm({ ...lcForm, email: e.target.value })}
-                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
-                  placeholder="contact@company.com" />
-              </div>
-              <div>
-                <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Address</label>
-                <textarea value={lcForm.address || ''} onChange={e => setLcForm({ ...lcForm, address: e.target.value })}
-                  rows={2}
-                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none resize-none"
-                  placeholder="Full shipping address" />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setLcShowModal(false)}
-                className="flex-1 py-2.5 bg-border-dark text-white text-xs font-bold rounded-xl hover:bg-[#2d445a] transition-all">Cancel</button>
-              <button onClick={handleLcSave}
-                className="flex-1 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-                {lcEditId ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
   if (isLoading) {
     return (
@@ -1260,20 +1088,10 @@ const SettingsPage: React.FC = () => {
           </div>
           {activeTab === 'email' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
         </button>
-        <button
-          onClick={() => setActiveTab('logistics')}
-          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'logistics' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
-        >
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>local_shipping</span>
-            Logistics
-          </div>
-          {activeTab === 'logistics' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
-        </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : activeTab === 'email' ? renderEmailTab() : activeTab === 'logistics' ? renderLogisticsTab() : renderCreateTab()}
+      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : activeTab === 'email' ? renderEmailTab() : renderCreateTab()}
     </div>
   );
 };
