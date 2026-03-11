@@ -598,23 +598,78 @@ const IncidentsPage: React.FC = () => {
         </div>
     );
 
+    // ─── DETAIL PANEL STATE ──────────────────────────────────────────
+    const [detailTab, setDetailTab] = useState<'timeline' | 'callLogs'>('timeline');
+    const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+    const [composeChannel, setComposeChannel] = useState<'email' | 'whatsapp' | 'sms' | 'call' | null>(null);
+    const [composeBody, setComposeBody] = useState('');
+    const [composeSubject, setComposeSubject] = useState('');
+    const [composeSending, setComposeSending] = useState(false);
+
+    const TIMELINE_CHANNEL_MAP: Record<string, { icon: string; color: string; bg: string }> = {
+        whatsapp: { icon: 'chat', color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
+        sms:      { icon: 'sms', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
+        email:    { icon: 'mail', color: '#f97316', bg: 'rgba(249,115,22,.12)' },
+        call:     { icon: 'call', color: '#a855f7', bg: 'rgba(168,85,247,.12)' },
+        system:   { icon: 'info', color: '#6b7280', bg: 'rgba(107,114,128,.12)' },
+        '17track': { icon: 'local_shipping', color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+    };
+
+    const getTimelineStyle = (ev: any) => {
+        // Map eventType + channel to icon/color
+        if (ev.eventType === 'status_change') return { icon: 'swap_horiz', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' };
+        if (ev.eventType === 'escalation') return { icon: 'warning', color: '#ef4444', bg: 'rgba(239,68,68,.12)' };
+        if (ev.eventType === 'call_center_update') return { icon: 'call', color: '#a855f7', bg: 'rgba(168,85,247,.12)' };
+        const ch = ev.channel || 'system';
+        return TIMELINE_CHANNEL_MAP[ch] || TIMELINE_CHANNEL_MAP.system;
+    };
+
+    const handleComposeSend = async () => {
+        if (!selectedTicket || !composeChannel || !composeBody.trim()) return;
+        try {
+            setComposeSending(true);
+            // Add a timeline event recording what was sent
+            await ticketsService.addTimelineEvent(selectedTicket.id, {
+                eventType: 'outbound',
+                channel: composeChannel,
+                content: composeChannel === 'email'
+                    ? `Email sent — "${composeSubject}" — "${composeBody.substring(0, 120)}..."`
+                    : composeChannel === 'call'
+                    ? `Call script prepared — "${composeBody.substring(0, 120)}..."`
+                    : `${composeChannel.toUpperCase()} sent — "${composeBody.substring(0, 120)}..."`,
+            });
+            setMessage({ type: 'success', text: `✅ ${composeChannel.toUpperCase()} logged to timeline!` });
+            setComposeBody('');
+            setComposeSubject('');
+            setComposeChannel(null);
+            openDetail(selectedTicket.id);
+        } catch (err: any) {
+            setMessage({ type: 'error', text: '❌ ' + (err?.response?.data?.message || 'Failed to send') });
+        } finally {
+            setComposeSending(false);
+        }
+    };
+
     // ─── RENDER: TICKET DETAIL PANEL ─────────────────────────────────
     const renderDetail = () => {
         if (!selectedTicket) return null;
         const t = selectedTicket;
         const sla = slaRemaining(t.slaDeadlineAt);
+        const callLogs: any[] = t.order?.callLogs || [];
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSelectedTicket(null)}>
-                <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setSelectedTicket(null); setComposeChannel(null); }}>
+                <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-border-dark">
+                    <div className="flex items-center justify-between p-5 border-b border-border-dark shrink-0">
                         <div className="flex items-center gap-4">
                             <span className="material-symbols-outlined" style={{ fontSize: 28, color: caseColor(t.caseType) }}>{caseIcon(t.caseType)}</span>
                             <div>
-                                <p className="text-lg font-black text-white">{t.title}</p>
-                                <div className="flex items-center gap-3 mt-1">
+                                <div className="flex items-center gap-2">
                                     <span className="text-xs font-mono text-text-muted">{t.ticketNumber}</span>
+                                    <span className="text-sm font-black text-white">— {t.customer?.name || 'Unknown'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: statusColor(t.status), backgroundColor: statusColor(t.status) + '10' }}>
                                         {STATUS_OPTIONS.find(s => s.value === t.status)?.label || t.status}
                                     </span>
@@ -627,121 +682,308 @@ const IncidentsPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={() => setSelectedTicket(null)} className="text-text-muted hover:text-white">
-                            <span className="material-symbols-outlined">close</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            {t.status !== 'resolved' && t.status !== 'closed' && (
+                                <button onClick={() => handleResolve(t.id, 'resolved')} className="flex items-center gap-1.5 px-4 py-2 bg-green-500/10 text-green-400 text-xs font-bold rounded-xl border border-green-500/20 hover:bg-green-500/20 transition-all">
+                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span> Resolve
+                                </button>
+                            )}
+                            <button onClick={() => { setSelectedTicket(null); setComposeChannel(null); }} className="text-text-muted hover:text-white">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Body: 2-column layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-0">
-                        {/* Left: Info */}
-                        <div className="lg:col-span-1 p-6 border-r border-border-dark/50 space-y-5">
-                            {/* SLA Timer */}
-                            <div className="bg-[#1a2332] rounded-xl p-4 border border-border-dark">
-                                <p className="text-[10px] text-text-muted font-bold uppercase mb-1">SLA Countdown</p>
-                                <p className="text-2xl font-black" style={{ color: sla.color }}>{sla.label}</p>
-                                {t.slaDeadlineAt && <p className="text-[10px] text-text-muted mt-1">Deadline: {new Date(t.slaDeadlineAt).toLocaleString()}</p>}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 flex-1 overflow-hidden">
+                        {/* Left: Info Panel */}
+                        <div className="lg:col-span-1 p-5 border-r border-border-dark/50 overflow-y-auto custom-scrollbar space-y-4">
+                            {/* Title */}
+                            <p className="text-sm font-black text-white leading-tight">{t.title}</p>
+                            {t.description && <p className="text-xs text-text-muted leading-relaxed">{t.description}</p>}
+
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { label: 'Customer', value: t.customer?.name || '—', icon: 'person' },
+                                    { label: 'Order', value: t.order?.orderNumber ? `#${t.order.orderNumber}` : '—', icon: 'receipt_long' },
+                                    { label: 'Phone', value: t.customer?.phone || '—', icon: 'call' },
+                                    { label: 'Amount', value: t.order?.totalAmount ? `€${t.order.totalAmount}` : '—', icon: 'euro' },
+                                    { label: 'Tracking', value: t.trackingSubstatus || '—', icon: 'local_shipping' },
+                                    { label: 'Due', value: t.slaDeadlineAt ? new Date(t.slaDeadlineAt).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—', icon: 'schedule' },
+                                ].map(info => (
+                                    <div key={info.label} className="bg-[#1a2332] rounded-lg p-3 border border-border-dark">
+                                        <p className="text-[9px] text-text-muted font-bold uppercase tracking-wider">{info.label}</p>
+                                        <p className="text-xs text-white font-bold mt-0.5 truncate">{info.value}</p>
+                                    </div>
+                                ))}
                             </div>
 
-                            {/* Info cards */}
-                            {[
-                                { label: 'Category', value: caseLabel(t.caseType) },
-                                { label: 'Source', value: t.source === '17track_auto' ? '17Track Auto' : 'Manual' },
-                                { label: 'Tracking Status', value: t.trackingSubstatus || '—' },
-                                { label: 'Country', value: t.country || '—' },
-                                { label: 'Assigned To', value: t.picName || t.pic?.fullName || 'Unassigned' },
-                                { label: 'Order', value: t.order?.orderNumber ? `#${t.order.orderNumber}` : '—' },
-                                { label: 'Customer', value: t.customer?.name || '—' },
-                                { label: 'Phone', value: t.customer?.phone || '—' },
-                                { label: 'Resolution', value: t.resolution ? RESOLUTION_OPTIONS.find(r => r.value === t.resolution)?.label || t.resolution : 'Pending' },
-                            ].map(info => (
-                                <div key={info.label}>
-                                    <p className="text-[10px] text-text-muted font-bold uppercase">{info.label}</p>
-                                    <p className="text-sm text-white font-bold">{info.value}</p>
+                            {/* PIC */}
+                            <div className="bg-[#1a2332] rounded-xl p-4 border border-border-dark">
+                                <p className="text-[9px] text-text-muted font-bold uppercase tracking-wider mb-2">Person in Charge</p>
+                                <div className="flex items-center gap-3">
+                                    <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-black">
+                                        {(t.picName || t.pic?.fullName || 'U').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
+                                    </div>
+                                    <span className="text-xs text-white font-bold">{t.picName || t.pic?.fullName || 'Unassigned'}</span>
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* SLA */}
+                            <div className="bg-[#1a2332] rounded-xl p-4 border border-border-dark">
+                                <p className="text-[9px] text-text-muted font-bold uppercase tracking-wider mb-1">SLA Countdown</p>
+                                <p className="text-xl font-black" style={{ color: sla.color }}>{sla.label}</p>
+                            </div>
 
                             {/* Actions */}
                             {t.status !== 'resolved' && t.status !== 'closed' && (
-                                <div className="space-y-2 pt-4 border-t border-border-dark">
-                                    <p className="text-[10px] text-text-muted font-bold uppercase">Resolve With</p>
+                                <div className="space-y-2 pt-3 border-t border-border-dark">
+                                    <p className="text-[9px] text-text-muted font-bold uppercase tracking-wider">Resolve With</p>
                                     <div className="grid grid-cols-2 gap-2">
                                         {RESOLUTION_OPTIONS.map(r => (
-                                            <button
-                                                key={r.value}
-                                                onClick={() => handleResolve(t.id, r.value)}
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-[#1a2332] text-white text-[10px] font-bold rounded-lg border border-border-dark hover:border-primary/30 hover:bg-primary/5 transition-all"
-                                            >
+                                            <button key={r.value} onClick={() => handleResolve(t.id, r.value)}
+                                                className="flex items-center gap-1.5 px-3 py-2 bg-[#0f1923] text-white text-[10px] font-bold rounded-lg border border-border-dark hover:border-primary/30 hover:bg-primary/5 transition-all">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{r.icon}</span>
                                                 {r.label}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="flex gap-2 mt-2">
-                                        {t.status === 'open' && (
-                                            <button onClick={() => handleStatusChange(t.id, 'in_progress')} className="flex-1 px-3 py-2 bg-orange-500/10 text-orange-400 text-[10px] font-bold rounded-lg border border-orange-500/20 hover:bg-orange-500/20 transition-all">
-                                                Start Working
-                                            </button>
-                                        )}
-                                    </div>
+                                    {t.status === 'open' && (
+                                        <button onClick={() => handleStatusChange(t.id, 'in_progress')} className="w-full px-3 py-2 bg-orange-500/10 text-orange-400 text-[10px] font-bold rounded-lg border border-orange-500/20 hover:bg-orange-500/20 transition-all">
+                                            Start Working
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
-                            <button onClick={() => handleDelete(t.id)} className="text-[10px] text-red-400 hover:text-red-300 font-bold mt-2">
+                            <button onClick={() => handleDelete(t.id)} className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 font-bold">
                                 <span className="material-symbols-outlined" style={{ fontSize: 12 }}>delete</span> Delete Ticket
                             </button>
                         </div>
 
-                        {/* Right: Timeline */}
-                        <div className="lg:col-span-2 p-6">
-                            <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4">Timeline</h4>
-                            <div className="space-y-3">
-                                {(t.timeline || []).map(ev => (
-                                    <div key={ev.id} className="flex gap-3">
-                                        <div className="flex flex-col items-center">
-                                            <div className="size-7 rounded-full bg-[#1a2332] border border-border-dark flex items-center justify-center shrink-0">
-                                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: ev.eventType === 'escalation' ? '#ef4444' : ev.eventType === 'status_change' ? '#3b82f6' : '#6b7280' }}>
-                                                    {ev.eventType === 'escalation' ? 'warning' : ev.eventType === 'status_change' ? 'swap_vert' : ev.eventType === 'call_center_update' ? 'phone' : 'info'}
-                                                </span>
-                                            </div>
-                                            <div className="w-px flex-1 bg-border-dark/50" />
-                                        </div>
-                                        <div className="pb-4 flex-1">
-                                            <p className="text-xs text-white">{ev.content || '—'}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-[10px] text-text-muted">{formatTimeAgo(ev.createdAt)}</span>
-                                                {ev.channel && <span className="text-[8px] font-bold bg-[#1a2332] text-text-muted px-1.5 py-0.5 rounded">{ev.channel}</span>}
-                                                {ev.actorName && <span className="text-[10px] text-primary">{ev.actorName}</span>}
-                                            </div>
-                                        </div>
-                                    </div>
+                        {/* Right: Tabbed Content */}
+                        <div className="lg:col-span-2 flex flex-col overflow-hidden">
+                            {/* Tab Navigation */}
+                            <div className="flex items-center border-b border-border-dark px-5 shrink-0">
+                                {[
+                                    { key: 'timeline', label: 'Timeline', icon: 'history' },
+                                    { key: 'callLogs', label: 'Call Logs', icon: 'call', count: callLogs.length },
+                                ].map(tab => (
+                                    <button
+                                        key={tab.key}
+                                        onClick={() => setDetailTab(tab.key as any)}
+                                        className={`px-4 py-3 text-xs font-bold transition-all relative flex items-center gap-2 ${detailTab === tab.key ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{tab.icon}</span>
+                                        {tab.label}
+                                        {tab.count !== undefined && tab.count > 0 && (
+                                            <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">{tab.count}</span>
+                                        )}
+                                        {detailTab === tab.key && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+                                    </button>
                                 ))}
-                                {(!t.timeline || t.timeline.length === 0) && (
-                                    <p className="text-xs text-text-muted italic py-4">No timeline events yet</p>
+                            </div>
+
+                            {/* Tab Content */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
+                                {/* Timeline */}
+                                {detailTab === 'timeline' && (
+                                    <div className="space-y-1">
+                                        {(t.timeline || []).map(ev => {
+                                            const style = getTimelineStyle(ev);
+                                            const time = new Date(ev.createdAt);
+                                            return (
+                                                <div key={ev.id} className="flex gap-3 py-2">
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: style.bg }}>
+                                                            <span className="material-symbols-outlined" style={{ fontSize: 18, color: style.color }}>{style.icon}</span>
+                                                        </div>
+                                                        <div className="w-px flex-1 bg-border-dark/30 mt-1" />
+                                                    </div>
+                                                    <div className="pb-3 flex-1 min-w-0">
+                                                        <p className="text-sm text-white font-bold leading-snug">{ev.content || '—'}</p>
+                                                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                            <span className="text-[10px] font-bold" style={{ color: style.color }}>{ev.actorName || ev.channel || 'system'}</span>
+                                                            <span className="text-[10px] text-text-muted">· {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            {ev.externalRef && (
+                                                                <span className="text-[9px] font-mono bg-[#1a2332] text-text-muted px-1.5 py-0.5 rounded border border-border-dark">{ev.externalRef}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {(!t.timeline || t.timeline.length === 0) && (
+                                            <p className="text-xs text-text-muted italic py-8 text-center">No timeline events yet</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Call Logs */}
+                                {detailTab === 'callLogs' && (
+                                    <div className="space-y-3">
+                                        {callLogs.length === 0 && (
+                                            <p className="text-xs text-text-muted italic py-8 text-center">No call logs available</p>
+                                        )}
+                                        {callLogs.map((log: any) => {
+                                            const isExpanded = expandedCallId === log.id;
+                                            const statusColors: Record<string, string> = {
+                                                'completed': '#22c55e', 'no-answer': '#ef4444', 'busy': '#f97316',
+                                                'failed': '#ef4444', 'canceled': '#6b7280', 'in-progress': '#3b82f6',
+                                            };
+                                            const statusLabel = log.callStatus?.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Unknown';
+                                            const confidence = log.speechConfidence ? Math.round(parseFloat(log.speechConfidence) * 100) : null;
+                                            const duration = log.callDuration ? `${Math.floor(log.callDuration / 60)}m ${log.callDuration % 60}s` : '—';
+                                            const callTime = new Date(log.createdAt);
+
+                                            return (
+                                                <div key={log.id} className="bg-[#1a2332] rounded-xl border border-border-dark overflow-hidden">
+                                                    {/* Call Header */}
+                                                    <button
+                                                        onClick={() => setExpandedCallId(isExpanded ? null : log.id)}
+                                                        className="w-full flex items-center justify-between p-4 hover:bg-[#1e2a3a] transition-colors"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="size-10 rounded-full flex items-center justify-center" style={{ backgroundColor: (statusColors[log.callStatus] || '#6b7280') + '15' }}>
+                                                                <span className="material-symbols-outlined" style={{ fontSize: 20, color: statusColors[log.callStatus] || '#6b7280' }}>
+                                                                    {log.callStatus === 'completed' ? 'call' : log.callStatus === 'no-answer' ? 'call_missed' : 'call_end'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <p className="text-sm text-white font-bold">{statusLabel}</p>
+                                                                <p className="text-[10px] text-text-muted font-mono">{log.callSid?.substring(0, 8)}...{log.callSid?.slice(-4)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-white font-bold">{duration}</p>
+                                                                <p className="text-[10px] text-text-muted">{callTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {callTime.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</p>
+                                                            </div>
+                                                            {log.dtmfInput && (
+                                                                <span className="text-[9px] font-bold bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/20">DTMF {log.dtmfInput}</span>
+                                                            )}
+                                                            <span className="material-symbols-outlined text-text-muted" style={{ fontSize: 18, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>expand_more</span>
+                                                        </div>
+                                                    </button>
+
+                                                    {/* Expanded Details */}
+                                                    {isExpanded && (
+                                                        <div className="p-4 pt-0 border-t border-border-dark space-y-4">
+                                                            {/* Transcript */}
+                                                            {log.speechResult && (
+                                                                <div>
+                                                                    <div className="flex items-center gap-3 mb-3">
+                                                                        <span className="material-symbols-outlined text-primary" style={{ fontSize: 16 }}>transcribe</span>
+                                                                        <span className="text-[10px] font-black uppercase tracking-wider text-white">Call Transcript</span>
+                                                                        {log.scriptLanguage && (
+                                                                            <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">{log.scriptLanguage.toUpperCase()}</span>
+                                                                        )}
+                                                                        {confidence !== null && (
+                                                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${confidence >= 80 ? 'bg-green-500/10 text-green-400' : confidence >= 50 ? 'bg-orange-500/10 text-orange-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                                                AI {confidence}% Confidence
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="bg-card-dark rounded-lg border border-border-dark p-4">
+                                                                        <p className="text-xs text-text-muted leading-relaxed whitespace-pre-wrap">{log.speechResult}</p>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Intent & DTMF */}
+                                                            <div className="grid grid-cols-3 gap-3">
+                                                                <div className="bg-card-dark rounded-lg border border-border-dark p-3">
+                                                                    <p className="text-[9px] text-text-muted font-bold uppercase">Script Type</p>
+                                                                    <p className="text-xs text-white font-bold">{log.scriptType || '—'}</p>
+                                                                </div>
+                                                                <div className="bg-card-dark rounded-lg border border-border-dark p-3">
+                                                                    <p className="text-[9px] text-text-muted font-bold uppercase">Intent</p>
+                                                                    <p className="text-xs text-white font-bold">{log.intentDetected || '—'}</p>
+                                                                </div>
+                                                                <div className="bg-card-dark rounded-lg border border-border-dark p-3">
+                                                                    <p className="text-[9px] text-text-muted font-bold uppercase">DTMF Input</p>
+                                                                    <p className="text-xs text-white font-bold">{log.dtmfInput || 'None'}</p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* No response warning */}
+                                                            {!log.dtmfInput && !log.speechResult && log.callStatus !== 'completed' && (
+                                                                <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-3 text-center">
+                                                                    <p className="text-xs text-red-400 font-bold">No DTMF detected — customer did not respond</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Messages section */}
-                            {(t.messages || []).length > 0 && (
-                                <>
-                                    <h4 className="text-sm font-black uppercase tracking-widest text-white mb-4 mt-6">Messages</h4>
-                                    <div className="space-y-3">
-                                        {(t.messages || []).map(msg => (
-                                            <div key={msg.id} className={`p-3 rounded-lg border ${msg.direction === 'inbound' ? 'bg-primary/5 border-primary/20' : 'bg-[#1a2332] border-border-dark'}`}>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">{msg.channel}</span>
-                                                        <span className="text-[10px] font-bold text-text-muted">{msg.direction === 'inbound' ? '← Received' : '→ Sent'}</span>
-                                                    </div>
-                                                    <span className="text-[10px] text-text-muted">{formatTimeAgo(msg.createdAt)}</span>
-                                                </div>
-                                                {msg.subject && <p className="text-xs font-bold text-white mb-1">{msg.subject}</p>}
-                                                <p className="text-xs text-text-muted leading-relaxed">{msg.body}</p>
-                                            </div>
+                            {/* Reply Compose Bar */}
+                            <div className="border-t border-border-dark p-4 shrink-0">
+                                {!composeChannel ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-text-muted font-bold uppercase mr-2">Reply via:</span>
+                                        {[
+                                            { key: 'email', label: 'Email', icon: 'mail', color: '#f97316' },
+                                            { key: 'whatsapp', label: 'WhatsApp', icon: 'chat', color: '#22c55e' },
+                                            { key: 'sms', label: 'SMS', icon: 'sms', color: '#3b82f6' },
+                                            { key: 'call', label: 'Call Script', icon: 'call', color: '#a855f7' },
+                                        ].map(ch => (
+                                            <button
+                                                key={ch.key}
+                                                onClick={() => setComposeChannel(ch.key as any)}
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-dark bg-[#1a2332] text-[10px] font-bold text-white hover:border-primary/30 hover:bg-primary/5 transition-all"
+                                            >
+                                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: ch.color }}>{ch.icon}</span>
+                                                {ch.label}
+                                            </button>
                                         ))}
                                     </div>
-                                </>
-                            )}
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 16, color: composeChannel === 'email' ? '#f97316' : composeChannel === 'whatsapp' ? '#22c55e' : composeChannel === 'sms' ? '#3b82f6' : '#a855f7' }}>
+                                                    {composeChannel === 'email' ? 'mail' : composeChannel === 'whatsapp' ? 'chat' : composeChannel === 'sms' ? 'sms' : 'call'}
+                                                </span>
+                                                <span className="text-xs font-bold text-white">{composeChannel === 'call' ? 'Call Script' : composeChannel.charAt(0).toUpperCase() + composeChannel.slice(1)}</span>
+                                                <span className="text-[10px] text-text-muted">→ {t.customer?.phone || t.customer?.name || 'Customer'}</span>
+                                            </div>
+                                            <button onClick={() => { setComposeChannel(null); setComposeBody(''); setComposeSubject(''); }} className="text-text-muted hover:text-white">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
+                                            </button>
+                                        </div>
+                                        {composeChannel === 'email' && (
+                                            <input
+                                                value={composeSubject}
+                                                onChange={e => setComposeSubject(e.target.value)}
+                                                placeholder="Subject line..."
+                                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-1.5 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none"
+                                            />
+                                        )}
+                                        <div className="flex gap-2">
+                                            <textarea
+                                                value={composeBody}
+                                                onChange={e => setComposeBody(e.target.value)}
+                                                rows={2}
+                                                placeholder={composeChannel === 'call' ? 'Write call script here...' : `Type ${composeChannel} message...`}
+                                                className="flex-1 bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none resize-none"
+                                            />
+                                            <button
+                                                onClick={handleComposeSend}
+                                                disabled={composeSending || !composeBody.trim()}
+                                                className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50 self-end"
+                                            >
+                                                {composeSending ? '...' : composeChannel === 'call' ? 'Log Call' : 'Send'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -57,6 +57,7 @@ export interface TimelineEvent {
     metadata?: any;
     actorId?: string;
     actorName?: string;
+    externalRef?: string;
     createdAt: string;
 }
 
@@ -194,6 +195,11 @@ const ticketsService = {
 
     updateWorkflow: async (caseType: string, body: Partial<IncidentWorkflow>): Promise<IncidentWorkflow> => {
         const { data } = await apiClient.patch(`/tickets/workflows/${caseType}`, body);
+        return data;
+    },
+
+    addTimelineEvent: async (ticketId: string, body: { eventType: string; channel?: string; content?: string; externalRef?: string }) => {
+        const { data } = await apiClient.post(`/tickets/${ticketId}/timeline`, body);
         return data;
     },
 

@@ -172,19 +172,34 @@ export class TicketsService {
     }
 
     // ─── ADD TIMELINE EVENT TO EXISTING TICKET ──────────────────────
-    async addTimelineEvent(orderId: string, content: string) {
-        const ticket = await this.prisma.ticket.findFirst({
-            where: { orderId, deletedAt: null },
-            orderBy: { createdAt: 'desc' },
-        });
-        if (!ticket) return null;
+    async addTimelineEvent(
+        ticketId: string,
+        bodyOrContent: string | { eventType?: string; channel?: string; content?: string; externalRef?: string },
+    ) {
+        // Support legacy (orderId, content:string) calls
+        if (typeof bodyOrContent === 'string') {
+            const ticket = await this.prisma.ticket.findFirst({
+                where: { orderId: ticketId, deletedAt: null },
+                orderBy: { createdAt: 'desc' },
+            });
+            if (!ticket) return null;
+            return this.prisma.ticketTimeline.create({
+                data: {
+                    ticketId: ticket.id,
+                    eventType: 'system',
+                    channel: 'system',
+                    content: bodyOrContent,
+                },
+            });
+        }
 
+        // New: direct ticketId + body object
         return this.prisma.ticketTimeline.create({
             data: {
-                ticketId: ticket.id,
-                eventType: 'system',
-                channel: 'system',
-                content,
+                ticketId,
+                eventType: bodyOrContent.eventType || 'system',
+                channel: bodyOrContent.channel || 'system',
+                content: bodyOrContent.content || '',
             },
         });
     }

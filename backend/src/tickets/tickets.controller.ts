@@ -79,6 +79,14 @@ export class TicketsController {
         return this.ticketsService.assign(id, picId, picName);
     }
 
+    @Post(':id/timeline')
+    addTimelineEvent(
+        @Param('id') id: string,
+        @Body() body: { eventType: string; channel?: string; content?: string; externalRef?: string },
+    ) {
+        return this.ticketsService.addTimelineEvent(id, body);
+    }
+
     @Delete(':id')
     @HttpCode(HttpStatus.OK)
     softDelete(@Param('id') id: string) {
