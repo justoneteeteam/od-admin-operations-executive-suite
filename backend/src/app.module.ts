@@ -25,9 +25,10 @@ import { RiskScoringModule } from './risk-scoring/risk-scoring.module';
 import { TwilioVoiceModule } from './twilio-voice/twilio-voice.module';
 import { AdsCampaignsModule } from './ads-campaigns/ads-campaigns.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule, AdsCampaignsModule, ExchangeRatesModule],
+  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule, AdsCampaignsModule, ExchangeRatesModule, TicketsModule],
   controllers: [AppController],
   providers: [
     AppService,

@@ -32,7 +32,10 @@ export class StoreSettingsService {
         const allowedFields = [
             'storeName', 'storeUrl', 'supportEmail', 'currency',
             'gsProjectId', 'gsClientEmail', 'gsPrivateKey', 'gsSpreadsheetId', 'gsSheetName',
-            'callCenterSheetId', 'callCenterSheetName', 'enableTwilioCalls'
+            'callCenterSheetId', 'callCenterSheetName', 'enableTwilioCalls',
+            'emailSmtpHost', 'emailSmtpPort', 'emailSmtpUser', 'emailSmtpPass',
+            'emailFromAddress', 'emailFromName', 'emailInboundEnabled',
+            'incidentSheetId', 'incidentSheetName'
         ];
 
         const updateData: any = {};

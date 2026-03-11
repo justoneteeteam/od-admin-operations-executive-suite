@@ -23,6 +23,19 @@ export interface StoreSettings {
     // Twilio Settings
     enableTwilioCalls?: boolean;
 
+    // Elastic Email SMTP
+    emailSmtpHost?: string;
+    emailSmtpPort?: number;
+    emailSmtpUser?: string;
+    emailSmtpPass?: string;
+    emailFromAddress?: string;
+    emailFromName?: string;
+    emailInboundEnabled?: boolean;
+
+    // Incident Call Center Sheet
+    incidentSheetId?: string;
+    incidentSheetName?: string;
+
     createdAt?: string;
     updatedAt?: string;
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import storeSettingsService, { StoreSettings } from '../src/services/settings.service';
 
-type ActiveTab = 'connection' | 'create' | 'whatsapp';
+type ActiveTab = 'connection' | 'create' | 'whatsapp' | 'email';
 
 const STORE_COLORS = [
   { bg: 'bg-indigo-100', text: 'text-indigo-600' },
@@ -74,6 +74,15 @@ const SettingsPage: React.FC = () => {
     callCenterSheetId: '',
     callCenterSheetName: '',
     enableTwilioCalls: false,
+    emailSmtpHost: '',
+    emailSmtpPort: 587,
+    emailSmtpUser: '',
+    emailSmtpPass: '',
+    emailFromAddress: '',
+    emailFromName: '',
+    emailInboundEnabled: false,
+    incidentSheetId: '',
+    incidentSheetName: '',
   };
 
   const [formData, setFormData] = useState<Partial<StoreSettings>>(emptyForm);
@@ -823,6 +832,8 @@ const SettingsPage: React.FC = () => {
   );
 
   // ─── WHATSAPP PERSONAL TAB ───────────────────────────────────────────
+  const renderEmailTab = () => renderEmailTabContent(formData, setFormData, handleSave, isSaving, activeStoreId);
+
   const renderWhatsappTab = () => {
     const LANG_COLORS: Record<string, { bg: string; text: string; label: string }> = {
       wa_arrival_en: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'English' },
@@ -1066,12 +1077,165 @@ const SettingsPage: React.FC = () => {
           </div>
           {activeTab === 'whatsapp' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
         </button>
+        <button
+          onClick={() => setActiveTab('email')}
+          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'email' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>mail</span>
+            Email & Incidents
+          </div>
+          {activeTab === 'email' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
+        </button>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : renderCreateTab()}
+      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : activeTab === 'email' ? renderEmailTab() : renderCreateTab()}
     </div>
   );
 };
+
+function renderEmailTabContent(
+  formData: any,
+  setFormData: (d: any) => void,
+  handleSave: () => void,
+  isSaving: boolean,
+  activeStoreId: string | null,
+) {
+  return (
+    <div className="flex flex-col gap-6 py-6">
+      {/* SMTP Config */}
+      <div className="bg-card-dark rounded-xl border border-border-dark p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="size-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-orange-400" style={{ fontSize: 20 }}>mail</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-white uppercase tracking-wider">Elastic Email SMTP</h3>
+            <p className="text-xs text-text-muted">Configure outbound/inbound email via Elastic Email</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">SMTP Host</label>
+            <input
+              value={formData.emailSmtpHost || ''}
+              onChange={e => setFormData({ ...formData, emailSmtpHost: e.target.value })}
+              placeholder="smtp.elasticemail.com"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Port</label>
+            <input
+              type="number"
+              value={formData.emailSmtpPort || 587}
+              onChange={e => setFormData({ ...formData, emailSmtpPort: parseInt(e.target.value) })}
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Username / API Key</label>
+            <input
+              value={formData.emailSmtpUser || ''}
+              onChange={e => setFormData({ ...formData, emailSmtpUser: e.target.value })}
+              placeholder="your-api-key"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Password</label>
+            <input
+              type="password"
+              value={formData.emailSmtpPass || ''}
+              onChange={e => setFormData({ ...formData, emailSmtpPass: e.target.value })}
+              placeholder="••••••••"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">From Email</label>
+            <input
+              value={formData.emailFromAddress || ''}
+              onChange={e => setFormData({ ...formData, emailFromAddress: e.target.value })}
+              placeholder="cod@justonetee.org"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">From Name</label>
+            <input
+              value={formData.emailFromName || ''}
+              onChange={e => setFormData({ ...formData, emailFromName: e.target.value })}
+              placeholder="JustOneTee Support"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center gap-3">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.emailInboundEnabled || false}
+              onChange={e => setFormData({ ...formData, emailInboundEnabled: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+          </label>
+          <span className="text-xs text-white font-bold">Enable Inbound Email Webhook</span>
+        </div>
+      </div>
+
+      {/* Incident Call Center Sheet */}
+      <div className="bg-card-dark rounded-xl border border-border-dark p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="size-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-purple-400" style={{ fontSize: 20 }}>report_problem</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-white uppercase tracking-wider">Incident Call Center Sheet</h3>
+            <p className="text-xs text-text-muted">Google Sheet for incident call queue (separate from orders call center)</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Spreadsheet ID</label>
+            <input
+              value={formData.incidentSheetId || ''}
+              onChange={e => setFormData({ ...formData, incidentSheetId: e.target.value })}
+              placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none font-mono"
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Sheet Name (Tab)</label>
+            <input
+              value={formData.incidentSheetName || ''}
+              onChange={e => setFormData({ ...formData, incidentSheetName: e.target.value })}
+              placeholder="Incident Queue"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Save */}
+      {activeStoreId && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+          >
+            {isSaving ? 'Saving…' : 'Save Email & Incident Settings'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default SettingsPage;

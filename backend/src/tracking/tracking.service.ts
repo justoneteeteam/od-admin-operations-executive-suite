@@ -1,7 +1,8 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmsWhatsappDeliveryService } from '../notifications/sms-whatsapp-delivery.service';
 import { WhatsappPersonalService } from '../notifications/whatsapp.personal.service';
+import { IncidentAutoService } from '../tickets/incident-auto.service';
 
 @Injectable()
 export class TrackingService {
@@ -11,6 +12,7 @@ export class TrackingService {
         @Inject(PrismaService) private readonly prisma: PrismaService,
         @Inject(SmsWhatsappDeliveryService) private readonly smsWhatsappDeliveryService: SmsWhatsappDeliveryService,
         @Inject(WhatsappPersonalService) private readonly whatsappPersonalService: WhatsappPersonalService,
+        @Optional() @Inject(forwardRef(() => IncidentAutoService)) private readonly incidentAutoService: IncidentAutoService,
     ) { }
 
     async handleWebhook(payload: any) {
@@ -268,6 +270,23 @@ export class TrackingService {
                     },
                 });
                 this.logger.log(`Updated Order ${order.orderNumber} to 'NotFound'`);
+            }
+        }
+
+        // ─── INCIDENT TICKET AUTO-CREATION HOOK ─────────────────────
+        const incidentStatuses = ['DeliveryFailure', 'Undelivered', 'Exception'];
+        if (incidentStatuses.includes(mainStatus) && this.incidentAutoService) {
+            try {
+                await this.incidentAutoService.handleTrackingEvent({
+                    orderId: order.id,
+                    customerId: order.customerId,
+                    mainStatus,
+                    substatus: subStatus,
+                    description,
+                    country: order.shippingCountry,
+                });
+            } catch (err) {
+                this.logger.error(`Incident hook error for ${order.orderNumber}: ${err.message}`);
             }
         }
     }

@@ -48,4 +48,41 @@ export class UpdateStoreSettingsDto {
     @IsBoolean()
     @IsOptional()
     enableTwilioCalls?: boolean;
+
+    // Elastic Email SMTP
+    @IsString()
+    @IsOptional()
+    emailSmtpHost?: string;
+
+    @IsOptional()
+    emailSmtpPort?: number;
+
+    @IsString()
+    @IsOptional()
+    emailSmtpUser?: string;
+
+    @IsString()
+    @IsOptional()
+    emailSmtpPass?: string;
+
+    @IsString()
+    @IsOptional()
+    emailFromAddress?: string;
+
+    @IsString()
+    @IsOptional()
+    emailFromName?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    emailInboundEnabled?: boolean;
+
+    // Incident Call Center Sheet
+    @IsString()
+    @IsOptional()
+    incidentSheetId?: string;
+
+    @IsString()
+    @IsOptional()
+    incidentSheetName?: string;
 }

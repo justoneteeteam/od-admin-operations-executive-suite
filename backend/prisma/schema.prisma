@@ -18,6 +18,10 @@ model User {
   createdAt             DateTime?              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime?              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   inventoryTransactions InventoryTransaction[]
+  ticketsPic            Ticket[]               @relation("TicketPic")
+  ticketTimelineActor   TicketTimeline[]        @relation("TimelineActor")
+  ticketMessagesSent    TicketMessage[]         @relation("MessageSender")
+  workflowUpdates       IncidentWorkflow[]      @relation("WorkflowUpdater")
 
   @@map("users")
 }
@@ -50,6 +54,7 @@ model Customer {
   updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   orders               Order[]
   riskAssessments      RiskAssessment[]
+  tickets              Ticket[]
 
   @@map("customers")
 }
@@ -223,6 +228,7 @@ model Order {
   customerResponses  CustomerResponse[]
   riskAssessments    RiskAssessment[]
   callLogs           CallLog[]
+  tickets            Ticket[]
 
   @@map("orders")
 }
@@ -677,6 +683,19 @@ model StoreSettings {
   // Twilio Settings
   enableTwilioCalls   Boolean   @default(false) @map("enable_twilio_calls")
 
+  // Elastic Email SMTP Settings
+  emailSmtpHost       String?   @map("email_smtp_host") @db.VarChar(255)
+  emailSmtpPort       Int?      @map("email_smtp_port")
+  emailSmtpUser       String?   @map("email_smtp_user") @db.VarChar(255)
+  emailSmtpPass       String?   @map("email_smtp_pass") @db.VarChar(255)
+  emailFromAddress    String?   @map("email_from_address") @db.VarChar(255)
+  emailFromName       String?   @map("email_from_name") @db.VarChar(100)
+  emailInboundEnabled Boolean?  @default(false) @map("email_inbound_enabled")
+
+  // Incident Call Center Sheet Integration
+  incidentSheetId     String?   @map("incident_sheet_id") @db.VarChar(255)
+  incidentSheetName   String?   @map("incident_sheet_name") @db.VarChar(255)
+
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -867,4 +886,99 @@ model AdsCampaignChangeLog {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("ads_campaign_change_logs")
+}
+
+// ─── INCIDENT MANAGEMENT ──────────────────────────────────────────────
+
+model Ticket {
+  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ticketNumber      String    @unique @map("ticket_number") @db.VarChar(20)
+  orderId           String?   @map("order_id") @db.Uuid
+  customerId        String?   @map("customer_id")
+  title             String    @db.VarChar(255)
+  description       String?
+  caseType          String    @default("other") @map("case_type") @db.VarChar(30)
+  priority          String    @default("medium") @db.VarChar(20)
+  status            String    @default("open") @db.VarChar(30)
+  source            String    @default("manual") @db.VarChar(30)
+  resolution        String?   @db.VarChar(30)
+  picId             String?   @map("pic_id") @db.Uuid
+  picName           String?   @map("pic_name") @db.VarChar(255)
+  autoStep          Int       @default(0) @map("auto_step")
+  autoPaused        Boolean   @default(false) @map("auto_paused")
+  country           String?   @db.VarChar(50)
+  trackingSubstatus String?   @map("tracking_substatus") @db.VarChar(100)
+  slaDeadlineAt     DateTime? @map("sla_deadline_at") @db.Timestamptz(6)
+  slaBreached       Boolean   @default(false) @map("sla_breached")
+  resolvedAt        DateTime? @map("resolved_at") @db.Timestamptz(6)
+  closedAt          DateTime? @map("closed_at") @db.Timestamptz(6)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order    Order?    @relation(fields: [orderId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  pic      User?     @relation("TicketPic", fields: [picId], references: [id])
+
+  timeline TicketTimeline[]
+  messages TicketMessage[]
+
+  @@map("tickets")
+}
+
+model TicketTimeline {
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ticketId  String    @map("ticket_id") @db.Uuid
+  eventType String    @map("event_type") @db.VarChar(30)
+  channel   String?   @db.VarChar(20)
+  content   String?
+  metadata  Json?
+  actorId   String?   @map("actor_id") @db.Uuid
+  actorName String?   @map("actor_name") @db.VarChar(255)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  actor  User?  @relation("TimelineActor", fields: [actorId], references: [id])
+
+  @@map("ticket_timeline")
+}
+
+model TicketMessage {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ticketId       String    @map("ticket_id") @db.Uuid
+  channel        String    @db.VarChar(20)
+  direction      String    @default("outbound") @db.VarChar(10)
+  recipient      String?   @db.VarChar(255)
+  subject        String?   @db.VarChar(255)
+  body           String
+  charCount      Int?      @map("char_count")
+  externalId     String?   @unique @map("external_id") @db.VarChar(255)
+  deliveryStatus String?   @default("queued") @map("delivery_status") @db.VarChar(30)
+  sentAt         DateTime? @map("sent_at") @db.Timestamptz(6)
+  deliveredAt    DateTime? @map("delivered_at") @db.Timestamptz(6)
+  errorMessage   String?   @map("error_message")
+  sentBy         String?   @map("sent_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender User?  @relation("MessageSender", fields: [sentBy], references: [id])
+
+  @@map("ticket_messages")
+}
+
+model IncidentWorkflow {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  caseType     String   @unique @map("case_type") @db.VarChar(30)
+  title        String   @db.VarChar(100)
+  description  String?
+  channelOrder Json     @default("[\"whatsapp\",\"sms\",\"call\"]") @map("channel_order")
+  steps        Json
+  isActive     Boolean  @default(true) @map("is_active")
+  updatedBy    String?  @map("updated_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  updater User? @relation("WorkflowUpdater", fields: [updatedBy], references: [id])
+
+  @@map("incident_workflows")
 }
