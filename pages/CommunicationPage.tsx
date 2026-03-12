@@ -4,6 +4,8 @@ import communicationService, {
     CommunicationSequence,
     SequenceStep,
 } from '../src/services/communication.service';
+import { productsService, Product } from '../src/services/products.service';
+import CallRecordsTab from '../components/CallRecordsTab';
 
 const CHANNEL_OPTIONS = [
     { value: 'sms', label: 'SMS', icon: 'sms', color: '#5b8def' },
@@ -22,8 +24,12 @@ const CATEGORY_OPTIONS = [
 
 const VARIABLES = ['{Name}', '{OrderNumber}', '{Phone}', '{TrackingURL}', '{Amount}', '{Product}', '{StoreName}'];
 
+const CONFIRM_STATUSES = ['pending', 'confirmed', 'cancelled', 'no_answer'];
+const ORDER_STATUSES = ['processing', 'shipped', 'out_for_delivery', 'delivered', 'returned', 'cancelled'];
+const RISK_LEVELS = ['low', 'medium', 'high', 'critical'];
+
 const CommunicationPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'templates' | 'sequences'>('templates');
+    const [activeTab, setActiveTab] = useState<'templates' | 'sequences' | 'call_records'>('templates');
 
     // ─── Templates State
     const [templates, setTemplates] = useState<CommunicationTemplate[]>([]);
@@ -44,14 +50,30 @@ const CommunicationPage: React.FC = () => {
     const [newSeq, setNewSeq] = useState<Partial<CommunicationSequence>>({ name: '', category: 'confirmation', triggerEvent: 'order_created' });
     const [showAddStepModal, setShowAddStepModal] = useState(false);
     const [newStep, setNewStep] = useState<Partial<SequenceStep>>({ channel: 'sms', label: '', delayMinutes: 0, trigger: 'auto' });
+    const [newStepTemplateId, setNewStepTemplateId] = useState('');
+    const [newStepScheduleHour, setNewStepScheduleHour] = useState('');
+    const [newStepBranches, setNewStepBranches] = useState<Record<string, string>>({});
+    const [channelTemplates, setChannelTemplates] = useState<CommunicationTemplate[]>([]);
+
+    // Product SKUs for condition editor
+    const [products, setProducts] = useState<Product[]>([]);
+    const [skuSearch, setSkuSearch] = useState('');
+
+    // Condition editor
+    const [showConditionEditor, setShowConditionEditor] = useState(false);
+    const [editingConditions, setEditingConditions] = useState<any>({});
 
     const contentRef = useRef<HTMLTextAreaElement>(null);
 
     // ─── Fetch
     useEffect(() => {
         if (activeTab === 'templates') fetchTemplates();
-        else fetchSequences();
+        else if (activeTab === 'sequences') fetchSequences();
     }, [activeTab]);
+
+    useEffect(() => {
+        productsService.getAll().then((data: any) => setProducts(Array.isArray(data) ? data : data?.data || []));
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => fetchTemplates(), 300);
@@ -74,6 +96,13 @@ const CommunicationPage: React.FC = () => {
             setTemplates(data);
         } catch (err) { console.error(err); }
         finally { setTplLoading(false); }
+    };
+
+    const fetchTemplatesByChannel = async (ch: string) => {
+        try {
+            const data = await communicationService.listTemplates({ channel: ch || undefined });
+            setChannelTemplates(data);
+        } catch { setChannelTemplates([]); }
     };
 
     const fetchSequences = async () => {
@@ -165,16 +194,50 @@ const CommunicationPage: React.FC = () => {
         } catch (err) { toast('error', 'Failed to toggle'); }
     };
 
+    const handleOpenAddStep = () => {
+        setNewStep({ channel: 'sms', label: '', delayMinutes: 0, trigger: 'auto' });
+        setNewStepTemplateId('');
+        setNewStepScheduleHour('');
+        setNewStepBranches({});
+        setChannelTemplates([]);
+        fetchTemplatesByChannel('sms');
+        setShowAddStepModal(true);
+    };
+
     const handleAddStep = async () => {
         if (!selectedSequence) return;
         try {
-            await communicationService.addStep(selectedSequence.id, newStep);
+            const stepData: any = { ...newStep };
+            if (newStepTemplateId) stepData.templateId = newStepTemplateId;
+            if (Object.keys(newStepBranches).length > 0) stepData.branches = newStepBranches;
+            if (newStepScheduleHour) stepData.content = JSON.stringify({ scheduledTime: newStepScheduleHour, ...(newStep.content ? { text: newStep.content } : {}) });
+            await communicationService.addStep(selectedSequence.id, stepData);
             toast('success', 'Step added');
             setShowAddStepModal(false);
             setNewStep({ channel: 'sms', label: '', delayMinutes: 0, trigger: 'auto' });
+            setNewStepTemplateId(''); setNewStepScheduleHour(''); setNewStepBranches({});
             fetchSequenceDetail(selectedSequence.id);
         } catch (err) { toast('error', 'Failed to add step'); }
     };
+
+    const handleSaveConditions = async () => {
+        if (!selectedSequence) return;
+        try {
+            await communicationService.updateSequence(selectedSequence.id, { conditions: editingConditions });
+            toast('success', 'Conditions updated');
+            setShowConditionEditor(false);
+            fetchSequenceDetail(selectedSequence.id);
+        } catch (err) { toast('error', 'Failed to save conditions'); }
+    };
+
+    const toggleConditionItem = (field: string, value: string) => {
+        setEditingConditions((prev: any) => {
+            const arr = prev[field] || [];
+            return { ...prev, [field]: arr.includes(value) ? arr.filter((v: string) => v !== value) : [...arr, value] };
+        });
+    };
+
+    const filteredSkus = products.filter(p => p.sku?.toLowerCase().includes(skuSearch.toLowerCase()));
 
     const handleRemoveStep = async (stepId: string) => {
         if (!selectedSequence || !window.confirm('Remove this step?')) return;
@@ -233,6 +296,13 @@ const CommunicationPage: React.FC = () => {
                 >
                     <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>bolt</span>
                     Sequences
+                </button>
+                <button
+                    onClick={() => setActiveTab('call_records')}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'call_records' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'}`}
+                >
+                    <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>call_log</span>
+                    Call Records
                 </button>
             </div>
 
@@ -471,31 +541,39 @@ const CommunicationPage: React.FC = () => {
                                 </div>
 
                                 {/* Conditions */}
-                                {selectedSequence.conditions && (
-                                    <div className="p-4 bg-[#111a22] rounded-xl border border-border-dark">
-                                        <h4 className="text-text-muted text-xs font-bold uppercase tracking-wider mb-3">Conditions</h4>
+                                <div className="p-4 bg-[#111a22] rounded-xl border border-border-dark">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-text-muted text-xs font-bold uppercase tracking-wider">Conditions</h4>
+                                        <button onClick={() => { setEditingConditions(selectedSequence.conditions || {}); setShowConditionEditor(true); }} className="px-2.5 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg hover:bg-primary/20 transition-all border border-primary/20">
+                                            <span className="material-symbols-outlined mr-0.5 align-middle" style={{ fontSize: '12px' }}>edit</span>
+                                            Edit
+                                        </button>
+                                    </div>
+                                    {selectedSequence.conditions && (Object.values(selectedSequence.conditions).some((v: any) => v && (Array.isArray(v) ? v.length > 0 : true))) ? (
                                         <div className="flex flex-wrap gap-2">
-                                            {selectedSequence.conditions.riskLevels?.map(r => (
+                                            {selectedSequence.conditions.riskLevels?.map((r: string) => (
                                                 <span key={r} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: {r}</span>
                                             ))}
-                                            {selectedSequence.conditions.orderStatuses?.map(s => (
+                                            {selectedSequence.conditions.orderStatuses?.map((s: string) => (
                                                 <span key={s} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Status: {s}</span>
                                             ))}
-                                            {selectedSequence.conditions.confirmationStatuses?.map(s => (
+                                            {selectedSequence.conditions.confirmationStatuses?.map((s: string) => (
                                                 <span key={s} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Confirm: {s}</span>
                                             ))}
-                                            {selectedSequence.conditions.skuType && (
-                                                <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">SKU: {selectedSequence.conditions.skuType}</span>
-                                            )}
+                                            {selectedSequence.conditions.skuTypes?.map((s: string) => (
+                                                <span key={s} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">SKU: {s}</span>
+                                            ))}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <p className="text-text-muted/50 text-xs italic">No conditions set — this sequence will trigger for all matching orders.</p>
+                                    )}
+                                </div>
 
                                 {/* Flow Canvas */}
                                 <div className="flex flex-col gap-0">
                                     <div className="flex items-center justify-between mb-3">
                                         <h4 className="text-text-muted text-xs font-bold uppercase tracking-wider">Sequence Flow</h4>
-                                        <button onClick={() => setShowAddStepModal(true)} className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-all border border-primary/20">
+                                        <button onClick={handleOpenAddStep} className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-all border border-primary/20">
                                             <span className="material-symbols-outlined mr-1 align-middle" style={{ fontSize: '14px' }}>add</span>
                                             Add Step
                                         </button>
@@ -584,12 +662,17 @@ const CommunicationPage: React.FC = () => {
                 </div>
             )}
 
+            {/* ═══ CALL RECORDS TAB ═══ */}
+            {activeTab === 'call_records' && (
+                <CallRecordsTab />
+            )}
+
             {/* ═══ MODALS ═══ */}
 
             {/* New Sequence Modal */}
             {showNewSeqModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowNewSeqModal(false)}>
-                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[440px] shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[480px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
                         <h3 className="text-white text-lg font-bold mb-4">✨ New Sequence</h3>
                         <div className="flex flex-col gap-3">
                             <div>
@@ -627,10 +710,10 @@ const CommunicationPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Add Step Modal */}
+            {/* Enhanced Add Step Modal */}
             {showAddStepModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowAddStepModal(false)}>
-                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[440px] shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
                         <h3 className="text-white text-lg font-bold mb-4">➕ Add Step</h3>
                         <div className="flex flex-col gap-3">
                             <div>
@@ -640,7 +723,7 @@ const CommunicationPage: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Channel</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.channel || 'sms'} onChange={e => setNewStep({ ...newStep, channel: e.target.value })}>
+                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.channel || 'sms'} onChange={e => { setNewStep({ ...newStep, channel: e.target.value }); fetchTemplatesByChannel(e.target.value); setNewStepTemplateId(''); }}>
                                         {CHANNEL_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                                     </select>
                                 </div>
@@ -649,22 +732,120 @@ const CommunicationPage: React.FC = () => {
                                     <input type="number" min={0} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.delayMinutes || 0} onChange={e => setNewStep({ ...newStep, delayMinutes: parseInt(e.target.value) || 0 })} />
                                 </div>
                             </div>
+                            {/* Template Selector */}
                             <div>
-                                <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Trigger</label>
-                                <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.trigger || 'auto'} onChange={e => setNewStep({ ...newStep, trigger: e.target.value })}>
-                                    <option value="auto">Automatic</option>
-                                    <option value="manual">Manual</option>
-                                    <option value="on_no_response">On No Response</option>
+                                <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Choose Template</label>
+                                <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStepTemplateId} onChange={e => setNewStepTemplateId(e.target.value)}>
+                                    <option value="">— No template (inline content) —</option>
+                                    {channelTemplates.map(t => <option key={t.id} value={t.id}>{t.templateName} {t.language ? `(${t.language.toUpperCase()})` : ''}</option>)}
                                 </select>
                             </div>
-                            <div>
-                                <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Inline Content (if no template)</label>
-                                <textarea rows={3} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.content || ''} onChange={e => setNewStep({ ...newStep, content: e.target.value })} placeholder="Step content..." />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Trigger</label>
+                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.trigger || 'auto'} onChange={e => setNewStep({ ...newStep, trigger: e.target.value })}>
+                                        <option value="auto">Automatic</option>
+                                        <option value="manual">Manual</option>
+                                        <option value="on_no_response">On No Response</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Schedule Time</label>
+                                    <input type="time" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStepScheduleHour} onChange={e => setNewStepScheduleHour(e.target.value)} />
+                                </div>
                             </div>
+                            {/* DTMF Branches (for call channel) */}
+                            {(newStep.channel === 'call') && (
+                                <div className="p-3 bg-[#0a1018] rounded-xl border border-amber-500/20">
+                                    <label className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+                                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>dialpad</span>
+                                        DTMF Options (Press 1/2/3)
+                                    </label>
+                                    {['1', '2', '3'].map(key => (
+                                        <div key={key} className="flex items-center gap-2 mt-2">
+                                            <span className="size-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-sm font-black shrink-0">{key}</span>
+                                            <span className="text-text-muted text-xs">→</span>
+                                            <input type="text" className="flex-1 px-3 py-2 bg-[#111a22] border border-border-dark rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" value={newStepBranches[key] || ''} onChange={e => setNewStepBranches({ ...newStepBranches, [key]: e.target.value })} placeholder={key === '1' ? 'Confirm Order' : key === '2' ? 'Cancel Order' : 'Speak to Agent'} />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {/* Inline Content */}
+                            {!newStepTemplateId && (
+                                <div>
+                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Inline Content</label>
+                                    <textarea rows={3} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.content || ''} onChange={e => setNewStep({ ...newStep, content: e.target.value })} placeholder="Step content..." />
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end gap-2 mt-5">
                             <button onClick={() => setShowAddStepModal(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-white transition-all">Cancel</button>
                             <button onClick={handleAddStep} className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20" disabled={!newStep.label}>Add Step</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Condition Editor Modal */}
+            {showConditionEditor && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowConditionEditor(false)}>
+                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-white text-lg font-bold mb-5">🎯 Edit Conditions</h3>
+                        <div className="flex flex-col gap-5">
+                            {/* Confirmation Status */}
+                            <div>
+                                <label className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2 block">Confirmation Status</label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {CONFIRM_STATUSES.map(s => (
+                                        <button key={s} onClick={() => toggleConditionItem('confirmationStatuses', s)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(editingConditions.confirmationStatuses || []).includes(s) ? 'bg-purple-500/20 text-purple-400 border-purple-500/40' : 'bg-[#0a1018] text-text-muted border-border-dark hover:border-purple-500/30'}`}>{s}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Order Status */}
+                            <div>
+                                <label className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-2 block">Order Status</label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {ORDER_STATUSES.map(s => (
+                                        <button key={s} onClick={() => toggleConditionItem('orderStatuses', s)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(editingConditions.orderStatuses || []).includes(s) ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' : 'bg-[#0a1018] text-text-muted border-border-dark hover:border-blue-500/30'}`}>{s}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Risk Level */}
+                            <div>
+                                <label className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-2 block">Risk Level</label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {RISK_LEVELS.map(s => (
+                                        <button key={s} onClick={() => toggleConditionItem('riskLevels', s)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(editingConditions.riskLevels || []).includes(s) ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-[#0a1018] text-text-muted border-border-dark hover:border-amber-500/30'}`}>{s}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* Product SKU */}
+                            <div>
+                                <label className="text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2 block">Product SKU</label>
+                                <input type="text" className="w-full px-3 py-2 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Search SKU..." value={skuSearch} onChange={e => setSkuSearch(e.target.value)} />
+                                <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
+                                    {filteredSkus.slice(0, 20).map(p => (
+                                        <button key={p.sku} onClick={() => toggleConditionItem('skuTypes', p.sku)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(editingConditions.skuTypes || []).includes(p.sku) ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' : 'bg-[#0a1018] text-text-muted border-border-dark hover:border-cyan-500/30'}`}>
+                                            {p.sku} <span className="text-text-muted/50 ml-1 font-normal">{p.name?.substring(0, 20)}</span>
+                                        </button>
+                                    ))}
+                                    {filteredSkus.length === 0 && <p className="text-text-muted/40 text-xs">No products found</p>}
+                                </div>
+                                {(editingConditions.skuTypes || []).length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                        {editingConditions.skuTypes.map((s: string) => (
+                                            <span key={s} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
+                                                {s}
+                                                <button onClick={() => toggleConditionItem('skuTypes', s)} className="hover:text-white">×</button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button onClick={() => setShowConditionEditor(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-white transition-all">Cancel</button>
+                            <button onClick={handleSaveConditions} className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">Save Conditions</button>
                         </div>
                     </div>
                 </div>
