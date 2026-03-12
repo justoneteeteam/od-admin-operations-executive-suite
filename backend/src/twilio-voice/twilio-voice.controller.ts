@@ -1,6 +1,7 @@
 import { Controller, Post, Query, Body, Res, Logger } from '@nestjs/common';
 import type { Response } from 'express';
 import { TwilioVoiceService } from './twilio-voice.service';
+import { WhisperTranscriptionService } from './whisper-transcription.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
 import * as twilio from 'twilio';
@@ -11,6 +12,7 @@ export class TwilioVoiceController {
 
     constructor(
         private readonly twilioVoiceService: TwilioVoiceService,
+        private readonly whisperService: WhisperTranscriptionService,
         private readonly prisma: PrismaService,
     ) { }
 
@@ -352,6 +354,44 @@ export class TwilioVoiceController {
         }
 
         return { received: true };
+    }
+
+    // ───────────────────────────────────────
+    // 4. Recording Callback (Twilio sends when recording is ready)
+    // ───────────────────────────────────────
+    @Public()
+    @Post('recording-callback')
+    async handleRecordingCallback(
+        @Query('orderId') orderId: string,
+        @Body() recordingData: any,
+    ) {
+        const { RecordingSid, RecordingUrl, RecordingStatus, RecordingDuration } = recordingData;
+
+        this.logger.log(
+            `Order ${orderId}: Recording callback — SID: ${RecordingSid}, Status: ${RecordingStatus}, Duration: ${RecordingDuration}s`,
+        );
+
+        if (RecordingStatus !== 'completed') {
+            return { received: true, skipped: 'recording not completed' };
+        }
+
+        // Find the latest call log for this order
+        const callLog = await this.prisma.callLog.findFirst({
+            where: { orderId },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        if (!callLog) {
+            this.logger.warn(`Order ${orderId}: No call log found for recording ${RecordingSid}`);
+            return { received: true, error: 'no call log found' };
+        }
+
+        // Process recording asynchronously (don't block Twilio webhook response)
+        this.whisperService.processRecording(callLog.id, RecordingUrl, RecordingSid).catch(err => {
+            this.logger.error(`Failed to process recording ${RecordingSid}: ${err.message}`);
+        });
+
+        return { received: true, processing: true };
     }
 
     // ───────────────────────────────────────
