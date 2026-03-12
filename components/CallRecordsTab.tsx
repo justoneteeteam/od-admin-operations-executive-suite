@@ -9,6 +9,7 @@ const CallRecordsTab: React.FC = () => {
   const [crIntentFilter, setCrIntentFilter] = useState('');
   const [crLoading, setCrLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
 
   const fetchCallRecords = async () => {
     setCrLoading(true);
@@ -41,6 +42,25 @@ const CallRecordsTab: React.FC = () => {
     { label: 'No Answer', value: callStats.noAnswer, icon: 'phone_missed', color: '#f5a623' },
     { label: 'Unclear', value: callStats.unclear, icon: 'help', color: '#a78bfa' },
   ];
+
+  const handlePlayAudio = (id: string, url: string) => {
+    if (playingId === id) {
+      setPlayingId(null);
+      return;
+    }
+    setPlayingId(id);
+    const audio = new Audio(url);
+    audio.onended = () => setPlayingId(null);
+    audio.play().catch(() => setPlayingId(null));
+  };
+
+  const getIntentScoreColor = (score: number | undefined | null) => {
+    if (!score && score !== 0) return 'text-text-muted';
+    const s = Number(score);
+    if (s >= 80) return 'text-emerald-400';
+    if (s >= 50) return 'text-amber-400';
+    return 'text-red-400';
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -100,16 +120,20 @@ const CallRecordsTab: React.FC = () => {
 
       <div className="bg-[#111a22] rounded-xl border border-border-dark overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[1100px]">
+          <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
               <tr className="bg-[#17232f] border-b border-[#233648]">
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Call SID</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Type</th>
+                <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Audio</th>
+                <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Transcription</th>
+                <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">English</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Intent</th>
+                <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Score</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">DTMF</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Duration</th>
-                <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Language</th>
+                <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Lang</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Date</th>
                 <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">CS Note</th>
               </tr>
@@ -117,13 +141,13 @@ const CallRecordsTab: React.FC = () => {
             <tbody className="divide-y divide-[#233648]">
               {crLoading ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-text-muted">
+                  <td colSpan={13} className="px-4 py-12 text-center text-text-muted">
                     <div className="animate-spin size-6 border-2 border-primary border-t-transparent rounded-full mx-auto"></div>
                   </td>
                 </tr>
               ) : callRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-text-muted text-sm">No call records found</td>
+                  <td colSpan={13} className="px-4 py-12 text-center text-text-muted text-sm">No call records found</td>
                 </tr>
               ) : (
                 callRecords.map(cr => {
@@ -148,20 +172,69 @@ const CallRecordsTab: React.FC = () => {
                         <p className="text-primary text-sm font-bold">{'#' + (cr.order?.orderNumber || '\u2014')}</p>
                         <p className="text-text-muted text-xs mt-0.5">{cr.order?.customer?.name || ''}</p>
                       </td>
-                      <td className="px-4 py-4 text-xs text-text-muted font-mono truncate max-w-[120px]">{cr.callSid}</td>
+                      <td className="px-4 py-4 text-xs text-text-muted font-mono truncate max-w-[100px]">{cr.callSid}</td>
                       <td className="px-4 py-4">
                         <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-[#1c2d3d] text-text-muted border border-border-dark">
                           {cr.scriptType}
                         </span>
                       </td>
+                      {/* Audio Recording */}
+                      <td className="px-4 py-4">
+                        {cr.recordingUrl ? (
+                          <button
+                            onClick={() => handlePlayAudio(cr.id, cr.recordingUrl!)}
+                            className={'size-8 rounded-lg flex items-center justify-center transition-all ' +
+                              (playingId === cr.id
+                                ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                                : 'bg-[#1c2d3d] text-text-muted hover:text-primary hover:bg-primary/10 border border-border-dark')}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                              {playingId === cr.id ? 'stop' : 'play_arrow'}
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                        )}
+                      </td>
+                      {/* Local Transcription */}
+                      <td className="px-4 py-4">
+                        {cr.transcriptionText ? (
+                          <p className="text-text-muted text-xs max-w-[150px] truncate" title={cr.transcriptionText}>
+                            {cr.transcriptionText}
+                          </p>
+                        ) : (
+                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                        )}
+                      </td>
+                      {/* English Transcription */}
+                      <td className="px-4 py-4">
+                        {cr.transcriptionEnglish ? (
+                          <p className="text-white text-xs max-w-[150px] truncate" title={cr.transcriptionEnglish}>
+                            {cr.transcriptionEnglish}
+                          </p>
+                        ) : (
+                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                        )}
+                      </td>
+                      {/* Intent */}
                       <td className="px-4 py-4">
                         <span className={'px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ' + intentColor}>
                           {cr.intentDetected || '\u2014'}
                         </span>
                       </td>
+                      {/* Intention Score */}
+                      <td className="px-4 py-4">
+                        {cr.intentionScore != null ? (
+                          <span className={'text-sm font-bold font-mono ' + getIntentScoreColor(cr.intentionScore)}>
+                            {Number(cr.intentionScore).toFixed(0)}%
+                          </span>
+                        ) : (
+                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                        )}
+                      </td>
                       <td className="px-4 py-4 text-sm text-white font-mono">{cr.dtmfInput || '\u2014'}</td>
                       <td className="px-4 py-4 text-sm text-text-muted font-mono">{dur}</td>
-                      <td className="px-4 py-4 text-sm">{langFlag + ' ' + lang.toUpperCase()}</td>
+                      <td className="px-4 py-4 text-xs">{langFlag + ' ' + lang.toUpperCase()}</td>
                       <td className="px-4 py-4 text-xs text-text-muted">
                         {cr.createdAt
                           ? new Date(cr.createdAt).toLocaleDateString('en-GB', {

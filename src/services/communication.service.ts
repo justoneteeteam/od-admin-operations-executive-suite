@@ -74,6 +74,10 @@ export interface CallRecord {
     speechConfidence?: number;
     dtmfInput?: string;
     intentDetected?: string;
+    intentionScore?: number;
+    recordingUrl?: string;
+    transcriptionText?: string;
+    transcriptionEnglish?: string;
     skipReason?: string;
     csNote?: string;
     createdAt: string;

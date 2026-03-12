@@ -834,6 +834,11 @@ model CallLog {
   dtmfInput       String?   @map("dtmf_input") @db.VarChar(10)
 
   intentDetected  String?   @map("intent_detected") @db.VarChar(50)
+  intentionScore  Decimal?  @map("intention_score") @db.Decimal(5, 2)
+
+  recordingUrl         String?  @map("recording_url")
+  transcriptionText    String?  @map("transcription_text")
+  transcriptionEnglish String?  @map("transcription_english")
 
   skipReason      String?   @map("skip_reason") @db.VarChar(50)
   idempotencyKey  String?   @unique @map("idempotency_key") @db.VarChar(150)
@@ -910,8 +915,8 @@ model AdsCampaignChangeLog {
 model CommunicationSequence {
   id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   name           String   @db.VarChar(255)
-  category       String   @db.VarChar(30)
-  triggerEvent   String   @map("trigger_event") @db.VarChar(50)
+  category       String   @default("confirmation") @db.VarChar(30)
+  triggerEvent   String   @default("order_created") @map("trigger_event") @db.VarChar(50)
   description    String?
   conditions     Json?
   whenStockNote  Json?    @map("when_stock_note")
