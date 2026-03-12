@@ -62,6 +62,7 @@ const DashboardLayout: React.FC = () => {
 
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">Operations</p>
             <SidebarItem to="/incidents" icon="report_problem" label="Incidents" active={location.pathname === '/incidents'} />
+            <SidebarItem to="/communication" icon="forum" label="Communication" active={location.pathname === '/communication'} />
 
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">Marketing</p>
             <SidebarItem to="/ads" icon="campaign" label="Ads Analytics" active={location.pathname === '/ads'} />
@@ -97,6 +98,7 @@ const DashboardLayout: React.FC = () => {
               {location.pathname === '/ads' && 'Ads Campaign Analytics'}
               {location.pathname === '/incidents' && 'Incident Management'}
               {location.pathname === '/logistics' && 'Logistic Companies'}
+              {location.pathname === '/communication' && 'Communication Hub'}
             </h2>
             <div className="hidden lg:flex h-10 items-stretch rounded-lg bg-border-dark min-w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
               <div className="text-text-muted flex items-center justify-center pl-4">

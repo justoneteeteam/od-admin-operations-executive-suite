@@ -657,18 +657,22 @@ model PerformanceMetric {
 }
 
 model NotificationTemplate {
-  id           String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  templateName String    @unique @map("template_name") @db.VarChar(100)
-  templateType String    @map("template_type") @db.VarChar(50)
-  subject      String?   @db.VarChar(255)
-  bodyTemplate String    @map("body_template")
-  variables    Json?
-  language     String?   @default("en") @db.VarChar(10)
-  isActive     Boolean?  @default(true) @map("is_active")
-  usageCount   Int?      @default(0) @map("usage_count")
-  lastUsedAt   DateTime? @map("last_used_at") @db.Timestamptz(6)
-  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  templateName     String    @unique @map("template_name") @db.VarChar(100)
+  templateType     String    @map("template_type") @db.VarChar(50)
+  channel          String?   @default("sms") @db.VarChar(30)
+  subject          String?   @db.VarChar(255)
+  bodyTemplate     String    @map("body_template")
+  shortDescription String?   @map("short_description") @db.VarChar(200)
+  variables        Json?
+  language         String?   @default("en") @db.VarChar(10)
+  isActive         Boolean?  @default(true) @map("is_active")
+  usageCount       Int?      @default(0) @map("usage_count")
+  lastUsedAt       DateTime? @map("last_used_at") @db.Timestamptz(6)
+  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sequenceSteps SequenceStep[]
 
   @@map("notification_templates")
 }
@@ -834,6 +838,8 @@ model CallLog {
   skipReason      String?   @map("skip_reason") @db.VarChar(50)
   idempotencyKey  String?   @unique @map("idempotency_key") @db.VarChar(150)
 
+  csNote          String?   @map("cs_note")
+
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
 
@@ -897,6 +903,46 @@ model AdsCampaignChangeLog {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("ads_campaign_change_logs")
+}
+
+// ─── COMMUNICATION SEQUENCES ──────────────────────────────────────────
+
+model CommunicationSequence {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String   @db.VarChar(255)
+  category       String   @db.VarChar(30)
+  triggerEvent   String   @map("trigger_event") @db.VarChar(50)
+  description    String?
+  conditions     Json?
+  whenStockNote  Json?    @map("when_stock_note")
+  isActive       Boolean  @default(true) @map("is_active")
+  triggeredCount Int      @default(0) @map("triggered_count")
+  legacyCaseType String?  @map("legacy_case_type") @db.VarChar(30)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  steps SequenceStep[]
+
+  @@map("communication_sequences")
+}
+
+model SequenceStep {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  sequenceId   String   @map("sequence_id") @db.Uuid
+  templateId   String?  @map("template_id") @db.Uuid
+  stepOrder    Int      @map("step_order")
+  channel      String   @db.VarChar(30)
+  label        String   @db.VarChar(255)
+  delayMinutes Int      @default(0) @map("delay_minutes")
+  trigger      String?  @default("auto") @db.VarChar(20)
+  branches     Json?
+  content      String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sequence CommunicationSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  template NotificationTemplate? @relation(fields: [templateId], references: [id])
+
+  @@map("sequence_steps")
 }
 
 // ─── INCIDENT MANAGEMENT ──────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { productsService, Product } from '../src/services/products.service';
 import { fulfillmentService, FulfillmentCenter } from '../src/services/fulfillment.service';
 import storeSettingsService, { StoreName } from '../src/services/settings.service';
 import { CustomerSearch } from '../src/components/CustomerSearch';
+import CallRecordsTab from '../components/CallRecordsTab';
 import * as XLSX from 'xlsx';
 
 const MOCK_LOGS = [
@@ -57,6 +58,9 @@ const OrdersPage: React.FC = () => {
   const [skipInventory, setSkipInventory] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResults, setImportResults] = useState<{ created: number; updated: number; skipped: number; errors: any[] } | null>(null);
+
+  // Tab state (Orders vs Call Records)
+  const [activeOrderTab, setActiveOrderTab] = useState<'orders' | 'call-records'>('orders');
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -521,7 +525,19 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
+      {/* Tab Switcher */}
+      <div className="flex gap-1 bg-card-dark rounded-xl p-1 border border-border-dark w-fit">
+        <button onClick={() => setActiveOrderTab('orders')} className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeOrderTab === 'orders' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'}`}>
+          <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>package_2</span>Orders
+        </button>
+        <button onClick={() => setActiveOrderTab('call-records')} className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeOrderTab === 'call-records' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'}`}>
+          <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>call</span>Call Records
+        </button>
+      </div>
+
+      {activeOrderTab === 'call-records' && <CallRecordsTab />}
+
+      <div className="flex flex-col gap-2" style={activeOrderTab !== 'orders' ? { display: 'none' } : undefined}>
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <span className="text-text-muted text-xs font-medium">Home</span>
           <span className="text-text-muted text-xs">/</span>
@@ -588,6 +604,7 @@ const OrdersPage: React.FC = () => {
               <option>Call Center</option>
               <option>Cancelled</option>
               <option>No Answer</option>
+              <option>Wait Until Stock</option>
             </select>
             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
           </div>
@@ -1249,6 +1266,7 @@ const OrdersPage: React.FC = () => {
                           <option value="Call Center">Call Center</option>
                           <option value="Cancelled">Cancelled</option>
                           <option value="No Answer">No Answer</option>
+                          <option value="Wait Until Stock">Wait Until Stock</option>
                         </select>
                       </div>
                       {editOrder.confirmationStatus !== 'Cancelled' && (
@@ -1466,7 +1484,7 @@ const OrdersPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div >
+          </div>
         )
       }
 

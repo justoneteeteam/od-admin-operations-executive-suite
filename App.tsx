@@ -16,6 +16,7 @@ import InventoryDashboard from './pages/InventoryDashboard';
 import AdsPage from './pages/AdsPage';
 import IncidentsPage from './pages/IncidentsPage';
 import LogisticsPage from './pages/LogisticsPage';
+import CommunicationPage from './pages/CommunicationPage';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,6 +47,7 @@ const App: React.FC = () => {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/ads" element={<AdsPage />} />
           <Route path="/incidents" element={<IncidentsPage />} />
+          <Route path="/communication" element={<CommunicationPage />} />
           <Route path="*" element={<Navigate to="/performance" />} />
         </Route>
 
