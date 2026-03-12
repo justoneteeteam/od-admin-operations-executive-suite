@@ -59,6 +59,10 @@ const CommunicationPage: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [skuSearch, setSkuSearch] = useState('');
 
+    // Pre-built card edit state
+    const [editConfirmCard, setEditConfirmCard] = useState(false);
+    const [editDeliveryCard, setEditDeliveryCard] = useState(false);
+
     // Condition editor
     const [showConditionEditor, setShowConditionEditor] = useState(false);
     const [editingConditions, setEditingConditions] = useState<any>({});
@@ -237,7 +241,10 @@ const CommunicationPage: React.FC = () => {
         });
     };
 
-    const filteredSkus = products.filter(p => p.sku?.toLowerCase().includes(skuSearch.toLowerCase()));
+    const filteredSkus = products.filter(p => {
+        const q = skuSearch.toLowerCase();
+        return p.sku?.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q);
+    });
 
     const handleRemoveStep = async (stepId: string) => {
         if (!selectedSequence || !window.confirm('Remove this step?')) return;
@@ -553,7 +560,12 @@ const CommunicationPage: React.FC = () => {
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#f5a623' }}>call</span>
                                                 <span className="text-sm font-bold text-white">Confirmation Call + Pre-SMS</span>
                                             </div>
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                                <button onClick={() => setEditConfirmCard(!editConfirmCard)} className="text-text-muted hover:text-primary transition-colors">
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{editConfirmCard ? 'expand_less' : 'edit'}</span>
+                                                </button>
+                                            </div>
                                         </div>
                                         <p className="text-xs text-text-muted">COD order confirmation: sends pre-call SMS warning → waits 8 seconds → initiates Twilio call with DTMF options.</p>
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -579,6 +591,57 @@ const CommunicationPage: React.FC = () => {
                                                 <p className="text-[10px] text-text-muted">Twilio call (short/long script). DTMF: <span className="text-amber-400">Press 1</span> → Confirm · <span className="text-amber-400">Press 2</span> → Cancel</p>
                                             </div>
                                         </div>
+                                        {/* Editable Settings */}
+                                        {editConfirmCard && (
+                                            <div className="mt-2 p-4 bg-[#0d1520] rounded-xl border border-primary/20 space-y-3">
+                                                <p className="text-[10px] text-primary font-bold uppercase tracking-wider">⚙ Backend Settings (requires code redeploy)</p>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Pre-call Delay</label>
+                                                        <input defaultValue="8" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none" suffix="sec" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Scheduler Interval</label>
+                                                        <input defaultValue="5" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Max Attempts</label>
+                                                        <input defaultValue="1" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">Script Type</label>
+                                                        <select defaultValue="short" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none">
+                                                            <option value="short">Short</option>
+                                                            <option value="long">Long</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-text-muted font-bold block mb-1">DTMF Options</label>
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-amber-400 text-xs font-black w-16">Press 1 →</span>
+                                                            <input defaultValue="Confirm" className="flex-1 bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-amber-400 text-xs font-black w-16">Press 2 →</span>
+                                                            <input defaultValue="Cancel" className="flex-1 bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-text-muted font-bold block mb-1">SMS Templates (by country)</label>
+                                                    <div className="space-y-1.5">
+                                                        {['ES', 'IT', 'EN'].map(lang => (
+                                                            <div key={lang} className="flex items-center gap-2">
+                                                                <span className="text-cyan-400 text-xs font-black w-8">{lang}</span>
+                                                                <input defaultValue={`sms_pre_call_${lang.toLowerCase()}`} className="flex-1 bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white font-mono outline-none" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Condition: Pending</span>
                                             <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: medium+</span>
@@ -593,7 +656,12 @@ const CommunicationPage: React.FC = () => {
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#22d4e6' }}>local_shipping</span>
                                                 <span className="text-sm font-bold text-white">Out of Delivery Notification</span>
                                             </div>
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                                <button onClick={() => setEditDeliveryCard(!editDeliveryCard)} className="text-text-muted hover:text-primary transition-colors">
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{editDeliveryCard ? 'expand_less' : 'edit'}</span>
+                                                </button>
+                                            </div>
                                         </div>
                                         <p className="text-xs text-text-muted">When 17Track reports order as "Out for Delivery", automatically sends SMS + WhatsApp to the customer.</p>
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -619,6 +687,37 @@ const CommunicationPage: React.FC = () => {
                                                 <p className="text-[10px] text-text-muted">Send WhatsApp delivery notification with tracking details</p>
                                             </div>
                                         </div>
+                                        {/* Editable Settings */}
+                                        {editDeliveryCard && (
+                                            <div className="mt-2 p-4 bg-[#0d1520] rounded-xl border border-primary/20 space-y-3">
+                                                <p className="text-[10px] text-primary font-bold uppercase tracking-wider">⚙ Backend Settings (requires code redeploy)</p>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">SMS Template</label>
+                                                        <input defaultValue="sms_out_for_delivery" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white font-mono outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-text-muted font-bold block mb-1">WhatsApp Template</label>
+                                                        <input defaultValue="wa_out_for_delivery" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white font-mono outline-none" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-text-muted font-bold block mb-1">Trigger Status</label>
+                                                    <select defaultValue="OutForDelivery" className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white outline-none">
+                                                        <option value="OutForDelivery">Out for Delivery</option>
+                                                        <option value="InTransit">In Transit</option>
+                                                        <option value="Delivered">Delivered</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <label className="relative inline-flex items-center cursor-pointer">
+                                                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                                                        <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                                    </label>
+                                                    <span className="text-xs text-white font-bold">Send both SMS + WhatsApp</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="flex flex-wrap gap-2 mt-1">
                                             <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Condition: out_for_delivery</span>
                                             <span className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#1a2332] text-text-muted border border-border-dark">🔗 17Track webhook trigger</span>
