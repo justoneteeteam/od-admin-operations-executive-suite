@@ -247,6 +247,27 @@ const CommunicationPage: React.FC = () => {
         } catch (err) { toast('error', 'Failed to remove step'); }
     };
 
+    const handleInlineAddStep = async () => {
+        if (!selectedSequence) return;
+        try {
+            await communicationService.addStep(selectedSequence.id, { channel: 'whatsapp', label: `Step ${(selectedSequence.steps?.length || 0) + 1}`, delayMinutes: 0, trigger: 'auto', content: '' });
+            fetchSequenceDetail(selectedSequence.id);
+        } catch (err) { toast('error', 'Failed to add step'); }
+    };
+
+    const handleUpdateStepField = async (stepId: string, field: string, value: any) => {
+        if (!selectedSequence) return;
+        // Optimistic UI update
+        setSelectedSequence(prev => {
+            if (!prev) return prev;
+            return { ...prev, steps: prev.steps?.map(s => s.id === stepId ? { ...s, [field]: value } : s) };
+        });
+        // Persist via API (fire-and-forget)
+        try {
+            await communicationService.updateStep(selectedSequence.id, stepId, { [field]: value });
+        } catch { /* will re-fetch on next focus */ }
+    };
+
     const handleDeleteSequence = async (id: string) => {
         if (!window.confirm('Delete this sequence and all its steps?')) return;
         try {
@@ -521,140 +542,256 @@ const CommunicationPage: React.FC = () => {
                     {/* Center: Sequence Detail */}
                     <div className="flex-1">
                         {!selectedSequence ? (
-                            <div className="flex items-center justify-center h-full text-text-muted">
-                                <div className="text-center">
-                                    <span className="material-symbols-outlined text-5xl mb-3 block opacity-30">bolt</span>
-                                    <p className="text-sm">Select a sequence to view its steps and conditions</p>
+                            <div className="flex flex-col gap-5" style={{ minHeight: 'calc(100vh - 280px)' }}>
+                                {/* Pre-built Automation Cards */}
+                                <p className="text-xs text-text-muted">Active automation sequences exposed from backend. Click a custom sequence on the left to edit.</p>
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                    {/* Confirmation Call + Pre-SMS Card */}
+                                    <div className="bg-[#111a22] rounded-xl border border-border-dark p-5 flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#f5a623' }}>call</span>
+                                                <span className="text-sm font-bold text-white">Confirmation Call + Pre-SMS</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                        </div>
+                                        <p className="text-xs text-text-muted">COD order confirmation: sends pre-call SMS warning → waits 8 seconds → initiates Twilio call with DTMF options.</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[10px] text-text-muted font-bold">Channels:</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: '#5b8def', borderColor: '#5b8def30', backgroundColor: '#5b8def10' }}>SMS</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: '#f5a623', borderColor: '#f5a62330', backgroundColor: '#f5a62310' }}>Call</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 1</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#5b8def' }}>sms</span>
+                                                    <span className="text-[10px] text-text-muted">SMS</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Pre-call SMS warning (by country: ES/IT/EN). Template: <span className="text-white font-mono">{'sms_pre_call_{{country}}'}</span></p>
+                                            </div>
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 2</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#f5a623' }}>call</span>
+                                                    <span className="text-[10px] text-text-muted">Call · 8s delay</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Twilio call (short/long script). DTMF: <span className="text-amber-400">Press 1</span> → Confirm · <span className="text-amber-400">Press 2</span> → Cancel</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Condition: Pending</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: medium+</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#1a2332] text-text-muted border border-border-dark">⏱ Every 5 min · Max 1 attempt</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Out of Delivery Notification Card */}
+                                    <div className="bg-[#111a22] rounded-xl border border-border-dark p-5 flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#22d4e6' }}>local_shipping</span>
+                                                <span className="text-sm font-bold text-white">Out of Delivery Notification</span>
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                        </div>
+                                        <p className="text-xs text-text-muted">When 17Track reports order as "Out for Delivery", automatically sends SMS + WhatsApp to the customer.</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[10px] text-text-muted font-bold">Channels:</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: '#5b8def', borderColor: '#5b8def30', backgroundColor: '#5b8def10' }}>SMS</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: '#25d366', borderColor: '#25d36630', backgroundColor: '#25d36610' }}>WhatsApp</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 1</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#5b8def' }}>sms</span>
+                                                    <span className="text-[10px] text-text-muted">SMS · Auto</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Send SMS delivery notification with tracking URL and estimated time</p>
+                                            </div>
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 2</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#25d366' }}>chat</span>
+                                                    <span className="text-[10px] text-text-muted">WhatsApp · Auto</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Send WhatsApp delivery notification with tracking details</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Condition: out_for_delivery</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#1a2332] text-text-muted border border-border-dark">🔗 17Track webhook trigger</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-1 flex items-center justify-center text-text-muted">
+                                    <div className="text-center">
+                                        <span className="material-symbols-outlined text-4xl mb-2 block opacity-20">bolt</span>
+                                        <p className="text-sm">Select a custom sequence from the left to edit its steps</p>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-5">
+                            <div className="bg-[#111a22] border border-border-dark rounded-2xl overflow-hidden" style={{ maxHeight: 'calc(100vh - 290px)', overflowY: 'auto' }}>
                                 {/* Header */}
-                                <div className="flex items-center justify-between">
+                                <div className="p-5 border-b border-border-dark flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="material-symbols-outlined" style={{ fontSize: 22, color: getCategoryMeta(selectedSequence.category).color }}>{getCategoryMeta(selectedSequence.category).icon}</span>
+                                        <div>
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-white">Edit Sequence</h3>
+                                            <p className="text-xs text-text-muted">{selectedSequence.name}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setSelectedSequence(null)} className="text-text-muted hover:text-white">
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
+                                </div>
+
+                                <div className="p-5 space-y-5">
+                                    {/* Title & Description */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Title</label>
+                                            <input value={selectedSequence.name} onChange={e => setSelectedSequence({ ...selectedSequence, name: e.target.value })} className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Description</label>
+                                            <input value={selectedSequence.description || ''} onChange={e => setSelectedSequence({ ...selectedSequence, description: e.target.value })} className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none" />
+                                        </div>
+                                    </div>
+
+                                    {/* Active Toggle */}
+                                    <div className="flex items-center gap-3">
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" checked={selectedSequence.isActive} onChange={e => { setSelectedSequence({ ...selectedSequence, isActive: e.target.checked }); communicationService.updateSequence(selectedSequence.id, { isActive: e.target.checked }); }} className="sr-only peer" />
+                                            <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                        </label>
+                                        <span className="text-xs text-white font-bold">Sequence Active</span>
+                                    </div>
+
+                                    {/* Channel Order */}
                                     <div>
-                                        <h2 className="text-white text-xl font-bold">{selectedSequence.name}</h2>
-                                        {selectedSequence.description && <p className="text-text-muted text-sm mt-0.5">{selectedSequence.description}</p>}
-                                    </div>
-                                    <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${selectedSequence.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                                        {selectedSequence.isActive ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
-
-                                {/* Conditions */}
-                                <div className="p-4 bg-[#111a22] rounded-xl border border-border-dark">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h4 className="text-text-muted text-xs font-bold uppercase tracking-wider">Conditions</h4>
-                                        <button onClick={() => { setEditingConditions(selectedSequence.conditions || {}); setShowConditionEditor(true); }} className="px-2.5 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg hover:bg-primary/20 transition-all border border-primary/20">
-                                            <span className="material-symbols-outlined mr-0.5 align-middle" style={{ fontSize: '12px' }}>edit</span>
-                                            Edit
-                                        </button>
-                                    </div>
-                                    {selectedSequence.conditions && (Object.values(selectedSequence.conditions).some((v: any) => v && (Array.isArray(v) ? v.length > 0 : true))) ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedSequence.conditions.riskLevels?.map((r: string) => (
-                                                <span key={r} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: {r}</span>
-                                            ))}
-                                            {selectedSequence.conditions.orderStatuses?.map((s: string) => (
-                                                <span key={s} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Status: {s}</span>
-                                            ))}
-                                            {selectedSequence.conditions.confirmationStatuses?.map((s: string) => (
-                                                <span key={s} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Confirm: {s}</span>
-                                            ))}
-                                            {selectedSequence.conditions.skuTypes?.map((s: string) => (
-                                                <span key={s} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">SKU: {s}</span>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-text-muted/50 text-xs italic">No conditions set — this sequence will trigger for all matching orders.</p>
-                                    )}
-                                </div>
-
-                                {/* Flow Canvas */}
-                                <div className="flex flex-col gap-0">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h4 className="text-text-muted text-xs font-bold uppercase tracking-wider">Sequence Flow</h4>
-                                        <button onClick={handleOpenAddStep} className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-all border border-primary/20">
-                                            <span className="material-symbols-outlined mr-1 align-middle" style={{ fontSize: '14px' }}>add</span>
-                                            Add Step
-                                        </button>
-                                    </div>
-
-                                    {selectedSequence.steps?.length === 0 ? (
-                                        <div className="p-8 bg-[#111a22] rounded-xl border border-dashed border-border-dark text-center">
-                                            <span className="material-symbols-outlined text-3xl text-text-muted/30 mb-2 block">playlist_add</span>
-                                            <p className="text-text-muted text-sm">No steps yet. Add your first step to build the sequence.</p>
-                                        </div>
-                                    ) : selectedSequence.steps?.map((step, idx) => {
-                                        const chMeta = getChannelMeta(step.channel);
-                                        return (
-                                            <React.Fragment key={step.id}>
-                                                {/* Connector line */}
-                                                {idx > 0 && (
-                                                    <div className="flex items-center ml-6">
-                                                        <div className="w-px h-8 bg-border-dark"></div>
-                                                        {step.delayMinutes > 0 && (
-                                                            <span className="ml-3 px-2.5 py-1 bg-[#111a22] border border-border-dark rounded text-[10px] text-text-muted font-mono">
-                                                                ⏱ {step.delayMinutes >= 60 ? `${Math.floor(step.delayMinutes / 60)}h ${step.delayMinutes % 60}m` : `${step.delayMinutes}m`} delay
-                                                            </span>
-                                                        )}
+                                        <label className="text-[10px] text-text-muted font-bold uppercase block mb-2">Channel Order</label>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {CHANNEL_OPTIONS.map(ch => {
+                                                const channelsUsed = selectedSequence.steps?.map((s: any) => s.channel) || [];
+                                                const isUsed = channelsUsed.includes(ch.value);
+                                                return (
+                                                    <div key={ch.value} className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${isUsed ? 'border-primary/40 bg-primary/10 text-white' : 'border-border-dark bg-[#1a2332] text-text-muted'}`}>
+                                                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: ch.color }}>{ch.icon}</span>
+                                                        {ch.label}
                                                     </div>
-                                                )}
-                                                {/* Step card */}
-                                                <div className="flex items-start gap-3 group">
-                                                    {/* Icon */}
-                                                    <div className="flex flex-col items-center">
-                                                        <div className="size-12 rounded-xl flex items-center justify-center border" style={{ background: `${chMeta.color}15`, borderColor: `${chMeta.color}30` }}>
-                                                            <span className="material-symbols-outlined" style={{ fontSize: '22px', color: chMeta.color }}>{chMeta.icon}</span>
-                                                        </div>
-                                                    </div>
-                                                    {/* Content */}
-                                                    <div className="flex-1 p-4 bg-[#111a22] rounded-xl border border-border-dark group-hover:border-primary/20 transition-all">
-                                                        <div className="flex items-center justify-between">
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Conditions */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-[10px] text-text-muted font-bold uppercase">Conditions</label>
+                                            <button onClick={() => { setEditingConditions(selectedSequence.conditions || {}); setShowConditionEditor(true); }} className="flex items-center gap-1 text-[10px] text-primary font-bold hover:text-primary/80 transition-colors">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>edit</span>
+                                                Edit
+                                            </button>
+                                        </div>
+                                        {selectedSequence.conditions && (Object.values(selectedSequence.conditions).some((v: any) => v && (Array.isArray(v) ? v.length > 0 : true))) ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {selectedSequence.conditions.riskLevels?.map((r: string) => (
+                                                    <span key={r} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: {r}</span>
+                                                ))}
+                                                {selectedSequence.conditions.orderStatuses?.map((s: string) => (
+                                                    <span key={s} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Status: {s}</span>
+                                                ))}
+                                                {selectedSequence.conditions.confirmationStatuses?.map((s: string) => (
+                                                    <span key={s} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Confirm: {s}</span>
+                                                ))}
+                                                {selectedSequence.conditions.skuTypes?.map((s: string) => (
+                                                    <span key={s} className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">SKU: {s}</span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-text-muted/40 text-xs italic">No conditions set. Click Edit to add.</p>
+                                        )}
+                                    </div>
+
+                                    {/* Automation Steps — Inline Editing */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-[10px] text-text-muted font-bold uppercase">Automation Steps</label>
+                                            <button onClick={handleInlineAddStep} className="flex items-center gap-1 text-[10px] text-primary font-bold hover:text-primary/80 transition-colors">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>add</span>
+                                                Add Step
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {(selectedSequence.steps || []).map((step: any, idx: number) => {
+                                                const chOpt = CHANNEL_OPTIONS.find(c => c.value === step.channel);
+                                                return (
+                                                    <div key={step.id} className="bg-[#1a2332] rounded-xl border border-border-dark p-4">
+                                                        <div className="flex items-center justify-between mb-3">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-white text-sm font-bold">{step.label}</span>
-                                                                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider" style={{ background: `${chMeta.color}15`, color: chMeta.color }}>{chMeta.label}</span>
-                                                                {step.trigger !== 'auto' && <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-400">{step.trigger}</span>}
+                                                                <span className="text-xs font-black text-text-muted">Step {idx + 1}</span>
+                                                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: chOpt?.color }}>{chOpt?.icon || 'help'}</span>
                                                             </div>
-                                                            <button onClick={() => handleRemoveStep(step.id)} className="p-1 rounded hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all">
-                                                                <span className="material-symbols-outlined text-text-muted hover:text-red-400" style={{ fontSize: '16px' }}>close</span>
+                                                            <button onClick={() => handleRemoveStep(step.id)} className="text-red-400 hover:text-red-300">
+                                                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
                                                             </button>
                                                         </div>
-                                                        {step.template && (
-                                                            <p className="text-text-muted text-xs mt-1.5 flex items-center gap-1">
-                                                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>description</span>
-                                                                {step.template.templateName}
-                                                                {step.template.language && <span className="ml-1 opacity-60">{step.template.language.toUpperCase()}</span>}
-                                                            </p>
-                                                        )}
-                                                        {step.content && !step.template && (
-                                                            <p className="text-text-muted text-xs mt-1.5 font-mono truncate max-w-[400px]">{step.content}</p>
-                                                        )}
-                                                        {/* DTMF branches */}
-                                                        {step.branches && (
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            <div>
+                                                                <label className="text-[10px] text-text-muted font-bold block mb-1">Channel</label>
+                                                                <select value={step.channel} onChange={e => handleUpdateStepField(step.id, 'channel', e.target.value)} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none">
+                                                                    {CHANNEL_OPTIONS.map(ch => (<option key={ch.value} value={ch.value}>{ch.label}</option>))}
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] text-text-muted font-bold block mb-1">Trigger</label>
+                                                                <select value={step.trigger || 'auto'} onChange={e => handleUpdateStepField(step.id, 'trigger', e.target.value)} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none">
+                                                                    <option value="auto">Auto (Timer)</option>
+                                                                    <option value="manual">Manual</option>
+                                                                    <option value="on_no_response">On No Response</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] text-text-muted font-bold block mb-1">Delay (min)</label>
+                                                                <input type="number" value={step.delayMinutes || 0} onChange={e => handleUpdateStepField(step.id, 'delayMinutes', parseInt(e.target.value) || 0)} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none" min={0} />
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <label className="text-[10px] text-text-muted font-bold block mb-1">Content / Template</label>
+                                                            <textarea value={step.content || ''} onChange={e => handleUpdateStepField(step.id, 'content', e.target.value)} rows={2} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none resize-none" placeholder={`Message template for ${chOpt?.label || 'channel'}...`} />
+                                                        </div>
+                                                        {/* DTMF branches display */}
+                                                        {step.branches && Object.keys(step.branches).length > 0 && (
                                                             <div className="mt-3 flex flex-wrap gap-2">
                                                                 {Object.entries(step.branches as Record<string, string>).map(([key, val]) => (
-                                                                    <span key={key} className="px-2.5 py-1 bg-[#1c2d3d] rounded-lg text-[10px] font-bold border border-border-dark">
+                                                                    <span key={key} className="px-2.5 py-1 bg-[#111a22] rounded-lg text-[10px] font-bold border border-border-dark">
                                                                         <span className="text-amber-400">Press {key}</span> → <span className="text-white">{val}</span>
                                                                     </span>
                                                                 ))}
                                                             </div>
                                                         )}
                                                     </div>
+                                                );
+                                            })}
+                                            {(selectedSequence.steps || []).length === 0 && (
+                                                <div className="text-center py-6 text-text-muted text-xs italic border border-dashed border-border-dark rounded-xl">
+                                                    No steps configured. Click "Add Step" to create an automation sequence.
                                                 </div>
-                                            </React.Fragment>
-                                        );
-                                    })}
-
-                                    {/* When Stock Arrives section for OOS */}
-                                    {selectedSequence.category === 'out_of_stock' && selectedSequence.whenStockNote && (
-                                        <div className="mt-4 p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/15">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="material-symbols-outlined text-emerald-400" style={{ fontSize: '18px' }}>inventory_2</span>
-                                                <span className="text-emerald-400 text-sm font-bold">When Stock Arrives</span>
-                                            </div>
-                                            <p className="text-text-muted text-xs">{JSON.stringify(selectedSequence.whenStockNote)}</p>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
+                                </div>
+
+                                {/* Footer */}
+                                <div className="p-5 pt-0 flex justify-end gap-3">
+                                    <button onClick={() => setSelectedSequence(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                                    <button onClick={async () => { try { await communicationService.updateSequence(selectedSequence.id, { name: selectedSequence.name, description: selectedSequence.description, isActive: selectedSequence.isActive, conditions: selectedSequence.conditions }); toast('success', '✅ Sequence saved!'); fetchSequences(); } catch { toast('error', 'Failed to save'); }}} className="px-6 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+                                        Save Sequence
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -687,12 +824,13 @@ const CommunicationPage: React.FC = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Trigger Event</label>
+                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Condition</label>
                                     <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.triggerEvent || 'order_created'} onChange={e => setNewSeq({ ...newSeq, triggerEvent: e.target.value })}>
                                         <option value="order_created">Order Created</option>
                                         <option value="status_changed">Status Changed</option>
                                         <option value="no_response">No Response</option>
                                         <option value="stock_arrived">Stock Arrived</option>
+                                        <option value="out_for_delivery">Out for Delivery</option>
                                         <option value="manual">Manual Trigger</option>
                                     </select>
                                 </div>
@@ -710,81 +848,7 @@ const CommunicationPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Enhanced Add Step Modal */}
-            {showAddStepModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowAddStepModal(false)}>
-                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-white text-lg font-bold mb-4">➕ Add Step</h3>
-                        <div className="flex flex-col gap-3">
-                            <div>
-                                <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Label</label>
-                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.label || ''} onChange={e => setNewStep({ ...newStep, label: e.target.value })} placeholder="e.g. Pre-call SMS" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Channel</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.channel || 'sms'} onChange={e => { setNewStep({ ...newStep, channel: e.target.value }); fetchTemplatesByChannel(e.target.value); setNewStepTemplateId(''); }}>
-                                        {CHANNEL_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Delay (minutes)</label>
-                                    <input type="number" min={0} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.delayMinutes || 0} onChange={e => setNewStep({ ...newStep, delayMinutes: parseInt(e.target.value) || 0 })} />
-                                </div>
-                            </div>
-                            {/* Template Selector */}
-                            <div>
-                                <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Choose Template</label>
-                                <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStepTemplateId} onChange={e => setNewStepTemplateId(e.target.value)}>
-                                    <option value="">— No template (inline content) —</option>
-                                    {channelTemplates.map(t => <option key={t.id} value={t.id}>{t.templateName} {t.language ? `(${t.language.toUpperCase()})` : ''}</option>)}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Trigger</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.trigger || 'auto'} onChange={e => setNewStep({ ...newStep, trigger: e.target.value })}>
-                                        <option value="auto">Automatic</option>
-                                        <option value="manual">Manual</option>
-                                        <option value="on_no_response">On No Response</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Schedule Time</label>
-                                    <input type="time" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStepScheduleHour} onChange={e => setNewStepScheduleHour(e.target.value)} />
-                                </div>
-                            </div>
-                            {/* DTMF Branches (for call channel) */}
-                            {(newStep.channel === 'call') && (
-                                <div className="p-3 bg-[#0a1018] rounded-xl border border-amber-500/20">
-                                    <label className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-                                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>dialpad</span>
-                                        DTMF Options (Press 1/2/3)
-                                    </label>
-                                    {['1', '2', '3'].map(key => (
-                                        <div key={key} className="flex items-center gap-2 mt-2">
-                                            <span className="size-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-sm font-black shrink-0">{key}</span>
-                                            <span className="text-text-muted text-xs">→</span>
-                                            <input type="text" className="flex-1 px-3 py-2 bg-[#111a22] border border-border-dark rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary/50" value={newStepBranches[key] || ''} onChange={e => setNewStepBranches({ ...newStepBranches, [key]: e.target.value })} placeholder={key === '1' ? 'Confirm Order' : key === '2' ? 'Cancel Order' : 'Speak to Agent'} />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {/* Inline Content */}
-                            {!newStepTemplateId && (
-                                <div>
-                                    <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Inline Content</label>
-                                    <textarea rows={3} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newStep.content || ''} onChange={e => setNewStep({ ...newStep, content: e.target.value })} placeholder="Step content..." />
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex justify-end gap-2 mt-5">
-                            <button onClick={() => setShowAddStepModal(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-white transition-all">Cancel</button>
-                            <button onClick={handleAddStep} className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20" disabled={!newStep.label}>Add Step</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Add Step Modal removed — steps are now added inline */}
 
             {/* Condition Editor Modal */}
             {showConditionEditor && (

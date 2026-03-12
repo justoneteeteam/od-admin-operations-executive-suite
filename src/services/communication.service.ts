@@ -168,6 +168,11 @@ const communicationService = {
         await apiClient.delete(`/communication/sequences/${sequenceId}/steps/${stepId}`);
     },
 
+    updateStep: async (sequenceId: string, stepId: string, dto: Partial<SequenceStep>): Promise<SequenceStep> => {
+        const res = await apiClient.patch(`/communication/sequences/${sequenceId}/steps/${stepId}`, dto);
+        return res.data;
+    },
+
     reorderSteps: async (sequenceId: string, stepIds: string[]): Promise<void> => {
         await apiClient.patch(`/communication/sequences/${sequenceId}/steps/reorder`, { stepIds });
     },
