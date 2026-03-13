@@ -124,6 +124,10 @@ export class TrackingService {
                 return;
             }
 
+            // Check if Out of Delivery notifications are enabled in store settings
+            const storeSettings = await this.prisma.storeSettings.findFirst();
+            const outOfDeliveryEnabled = (storeSettings as any)?.enableOutOfDeliveryNotifications !== false;
+
             // 2. Prepare Variables for SMS Template
             // Variables: 1=CustomerName, 2=OrderNumber
             const customerName = order.customer.name;
@@ -142,47 +146,52 @@ export class TrackingService {
             });
             this.logger.log(`Updated Order ${order.orderNumber} shipping status to 'OutForDelivery'`);
 
-            // 5a. Send IMMEDIATE Twilio SMS
-            try {
-                await this.smsWhatsappDeliveryService.sendTemplateMessage(
-                    order.customer.phone,
-                    smsTemplateName,
-                    [safeName, order.orderNumber],
-                    { orderId: order.id, customerId: order.customerId }
-                );
-                this.logger.log(`[SMS] Out for Delivery sent immediately for Order ${order.orderNumber} (${smsTemplateName})`);
-            } catch (e) {
-                this.logger.error(`Failed to send SMS for Order ${order.orderNumber}: ${e.message}`, e.stack);
-            }
-
-            // 5b. Schedule 1 HOUR DELAY Personal WhatsApp
-            const delayMs = 60 * 60 * 1000; // 1 hour
-            this.logger.log(`[WhatsApp] Scheduling Personal WhatsApp for Order ${order.orderNumber} in 1 hour.`);
-
-            setTimeout(async () => {
+            // Only send notifications if enabled in store settings
+            if (!outOfDeliveryEnabled) {
+                this.logger.log(`Out of Delivery notifications disabled. Skipping SMS/WhatsApp for Order ${order.orderNumber}`);
+            } else {
+                // 5a. Send IMMEDIATE Twilio SMS
                 try {
-                    const waTemplateName = this.getWhatsappTemplateForCountry(order.shippingCountry);
-                    const storeName = order.storeName || 'Our Store';
-                    const codAmount = order.totalAmount ? order.totalAmount.toString() : '0.00';
-
-                    // Format items list
-                    const orderItems = await this.prisma.orderItem.findMany({
-                        where: { orderId: order.id },
-                        include: { product: true }
-                    });
-                    const itemsText = orderItems.map(item => `${item.quantity}x ${item.product.name}`).join(', ');
-
-                    await this.whatsappPersonalService.sendTemplateMessage(
+                    await this.smsWhatsappDeliveryService.sendTemplateMessage(
                         order.customer.phone,
-                        waTemplateName,
-                        [safeName, storeName, codAmount, itemsText],
+                        smsTemplateName,
+                        [safeName, order.orderNumber],
                         { orderId: order.id, customerId: order.customerId }
                     );
-                    this.logger.log(`[WhatsApp] Delayed message sent successfully for Order ${order.orderNumber}`);
+                    this.logger.log(`[SMS] Out for Delivery sent immediately for Order ${order.orderNumber} (${smsTemplateName})`);
                 } catch (e) {
-                    this.logger.error(`[WhatsApp] Delayed send failed for Order ${order.orderNumber}: ${e.message}`);
+                    this.logger.error(`Failed to send SMS for Order ${order.orderNumber}: ${e.message}`, e.stack);
                 }
-            }, delayMs);
+
+                // 5b. Schedule 1 HOUR DELAY Personal WhatsApp
+                const delayMs = 60 * 60 * 1000; // 1 hour
+                this.logger.log(`[WhatsApp] Scheduling Personal WhatsApp for Order ${order.orderNumber} in 1 hour.`);
+
+                setTimeout(async () => {
+                    try {
+                        const waTemplateName = this.getWhatsappTemplateForCountry(order.shippingCountry);
+                        const storeName = order.storeName || 'Our Store';
+                        const codAmount = order.totalAmount ? order.totalAmount.toString() : '0.00';
+
+                        // Format items list
+                        const orderItems = await this.prisma.orderItem.findMany({
+                            where: { orderId: order.id },
+                            include: { product: true }
+                        });
+                        const itemsText = orderItems.map(item => `${item.quantity}x ${item.product.name}`).join(', ');
+
+                        await this.whatsappPersonalService.sendTemplateMessage(
+                            order.customer.phone,
+                            waTemplateName,
+                            [safeName, storeName, codAmount, itemsText],
+                            { orderId: order.id, customerId: order.customerId }
+                        );
+                        this.logger.log(`[WhatsApp] Delayed message sent successfully for Order ${order.orderNumber}`);
+                    } catch (e) {
+                        this.logger.error(`[WhatsApp] Delayed send failed for Order ${order.orderNumber}: ${e.message}`);
+                    }
+                }, delayMs);
+            }
 
         } else if (mainStatus === 'InTransit' || mainStatus === 'Transit' || mainStatus === 'In Transit' || subStatus === 'InTransit_Arrival') {
             if (order.shippingStatus !== 'InTransit' && order.shippingStatus !== 'OutForDelivery' && order.shippingStatus !== 'Delivered') {

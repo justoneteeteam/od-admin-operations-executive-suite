@@ -65,6 +65,10 @@ const CommunicationPage: React.FC = () => {
     const [storeSettingsId, setStoreSettingsId] = useState<string | null>(null);
     const [twilioToggling, setTwilioToggling] = useState(false);
 
+    // Out of Delivery toggle state
+    const [outOfDeliveryEnabled, setOutOfDeliveryEnabled] = useState(true);
+    const [outOfDeliveryToggling, setOutOfDeliveryToggling] = useState(false);
+
     // Condition editor
     const [showConditionEditor, setShowConditionEditor] = useState(false);
     const [editingConditions, setEditingConditions] = useState<any>({});
@@ -83,6 +87,7 @@ const CommunicationPage: React.FC = () => {
             if (stores.length > 0) {
                 setStoreSettingsId(stores[0].id);
                 setTwilioEnabled(!!stores[0].enableTwilioCalls);
+                setOutOfDeliveryEnabled(stores[0].enableOutOfDeliveryNotifications !== false);
             }
         }).catch(err => console.error('Failed to fetch store settings:', err));
     }, []);
@@ -113,6 +118,21 @@ const CommunicationPage: React.FC = () => {
             toast('error', 'Failed to toggle Twilio calls');
         } finally {
             setTwilioToggling(false);
+        }
+    };
+
+    const handleToggleOutOfDelivery = async () => {
+        if (!storeSettingsId || outOfDeliveryToggling) return;
+        setOutOfDeliveryToggling(true);
+        const newValue = !outOfDeliveryEnabled;
+        try {
+            await storeSettingsService.update(storeSettingsId, { enableOutOfDeliveryNotifications: newValue });
+            setOutOfDeliveryEnabled(newValue);
+            toast('success', `Out of Delivery notifications ${newValue ? 'enabled' : 'disabled'}`);
+        } catch (err) {
+            toast('error', 'Failed to toggle Out of Delivery notifications');
+        } finally {
+            setOutOfDeliveryToggling(false);
         }
     };
 
@@ -662,13 +682,21 @@ const CommunicationPage: React.FC = () => {
                                     </div>
 
                                     {/* Out of Delivery Notification Card */}
-                                    <div className="bg-[#111a22] rounded-xl border border-border-dark p-5 flex flex-col gap-3">
+                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${outOfDeliveryEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#22d4e6' }}>local_shipping</span>
                                                 <span className="text-sm font-bold text-white">Out of Delivery Notification</span>
                                             </div>
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">Active</span>
+                                            <div className="flex items-center gap-2">
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" checked={outOfDeliveryEnabled} onChange={handleToggleOutOfDelivery} disabled={outOfDeliveryToggling || !storeSettingsId} className="sr-only peer" />
+                                                    <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-emerald-500 transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                                </label>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${outOfDeliveryEnabled ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                                    {outOfDeliveryToggling ? '...' : outOfDeliveryEnabled ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </div>
                                         </div>
                                         <p className="text-xs text-text-muted">When 17Track reports order as "Out for Delivery", automatically sends SMS + WhatsApp to the customer.</p>
                                         <div className="flex items-center gap-2 flex-wrap">

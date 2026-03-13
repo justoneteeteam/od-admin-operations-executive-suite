@@ -13,7 +13,7 @@ export class TrackingPollService {
         private readonly trackingService: TrackingService,
     ) { }
 
-    @Cron(CronExpression.EVERY_2_HOURS)
+    @Cron('*/20 * * * *')
     async pollActiveTrackingNumbers() {
         this.logger.log('Starting scheduled tracking poll...');
 
