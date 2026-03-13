@@ -100,48 +100,88 @@ export class WhisperTranscriptionService {
             });
 
             let transcriptionText = transcription.text?.trim() || '';
-            this.logger.log(`Transcription (Whisper): "${transcriptionText}"`);
+            this.logger.log(`Transcription (Whisper raw): "${transcriptionText}"`);
 
-            // Append customer response from Twilio Gather (speech/DTMF)
-            // Whisper often misses the customer's brief spoken response
-            const customerParts: string[] = [];
+            // Step 2: Use GPT to analyze the transcription — separate script from customer speech and translate
+            const lang = callLog?.scriptLanguage || 'en';
+            const isNonEnglish = lang !== 'en' && lang !== 'en-US' && lang !== 'en-GB';
+
+            // Build context about known customer response from Twilio Gather
+            let gatherContext = '';
             if (callLog?.speechResult) {
-                customerParts.push(`Customer said: "${callLog.speechResult}"`);
+                gatherContext += `\nKnown customer speech (from Twilio speech recognition): "${callLog.speechResult}"`;
             }
             if (callLog?.dtmfInput) {
-                customerParts.push(`Customer pressed: ${callLog.dtmfInput}`);
+                gatherContext += `\nKnown customer DTMF input: pressed ${callLog.dtmfInput}`;
             }
             if (callLog?.intentDetected) {
-                customerParts.push(`Intent: ${callLog.intentDetected}`);
+                gatherContext += `\nDetected intent: ${callLog.intentDetected}`;
             }
-            if (customerParts.length > 0) {
-                transcriptionText += '\n\n--- Customer Response ---\n' + customerParts.join(' | ');
-            }
-            this.logger.log(`Full transcription: "${transcriptionText}"`);
 
-            // Step 2: Translate to English using GPT (if not already English)
-            // GPT text translation is far more accurate than Whisper's audio translation
+            const analysisPrompt = `Analyze this transcription of an automated confirmation call recording. The recording contains BOTH an automated TTS script AND the customer's spoken responses.
+
+The automated script follows this pattern: greeting from a store, order details (number, items, price), delivery method, then asks the customer to confirm (say YES/press 1) or cancel (say NO/press 2). If no response, it says "we did not receive a response."
+
+Your job: Identify what the CUSTOMER said (separate from the automated script). The customer may have spoken during or after the script — their voice may be brief (e.g., just "no", "sí", "what?", "hello?").
+${gatherContext}
+
+Output in this EXACT format:
+SCRIPT: [The automated script text only]
+CUSTOMER: [What the customer said, or "No response detected" if silent]
+ENGLISH_SCRIPT: [English translation of the script]
+ENGLISH_CUSTOMER: [English translation of what the customer said]
+
+Transcription to analyze:
+"${transcriptionText}"`;
+
+            let finalTranscription = transcriptionText;
             let translationText = transcriptionText;
-            const lang = callLog?.scriptLanguage || 'en';
-            if (lang !== 'en' && lang !== 'en-US' && lang !== 'en-GB' && transcriptionText) {
+
+            try {
                 const gptResponse = await openai.chat.completions.create({
                     model: 'gpt-4o-mini',
                     messages: [
-                        {
-                            role: 'system',
-                            content: 'You are a translator. Translate the following text to English. Return ONLY the English translation, nothing else. Preserve the full content — do not summarize or shorten.',
-                        },
-                        {
-                            role: 'user',
-                            content: transcriptionText,
-                        },
+                        { role: 'system', content: 'You analyze call recordings and separate automated script from customer responses. Be precise and preserve all content.' },
+                        { role: 'user', content: analysisPrompt },
                     ],
                     temperature: 0.1,
-                    max_tokens: 2000,
+                    max_tokens: 3000,
                 });
-                translationText = gptResponse.choices[0]?.message?.content?.trim() || transcriptionText;
-                this.logger.log(`Translation (English via GPT): "${translationText}"`);
+
+                const gptOutput = gptResponse.choices[0]?.message?.content?.trim() || '';
+                this.logger.log(`GPT analysis: "${gptOutput}"`);
+
+                // Parse the structured output
+                const scriptMatch = gptOutput.match(/SCRIPT:\s*(.+?)(?=\nCUSTOMER:)/s);
+                const customerMatch = gptOutput.match(/CUSTOMER:\s*(.+?)(?=\nENGLISH_SCRIPT:)/s);
+                const engScriptMatch = gptOutput.match(/ENGLISH_SCRIPT:\s*(.+?)(?=\nENGLISH_CUSTOMER:)/s);
+                const engCustomerMatch = gptOutput.match(/ENGLISH_CUSTOMER:\s*(.+)/s);
+
+                const scriptText = scriptMatch?.[1]?.trim() || transcriptionText;
+                const customerText = customerMatch?.[1]?.trim() || 'No response detected';
+                const engScript = engScriptMatch?.[1]?.trim() || '';
+                const engCustomer = engCustomerMatch?.[1]?.trim() || '';
+
+                // Build the full transcription with clear separation
+                finalTranscription = `${scriptText}\n\n--- Customer Response ---\n${customerText}`;
+                if (isNonEnglish) {
+                    translationText = `${engScript}\n\n--- Customer Response ---\n${engCustomer}`;
+                } else {
+                    translationText = finalTranscription;
+                }
+            } catch (gptError) {
+                this.logger.error(`GPT analysis failed: ${gptError.message}. Using raw transcription.`);
+                // Fallback: append Gather data if available
+                const customerParts: string[] = [];
+                if (callLog?.speechResult) customerParts.push(`Customer said: "${callLog.speechResult}"`);
+                if (callLog?.dtmfInput) customerParts.push(`Customer pressed: ${callLog.dtmfInput}`);
+                if (customerParts.length > 0) {
+                    finalTranscription += '\n\n--- Customer Response ---\n' + customerParts.join(' | ');
+                }
             }
+
+            this.logger.log(`Final transcription: "${finalTranscription}"`);
+            this.logger.log(`Final translation: "${translationText}"`);
 
             // Step 3: Score intention from the transcription
             const intentionScore = this.scoreIntention(transcriptionText, translationText);
@@ -151,8 +191,8 @@ export class WhisperTranscriptionService {
             await this.prisma.callLog.update({
                 where: { id: callLogId },
                 data: {
-                    transcriptionText,
-                    transcriptionEnglish: translationText !== transcriptionText ? translationText : null,
+                    transcriptionText: finalTranscription,
+                    transcriptionEnglish: translationText !== finalTranscription ? translationText : null,
                     intentionScore,
                 },
             });
