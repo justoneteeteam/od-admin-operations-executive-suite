@@ -13,6 +13,7 @@ const CallRecordsTab: React.FC = () => {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [retranscribingId, setRetranscribingId] = useState<string | null>(null);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchCallRecords = async () => {
     setCrLoading(true);
@@ -254,9 +255,22 @@ const CallRecordsTab: React.FC = () => {
                       {/* Local Transcription */}
                       <td className="px-4 py-4">
                         {cr.transcriptionText ? (
-                          <p className="text-text-muted text-xs max-w-[250px] whitespace-pre-line line-clamp-3 cursor-help" title={cr.transcriptionText}>
-                            {cr.transcriptionText}
-                          </p>
+                          <div className="max-w-[250px]">
+                            <p className={`text-text-muted text-xs whitespace-pre-line ${expandedId === cr.id ? '' : 'line-clamp-2'}`}>
+                              {cr.transcriptionText}
+                            </p>
+                            {cr.transcriptionText.length > 80 && (
+                              <button
+                                onClick={() => setExpandedId(expandedId === cr.id ? null : cr.id)}
+                                className="text-primary/70 hover:text-primary text-[10px] mt-1 flex items-center gap-0.5 transition-colors"
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
+                                  {expandedId === cr.id ? 'expand_less' : 'expand_more'}
+                                </span>
+                                {expandedId === cr.id ? 'Show less' : 'Show full'}
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-text-muted/30 text-xs">{'\u2014'}</span>
                         )}
@@ -264,9 +278,22 @@ const CallRecordsTab: React.FC = () => {
                       {/* English Transcription */}
                       <td className="px-4 py-4">
                         {cr.transcriptionEnglish ? (
-                          <p className="text-white text-xs max-w-[250px] whitespace-pre-line line-clamp-3 cursor-help" title={cr.transcriptionEnglish}>
-                            {cr.transcriptionEnglish}
-                          </p>
+                          <div className="max-w-[250px]">
+                            <p className={`text-white text-xs whitespace-pre-line ${expandedId === cr.id ? '' : 'line-clamp-2'}`}>
+                              {cr.transcriptionEnglish}
+                            </p>
+                            {cr.transcriptionEnglish.length > 80 && (
+                              <button
+                                onClick={() => setExpandedId(expandedId === cr.id ? null : cr.id)}
+                                className="text-primary/70 hover:text-primary text-[10px] mt-1 flex items-center gap-0.5 transition-colors"
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>
+                                  {expandedId === cr.id ? 'expand_less' : 'expand_more'}
+                                </span>
+                                {expandedId === cr.id ? 'Show less' : 'Show full'}
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-text-muted/30 text-xs">{'\u2014'}</span>
                         )}
