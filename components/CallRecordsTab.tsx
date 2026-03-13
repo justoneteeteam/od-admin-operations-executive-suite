@@ -233,21 +233,19 @@ const CallRecordsTab: React.FC = () => {
                                 {playingId === cr.id ? 'stop' : 'play_arrow'}
                               </span>
                             </button>
-                            {!cr.transcriptionText && (
-                              <button
-                                onClick={() => handleRetranscribe(cr.id)}
-                                title="Re-transcribe this recording"
-                                disabled={retranscribingId === cr.id}
-                                className={'size-8 rounded-lg flex items-center justify-center transition-all ' +
-                                  (retranscribingId === cr.id
-                                    ? 'bg-amber-500/20 text-amber-400 animate-pulse'
-                                    : 'bg-[#1c2d3d] text-text-muted hover:text-amber-400 hover:bg-amber-500/10 border border-border-dark')}
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                                  {retranscribingId === cr.id ? 'hourglass_top' : 'translate'}
-                                </span>
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleRetranscribe(cr.id)}
+                              title="Re-transcribe this recording"
+                              disabled={retranscribingId === cr.id}
+                              className={'size-8 rounded-lg flex items-center justify-center transition-all ' +
+                                (retranscribingId === cr.id
+                                  ? 'bg-amber-500/20 text-amber-400 animate-pulse'
+                                  : 'bg-[#1c2d3d] text-text-muted hover:text-amber-400 hover:bg-amber-500/10 border border-border-dark')}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                {retranscribingId === cr.id ? 'hourglass_top' : 'translate'}
+                              </span>
+                            </button>
                           </div>
                         ) : (
                           <span className="text-text-muted/30 text-xs">\u2014</span>
