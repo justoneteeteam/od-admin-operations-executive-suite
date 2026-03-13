@@ -208,19 +208,24 @@ export class OrdersService {
 
         if (where.search) {
             const searchTerm = where.search.replace(/^#/, ''); // Strip leading '#'
+
+            // Pre-query matching customers to avoid Prisma relation filter
+            // type mismatch between Customer.id (text) and Order.customerId (uuid)
+            const matchingCustomers = await this.prisma.customer.findMany({
+                where: {
+                    OR: [
+                        { name: { contains: where.search, mode: 'insensitive' } },
+                        { phone: { contains: searchTerm, mode: 'insensitive' } },
+                    ]
+                },
+                select: { id: true }
+            });
+            const customerIds = matchingCustomers.map(c => c.id);
+
             whereClause.OR = [
                 { orderNumber: { contains: searchTerm, mode: 'insensitive' } },
                 { trackingNumber: { contains: searchTerm, mode: 'insensitive' } },
-                {
-                    customer: {
-                        name: { contains: where.search, mode: 'insensitive' }
-                    }
-                },
-                {
-                    customer: {
-                        phone: { contains: searchTerm, mode: 'insensitive' }
-                    }
-                }
+                ...(customerIds.length > 0 ? [{ customerId: { in: customerIds } }] : []),
             ];
         }
         if (where.startDate || where.endDate) {
