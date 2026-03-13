@@ -10,6 +10,6 @@ import { TwilioCallSchedulerService } from './twilio-call-scheduler.service';
     imports: [PrismaModule, NotificationsModule],
     controllers: [TwilioVoiceController],
     providers: [TwilioVoiceService, TwilioCallSchedulerService, WhisperTranscriptionService],
-    exports: [TwilioVoiceService],
+    exports: [TwilioVoiceService, WhisperTranscriptionService],
 })
 export class TwilioVoiceModule { }

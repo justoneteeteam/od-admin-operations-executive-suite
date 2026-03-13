@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import communicationService, { CallRecord, CallRecordsResponse } from '../src/services/communication.service';
+import { API_BASE_URL } from '../src/config/api';
 
 const CallRecordsTab: React.FC = () => {
   const [callRecords, setCallRecords] = useState<CallRecord[]>([]);
@@ -10,6 +11,8 @@ const CallRecordsTab: React.FC = () => {
   const [crLoading, setCrLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [retranscribingId, setRetranscribingId] = useState<string | null>(null);
+  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
 
   const fetchCallRecords = async () => {
     setCrLoading(true);
@@ -43,15 +46,53 @@ const CallRecordsTab: React.FC = () => {
     { label: 'Unclear', value: callStats.unclear, icon: 'help', color: '#a78bfa' },
   ];
 
-  const handlePlayAudio = (id: string, url: string) => {
+  const handlePlayAudio = (id: string) => {
     if (playingId === id) {
+      audioRef?.pause();
       setPlayingId(null);
+      setAudioRef(null);
       return;
     }
+    // Stop any currently playing audio
+    if (audioRef) {
+      audioRef.pause();
+    }
+    // Use backend proxy URL (handles Twilio auth server-side)
+    const token = localStorage.getItem('authToken');
+    const proxyUrl = `${API_BASE_URL}/communication/call-records/${id}/audio`;
+    const audio = new Audio();
+    // Set auth header via fetch + blob approach
+    fetch(proxyUrl, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch audio');
+        return res.blob();
+      })
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        audio.src = blobUrl;
+        audio.onended = () => { setPlayingId(null); setAudioRef(null); URL.revokeObjectURL(blobUrl); };
+        audio.play().catch(() => { setPlayingId(null); setAudioRef(null); });
+      })
+      .catch(() => { setPlayingId(null); setAudioRef(null); });
     setPlayingId(id);
-    const audio = new Audio(url);
-    audio.onended = () => setPlayingId(null);
-    audio.play().catch(() => setPlayingId(null));
+    setAudioRef(audio);
+  };
+
+  const handleRetranscribe = async (id: string) => {
+    setRetranscribingId(id);
+    try {
+      const result = await communicationService.retranscribe(id);
+      if (result.success) {
+        // Refresh after a short delay to allow backend processing
+        setTimeout(fetchCallRecords, 3000);
+      } else {
+        alert(result.error || 'Re-transcription failed');
+      }
+    } catch (err) {
+      alert('Re-transcription request failed');
+    } finally {
+      setRetranscribingId(null);
+    }
   };
 
   const getIntentScoreColor = (score: number | undefined | null) => {
@@ -178,20 +219,37 @@ const CallRecordsTab: React.FC = () => {
                           {cr.scriptType}
                         </span>
                       </td>
-                      {/* Audio Recording */}
+                      {/* Audio Recording + Re-transcribe */}
                       <td className="px-4 py-4">
                         {cr.recordingUrl ? (
-                          <button
-                            onClick={() => handlePlayAudio(cr.id, cr.recordingUrl!)}
-                            className={'size-8 rounded-lg flex items-center justify-center transition-all ' +
-                              (playingId === cr.id
-                                ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                                : 'bg-[#1c2d3d] text-text-muted hover:text-primary hover:bg-primary/10 border border-border-dark')}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                              {playingId === cr.id ? 'stop' : 'play_arrow'}
-                            </span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handlePlayAudio(cr.id)}
+                              className={'size-8 rounded-lg flex items-center justify-center transition-all ' +
+                                (playingId === cr.id
+                                  ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                                  : 'bg-[#1c2d3d] text-text-muted hover:text-primary hover:bg-primary/10 border border-border-dark')}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                {playingId === cr.id ? 'stop' : 'play_arrow'}
+                              </span>
+                            </button>
+                            {!cr.transcriptionText && (
+                              <button
+                                onClick={() => handleRetranscribe(cr.id)}
+                                title="Re-transcribe this recording"
+                                disabled={retranscribingId === cr.id}
+                                className={'size-8 rounded-lg flex items-center justify-center transition-all ' +
+                                  (retranscribingId === cr.id
+                                    ? 'bg-amber-500/20 text-amber-400 animate-pulse'
+                                    : 'bg-[#1c2d3d] text-text-muted hover:text-amber-400 hover:bg-amber-500/10 border border-border-dark')}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                  {retranscribingId === cr.id ? 'hourglass_top' : 'translate'}
+                                </span>
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-text-muted/30 text-xs">\u2014</span>
                         )}

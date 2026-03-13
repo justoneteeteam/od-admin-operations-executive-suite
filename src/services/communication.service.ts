@@ -201,6 +201,11 @@ const communicationService = {
     updateCsNote: async (id: string, note: string): Promise<void> => {
         await apiClient.patch(`/communication/call-records/${id}/note`, { note });
     },
+
+    retranscribe: async (id: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+        const res = await apiClient.post(`/communication/call-records/${id}/retranscribe`);
+        return res.data;
+    },
 };
 
 export default communicationService;
