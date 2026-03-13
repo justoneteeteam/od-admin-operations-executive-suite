@@ -82,10 +82,10 @@ export class WhisperTranscriptionService {
                 return { success: false, error: errMsg };
             }
 
-            // Get the call log to know the language
+            // Get the call log to know the language + customer response
             const callLog = await this.prisma.callLog.findUnique({
                 where: { id: callLogId },
-                select: { scriptLanguage: true },
+                select: { scriptLanguage: true, speechResult: true, dtmfInput: true, intentDetected: true },
             });
 
             // Step 1: Transcribe in original language — use Blob for Node.js compat
@@ -99,8 +99,25 @@ export class WhisperTranscriptionService {
                 language: this.mapLanguageCode(callLog?.scriptLanguage),
             });
 
-            const transcriptionText = transcription.text?.trim() || '';
-            this.logger.log(`Transcription (original): "${transcriptionText}"`);
+            let transcriptionText = transcription.text?.trim() || '';
+            this.logger.log(`Transcription (Whisper): "${transcriptionText}"`);
+
+            // Append customer response from Twilio Gather (speech/DTMF)
+            // Whisper often misses the customer's brief spoken response
+            const customerParts: string[] = [];
+            if (callLog?.speechResult) {
+                customerParts.push(`Customer said: "${callLog.speechResult}"`);
+            }
+            if (callLog?.dtmfInput) {
+                customerParts.push(`Customer pressed: ${callLog.dtmfInput}`);
+            }
+            if (callLog?.intentDetected) {
+                customerParts.push(`Intent: ${callLog.intentDetected}`);
+            }
+            if (customerParts.length > 0) {
+                transcriptionText += '\n\n--- Customer Response ---\n' + customerParts.join(' | ');
+            }
+            this.logger.log(`Full transcription: "${transcriptionText}"`);
 
             // Step 2: Translate to English using GPT (if not already English)
             // GPT text translation is far more accurate than Whisper's audio translation
