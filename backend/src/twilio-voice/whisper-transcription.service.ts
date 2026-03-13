@@ -102,19 +102,28 @@ export class WhisperTranscriptionService {
             const transcriptionText = transcription.text?.trim() || '';
             this.logger.log(`Transcription (original): "${transcriptionText}"`);
 
-            // Step 2: Translate to English (if not already English)
+            // Step 2: Translate to English using GPT (if not already English)
+            // GPT text translation is far more accurate than Whisper's audio translation
             let translationText = transcriptionText;
             const lang = callLog?.scriptLanguage || 'en';
             if (lang !== 'en' && lang !== 'en-US' && lang !== 'en-GB' && transcriptionText) {
-                const audioFileForTranslation = new Blob([audioBuffer], { type: 'audio/wav' });
-                // @ts-ignore
-                audioFileForTranslation.name = 'recording.wav';
-                const translation = await openai.audio.translations.create({
-                    model: 'whisper-1',
-                    file: audioFileForTranslation as any,
+                const gptResponse = await openai.chat.completions.create({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a translator. Translate the following text to English. Return ONLY the English translation, nothing else. Preserve the full content — do not summarize or shorten.',
+                        },
+                        {
+                            role: 'user',
+                            content: transcriptionText,
+                        },
+                    ],
+                    temperature: 0.1,
+                    max_tokens: 2000,
                 });
-                translationText = translation.text?.trim() || transcriptionText;
-                this.logger.log(`Translation (English): "${translationText}"`);
+                translationText = gptResponse.choices[0]?.message?.content?.trim() || transcriptionText;
+                this.logger.log(`Translation (English via GPT): "${translationText}"`);
             }
 
             // Step 3: Score intention from the transcription
