@@ -25,14 +25,14 @@ export class WhisperTranscriptionService {
      * 4. Score the intention
      * 5. Update the call_log record
      */
-    async processRecording(callLogId: string, recordingUrl: string, recordingSid: string): Promise<void> {
+    async processRecording(callLogId: string, recordingUrl: string, recordingSid: string): Promise<{ success: boolean; error?: string; transcription?: string }> {
         if (!this.openai) {
-            this.logger.warn('Whisper not configured. Saving recording URL only.');
+            this.logger.warn('Whisper not configured (OPENAI_API_KEY not set). Saving recording URL only.');
             await this.prisma.callLog.update({
                 where: { id: callLogId },
                 data: { recordingUrl },
             });
-            return;
+            return { success: false, error: 'OPENAI_API_KEY not set. Whisper transcription disabled.' };
         }
 
         try {
@@ -49,6 +49,8 @@ export class WhisperTranscriptionService {
             const accountSid = process.env.TWILIO_ACCOUNT_SID;
             const authToken = process.env.TWILIO_AUTH_TOKEN;
 
+            this.logger.log(`Downloading recording from: ${audioUrl}`);
+
             const response = await fetch(audioUrl, {
                 headers: {
                     'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
@@ -56,11 +58,20 @@ export class WhisperTranscriptionService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to download recording: ${response.status} ${response.statusText}`);
+                const errText = await response.text().catch(() => '');
+                const errMsg = `Failed to download recording: ${response.status} ${response.statusText} — ${errText.substring(0, 200)}`;
+                this.logger.error(errMsg);
+                return { success: false, error: errMsg };
             }
 
             const audioBuffer = Buffer.from(await response.arrayBuffer());
             this.logger.log(`Downloaded recording: ${audioBuffer.length} bytes`);
+
+            if (audioBuffer.length < 100) {
+                const errMsg = `Recording too small (${audioBuffer.length} bytes), likely empty or invalid`;
+                this.logger.error(errMsg);
+                return { success: false, error: errMsg };
+            }
 
             // Get the call log to know the language
             const callLog = await this.prisma.callLog.findUnique({
@@ -68,12 +79,14 @@ export class WhisperTranscriptionService {
                 select: { scriptLanguage: true },
             });
 
-            // Step 1: Transcribe in original language
-            const audioFile = new File([audioBuffer], 'recording.wav', { type: 'audio/wav' });
+            // Step 1: Transcribe in original language — use Blob for Node.js compat
+            const audioFile = new Blob([audioBuffer], { type: 'audio/wav' });
+            // @ts-ignore — OpenAI SDK accepts Blob with name property
+            audioFile.name = 'recording.wav';
 
             const transcription = await this.openai.audio.transcriptions.create({
                 model: 'whisper-1',
-                file: audioFile,
+                file: audioFile as any,
                 language: this.mapLanguageCode(callLog?.scriptLanguage),
             });
 
@@ -84,10 +97,12 @@ export class WhisperTranscriptionService {
             let translationText = transcriptionText;
             const lang = callLog?.scriptLanguage || 'en';
             if (lang !== 'en' && lang !== 'en-US' && lang !== 'en-GB' && transcriptionText) {
-                const audioFileForTranslation = new File([audioBuffer], 'recording.wav', { type: 'audio/wav' });
+                const audioFileForTranslation = new Blob([audioBuffer], { type: 'audio/wav' });
+                // @ts-ignore
+                audioFileForTranslation.name = 'recording.wav';
                 const translation = await this.openai.audio.translations.create({
                     model: 'whisper-1',
-                    file: audioFileForTranslation,
+                    file: audioFileForTranslation as any,
                 });
                 translationText = translation.text?.trim() || transcriptionText;
                 this.logger.log(`Translation (English): "${translationText}"`);
@@ -108,8 +123,10 @@ export class WhisperTranscriptionService {
             });
 
             this.logger.log(`Recording ${recordingSid} processed successfully.`);
+            return { success: true, transcription: transcriptionText };
         } catch (error) {
             this.logger.error(`Failed to process recording ${recordingSid}: ${error.message}`, error.stack);
+            return { success: false, error: error.message };
         }
     }
 

@@ -83,13 +83,12 @@ const CallRecordsTab: React.FC = () => {
     try {
       const result = await communicationService.retranscribe(id);
       if (result.success) {
-        // Refresh after a short delay to allow backend processing
-        setTimeout(fetchCallRecords, 3000);
+        fetchCallRecords();
       } else {
-        alert(result.error || 'Re-transcription failed');
+        alert('Transcription failed: ' + (result.error || 'Unknown error'));
       }
-    } catch (err) {
-      alert('Re-transcription request failed');
+    } catch (err: any) {
+      alert('Re-transcription request failed: ' + (err?.response?.data?.error || err?.message || 'Network error'));
     } finally {
       setRetranscribingId(null);
     }

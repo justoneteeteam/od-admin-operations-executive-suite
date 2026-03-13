@@ -174,11 +174,9 @@ export class CommunicationController {
         const match = callLog.recordingUrl.match(/Recordings\/([A-Za-z0-9]+)/);
         const recordingSid = match ? match[1] : 'unknown';
 
-        // Process asynchronously
-        this.whisperService.processRecording(callLog.id, callLog.recordingUrl, recordingSid).catch(err => {
-            this.logger.error(`Re-transcription failed: ${err.message}`);
-        });
+        // Process synchronously so we can return the actual result
+        const result = await this.whisperService.processRecording(callLog.id, callLog.recordingUrl, recordingSid);
 
-        return { success: true, message: 'Re-transcription started', callLogId: callLog.id };
+        return { ...result, callLogId: callLog.id };
     }
 }
