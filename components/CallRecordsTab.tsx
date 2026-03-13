@@ -248,27 +248,27 @@ const CallRecordsTab: React.FC = () => {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                          <span className="text-text-muted/30 text-xs">{'\u2014'}</span>
                         )}
                       </td>
                       {/* Local Transcription */}
                       <td className="px-4 py-4">
                         {cr.transcriptionText ? (
-                          <p className="text-text-muted text-xs max-w-[150px] truncate" title={cr.transcriptionText}>
+                          <p className="text-text-muted text-xs max-w-[250px] whitespace-pre-line line-clamp-3 cursor-help" title={cr.transcriptionText}>
                             {cr.transcriptionText}
                           </p>
                         ) : (
-                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                          <span className="text-text-muted/30 text-xs">{'\u2014'}</span>
                         )}
                       </td>
                       {/* English Transcription */}
                       <td className="px-4 py-4">
                         {cr.transcriptionEnglish ? (
-                          <p className="text-white text-xs max-w-[150px] truncate" title={cr.transcriptionEnglish}>
+                          <p className="text-white text-xs max-w-[250px] whitespace-pre-line line-clamp-3 cursor-help" title={cr.transcriptionEnglish}>
                             {cr.transcriptionEnglish}
                           </p>
                         ) : (
-                          <span className="text-text-muted/30 text-xs">\u2014</span>
+                          <span className="text-text-muted/30 text-xs">{'\u2014'}</span>
                         )}
                       </td>
                       {/* Intent */}
