@@ -7,14 +7,22 @@ export class WhisperTranscriptionService {
     private readonly logger = new Logger(WhisperTranscriptionService.name);
     private openai: OpenAI | null = null;
 
-    constructor(private readonly prisma: PrismaService) {
+    constructor(private readonly prisma: PrismaService) {}
+
+    /**
+     * Lazy-init OpenAI client — checks env var at runtime so it picks up
+     * keys added after the process started.
+     */
+    private getOpenAI(): OpenAI | null {
         const apiKey = process.env.OPENAI_API_KEY;
-        if (apiKey) {
-            this.openai = new OpenAI({ apiKey });
-            this.logger.log('OpenAI Whisper service initialized.');
-        } else {
-            this.logger.warn('OPENAI_API_KEY not set. Whisper transcription disabled.');
+        if (!apiKey) {
+            return null;
         }
+        if (!this.openai) {
+            this.openai = new OpenAI({ apiKey });
+            this.logger.log('OpenAI Whisper client initialized.');
+        }
+        return this.openai;
     }
 
     /**
@@ -26,7 +34,8 @@ export class WhisperTranscriptionService {
      * 5. Update the call_log record
      */
     async processRecording(callLogId: string, recordingUrl: string, recordingSid: string): Promise<{ success: boolean; error?: string; transcription?: string }> {
-        if (!this.openai) {
+        const openai = this.getOpenAI();
+        if (!openai) {
             this.logger.warn('Whisper not configured (OPENAI_API_KEY not set). Saving recording URL only.');
             await this.prisma.callLog.update({
                 where: { id: callLogId },
@@ -84,7 +93,7 @@ export class WhisperTranscriptionService {
             // @ts-ignore — OpenAI SDK accepts Blob with name property
             audioFile.name = 'recording.wav';
 
-            const transcription = await this.openai.audio.transcriptions.create({
+            const transcription = await openai.audio.transcriptions.create({
                 model: 'whisper-1',
                 file: audioFile as any,
                 language: this.mapLanguageCode(callLog?.scriptLanguage),
@@ -100,7 +109,7 @@ export class WhisperTranscriptionService {
                 const audioFileForTranslation = new Blob([audioBuffer], { type: 'audio/wav' });
                 // @ts-ignore
                 audioFileForTranslation.name = 'recording.wav';
-                const translation = await this.openai.audio.translations.create({
+                const translation = await openai.audio.translations.create({
                     model: 'whisper-1',
                     file: audioFileForTranslation as any,
                 });
