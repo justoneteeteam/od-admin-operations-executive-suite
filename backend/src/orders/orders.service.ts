@@ -191,6 +191,7 @@ export class OrdersService {
         orderStatus?: string;
         confirmationStatus?: string;
         search?: string;
+        searchType?: string;
         customerId?: string;
         startDate?: Date;
         endDate?: Date;
@@ -208,25 +209,27 @@ export class OrdersService {
 
         if (where.search) {
             const searchTerm = where.search.replace(/^#/, ''); // Strip leading '#'
+            const type = where.searchType || 'orderNumber';
 
-            // Pre-query matching customers to avoid Prisma relation filter
-            // type mismatch between Customer.id (text) and Order.customerId (uuid)
-            const matchingCustomers = await this.prisma.customer.findMany({
-                where: {
-                    OR: [
-                        { name: { contains: where.search, mode: 'insensitive' } },
-                        { phone: { contains: searchTerm, mode: 'insensitive' } },
-                    ]
-                },
-                select: { id: true }
-            });
-            const customerIds = matchingCustomers.map(c => c.id);
-
-            whereClause.OR = [
-                { orderNumber: { contains: searchTerm, mode: 'insensitive' } },
-                { trackingNumber: { contains: searchTerm, mode: 'insensitive' } },
-                ...(customerIds.length > 0 ? [{ customerId: { in: customerIds } }] : []),
-            ];
+            if (type === 'orderNumber') {
+                whereClause.orderNumber = { contains: searchTerm, mode: 'insensitive' };
+            } else if (type === 'trackingNumber') {
+                whereClause.trackingNumber = { contains: searchTerm, mode: 'insensitive' };
+            } else if (type === 'customerName') {
+                // Pre-query matching customers to avoid Prisma relation filter
+                // type mismatch between Customer.id (text) and Order.customerId (uuid)
+                const matchingCustomers = await this.prisma.customer.findMany({
+                    where: { name: { contains: where.search, mode: 'insensitive' } },
+                    select: { id: true }
+                });
+                const customerIds = matchingCustomers.map(c => c.id);
+                if (customerIds.length > 0) {
+                    whereClause.customerId = { in: customerIds };
+                } else {
+                    // No matching customers — return empty result immediately
+                    return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+                }
+            }
         }
         if (where.startDate || where.endDate) {
             whereClause.orderDate = {};

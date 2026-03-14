@@ -31,6 +31,7 @@ const OrdersPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState('orderNumber');
   const [confirmationFilter, setConfirmationFilter] = useState('All Confirmations');
   const [orderStatusFilter, setOrderStatusFilter] = useState('All Status');
   const [dateFilter, setDateFilter] = useState('Last 30 Days');
@@ -62,7 +63,7 @@ const OrdersPage: React.FC = () => {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
+  }, [searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
 
   // Debounced fetch for orders
   useEffect(() => {
@@ -70,7 +71,7 @@ const OrdersPage: React.FC = () => {
       fetchOrders();
     }, 300);
     return () => clearTimeout(timer);
-  }, [page, searchTerm, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
+  }, [page, searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
 
   // Initial fetch for static data
   useEffect(() => {
@@ -153,6 +154,7 @@ const OrdersPage: React.FC = () => {
         orderStatus: orderStatusFilter === 'All Status' ? undefined : orderStatusFilter,
         confirmationStatus: confirmationFilter === 'All Confirmations' ? undefined : confirmationFilter,
         search: searchTerm || undefined,
+        searchType: searchTerm ? searchType : undefined,
         page: page,
         limit: 20
       });
@@ -566,15 +568,29 @@ const OrdersPage: React.FC = () => {
 
         {/* Search and Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
-          <div className="md:col-span-2 lg:col-span-2 relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
-            <input
-              type="text"
-              placeholder="Search by order ID or customer name..."
-              className="w-full pl-10 pr-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="md:col-span-2 lg:col-span-2 flex gap-0">
+            <div className="relative flex-shrink-0">
+              <select
+                className="h-full pl-3 pr-7 py-2.5 bg-[#17232f] border border-border-dark border-r-0 rounded-l-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer font-medium"
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+              >
+                <option value="orderNumber">Order #</option>
+                <option value="customerName">Customer</option>
+                <option value="trackingNumber">Tracking #</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[16px]">expand_more</span>
+            </div>
+            <div className="relative flex-1">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
+              <input
+                type="text"
+                placeholder={searchType === 'orderNumber' ? 'Search by order number...' : searchType === 'customerName' ? 'Search by customer name...' : 'Search by tracking number...'}
+                className="w-full pl-10 pr-4 py-2.5 bg-card-dark border border-border-dark rounded-r-xl text-white placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
           <div className="relative">
             <select
