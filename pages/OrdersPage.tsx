@@ -571,7 +571,8 @@ const OrdersPage: React.FC = () => {
           <div className="md:col-span-2 lg:col-span-2 flex gap-0">
             <div className="relative flex-shrink-0">
               <select
-                className="h-full pl-3 pr-7 py-2.5 bg-[#17232f] border border-border-dark border-r-0 rounded-l-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer font-medium"
+                className="h-full pl-3 pr-7 py-2.5 bg-[#17232f] border border-border-dark border-r-0 rounded-l-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm cursor-pointer font-medium"
+                style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7f95' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value)}
               >
@@ -579,7 +580,6 @@ const OrdersPage: React.FC = () => {
                 <option value="customerName">Customer</option>
                 <option value="trackingNumber">Tracking #</option>
               </select>
-              <span className="material-symbols-outlined absolute right-1 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[16px]">expand_more</span>
             </div>
             <div className="relative flex-1">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
