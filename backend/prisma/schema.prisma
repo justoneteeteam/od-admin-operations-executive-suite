@@ -1076,3 +1076,21 @@ model PurchaseLogisticCompany {
   @@unique([purchaseId, logisticCompanyId])
   @@map("purchase_logistic_companies")
 }
+
+model WebhookLog {
+  id           String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  source       String   @db.VarChar(50)   // e.g. 'shopify', '17track'
+  eventType    String   @map("event_type") @db.VarChar(100)   // e.g. 'orders/create'
+  shopDomain   String?  @map("shop_domain") @db.VarChar(255)
+  externalId   String?  @map("external_id") @db.VarChar(255)  // Shopify order ID
+  orderNumber  String?  @map("order_number") @db.VarChar(100) // Human-readable #1556
+  status       String   @db.VarChar(20)   // received, processed, failed, duplicate
+  errorMessage String?  @map("error_message") @db.Text
+  payload      Json?    @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([source, createdAt])
+  @@index([orderNumber])
+  @@index([externalId])
+  @@map("webhook_logs")
+}

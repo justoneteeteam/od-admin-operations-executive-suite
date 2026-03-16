@@ -16,11 +16,85 @@ export class ShopifyService {
         private trackingService: TrackingService,
     ) { }
 
+    // ──────────────────────────────────────────────
+    //  Webhook Logging Helpers
+    // ──────────────────────────────────────────────
+
+    private async logWebhook(data: {
+        source: string;
+        eventType: string;
+        shopDomain?: string;
+        externalId?: string;
+        orderNumber?: string;
+        status: string;
+        errorMessage?: string;
+        payload?: any;
+    }) {
+        try {
+            return await this.prisma.webhookLog.create({
+                data: {
+                    source: data.source,
+                    eventType: data.eventType,
+                    shopDomain: data.shopDomain || null,
+                    externalId: data.externalId || null,
+                    orderNumber: data.orderNumber || null,
+                    status: data.status,
+                    errorMessage: data.errorMessage || null,
+                    payload: data.payload || null,
+                },
+            });
+        } catch (logError) {
+            // Never let logging crash the webhook pipeline
+            this.logger.error('Failed to write webhook log', logError);
+            return null;
+        }
+    }
+
+    private async updateWebhookLog(id: string, status: string, errorMessage?: string) {
+        try {
+            await this.prisma.webhookLog.update({
+                where: { id },
+                data: { status, errorMessage: errorMessage || null },
+            });
+        } catch (logError) {
+            this.logger.error(`Failed to update webhook log ${id}`, logError);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  Order Create Webhook
+    // ──────────────────────────────────────────────
+
     async processOrderWebhook(payload: any, shopDomain: string) {
-        this.logger.log(`Processing Shopify Webhook: Order #${payload.order_number}`);
+        const orderNumber = payload.name || String(payload.order_number || payload.id);
+        const externalId = String(payload.id);
+
+        this.logger.log(`Processing Shopify Webhook: Order ${orderNumber} (Shopify ID: ${externalId})`);
+
+        // 1. Log the incoming webhook
+        const log = await this.logWebhook({
+            source: 'shopify',
+            eventType: 'orders/create',
+            shopDomain,
+            externalId,
+            orderNumber,
+            status: 'received',
+            payload,
+        });
 
         try {
-            // 1. Resolve or Create Customer
+            // 2. Idempotency check — skip if order already exists
+            const existingOrder = await this.prisma.order.findFirst({
+                where: { orderNumber },
+            });
+
+            if (existingOrder) {
+                this.logger.warn(`Order ${orderNumber} already exists (ID: ${existingOrder.id}). Skipping duplicate webhook.`);
+                if (log) await this.updateWebhookLog(log.id, 'duplicate');
+                return; // Return 200 so Shopify stops retrying
+            }
+
+            // 3. Resolve or Create Customer
             const customerEmail = payload.customer?.email || payload.email;
             const customerPhone = payload.customer?.phone || payload.phone || payload.shipping_address?.phone;
 
@@ -52,7 +126,7 @@ export class ShopifyService {
             }
             customerId = customer.id;
 
-            // 2. Resolve Products from Line Items
+            // 4. Resolve Products from Line Items
             const orderItems: any[] = [];
             const lineItems = payload.line_items || [];
 
@@ -85,10 +159,10 @@ export class ShopifyService {
             }
 
             if (orderItems.length === 0) {
-                throw new Error(`Order #${payload.order_number} has no valid line items mapped to internal products.`);
+                throw new Error(`Order ${orderNumber} has no valid line items mapped to internal products.`);
             }
 
-            // 3. Resolve Store from StoreSettings by domain
+            // 5. Resolve Store from StoreSettings by domain
             let store = await this.prisma.storeSettings.findFirst({
                 where: {
                     OR: [
@@ -106,9 +180,9 @@ export class ShopifyService {
                 });
             }
 
-            // 4. Construct CreateOrderDto
+            // 6. Construct CreateOrderDto
             const createOrderDto: CreateOrderDto = {
-                orderNumber: payload.name || String(payload.id),
+                orderNumber,
                 customerId,
                 storeId: store.id,
                 storeName: store.storeName,
@@ -130,27 +204,45 @@ export class ShopifyService {
                 items: orderItems,
             };
 
-            // 4. Save using OrdersService
+            // 7. Save using OrdersService
             const newOrder = await this.ordersService.create(createOrderDto);
             if (newOrder) {
-                this.logger.log(`Successfully created internal order: ${newOrder.id}`);
+                this.logger.log(`Successfully created internal order: ${newOrder.id} (${orderNumber})`);
+                if (log) await this.updateWebhookLog(log.id, 'processed');
             } else {
-                this.logger.log(`Failed to create internal order for Shopify Order #${payload.order_number}`);
+                this.logger.error(`Failed to create internal order for Shopify Order ${orderNumber}`);
+                if (log) await this.updateWebhookLog(log.id, 'failed', 'ordersService.create returned null');
             }
 
         } catch (error) {
-            this.logger.error(`Error processing webhook payload for Order #${payload.order_number}`, error.stack);
-            throw error;
+            this.logger.error(`Error processing webhook for Order ${orderNumber}: ${error.message}`, error.stack);
+            if (log) await this.updateWebhookLog(log.id, 'failed', error.message);
+            throw error; // Re-throw so controller returns 500 and Shopify retries
         }
     }
 
+    // ──────────────────────────────────────────────
+    //  Fulfillment Create Webhook
+    // ──────────────────────────────────────────────
+
     async processFulfillmentWebhook(payload: any, shopDomain: string) {
-        this.logger.log(`Processing Shopify Fulfillment Webhook for Order ID: ${payload.order_id}`);
+        const externalOrderId = String(payload.order_id || '');
+        this.logger.log(`Processing Shopify Fulfillment Webhook for Order ID: ${externalOrderId}`);
+
+        // Log the incoming webhook
+        const log = await this.logWebhook({
+            source: 'shopify',
+            eventType: 'fulfillments/create',
+            shopDomain,
+            externalId: externalOrderId,
+            status: 'received',
+            payload,
+        });
 
         try {
-            const shopifyOrderId = payload.order_id;
-            if (!shopifyOrderId) {
+            if (!payload.order_id) {
                 this.logger.warn('Fulfillment payload missing order_id. Skipping.');
+                if (log) await this.updateWebhookLog(log.id, 'failed', 'Missing order_id in payload');
                 return;
             }
 
@@ -158,13 +250,14 @@ export class ShopifyService {
             const order = await this.prisma.order.findFirst({
                 where: {
                     notes: {
-                        contains: `[SHOPIFY_ORDER_ID:${shopifyOrderId}]`
+                        contains: `[SHOPIFY_ORDER_ID:${payload.order_id}]`
                     }
                 }
             });
 
             if (!order) {
-                this.logger.warn(`Internal Order not found for Shopify Order ID: ${shopifyOrderId}. Cannot attach tracking.`);
+                this.logger.warn(`Internal Order not found for Shopify Order ID: ${payload.order_id}. Cannot attach tracking.`);
+                if (log) await this.updateWebhookLog(log.id, 'failed', `No internal order found for Shopify ID: ${payload.order_id}`);
                 return;
             }
 
@@ -199,13 +292,16 @@ export class ShopifyService {
                     .catch(e => this.logger.error(`Tracking Register Error for ${order.orderNumber}: ${e.message}`));
 
                 this.logger.log(`Successfully attached Tracking Number ${trackingNumber} to Internal Order ${order.orderNumber}`);
+                if (log) await this.updateWebhookLog(log.id, 'processed');
             } else {
                 this.logger.log(`Fulfillment received for Order ${order.orderNumber} but no tracking number was included. Status untouched.`);
+                if (log) await this.updateWebhookLog(log.id, 'processed');
             }
 
         } catch (error) {
             this.logger.error(`Error processing fulfillment webhook for Order ID ${payload.order_id}`, error.stack);
-            throw error;
+            if (log) await this.updateWebhookLog(log.id, 'failed', error.message);
+            throw error; // Re-throw so controller returns 500
         }
     }
 }

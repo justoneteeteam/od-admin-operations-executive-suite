@@ -25,6 +25,13 @@ export class TwilioCallSchedulerService {
         this.logger.log('Starting Twilio call scheduler cron job...');
 
         try {
+            // Check if Twilio calls are enabled in store settings
+            const storeSettings = await this.prisma.storeSettings.findFirst();
+            if (!storeSettings?.enableTwilioCalls) {
+                this.logger.log('Twilio calls are disabled in store settings. Skipping scheduler.');
+                return;
+            }
+
             // Find orders that meet the criteria:
             // 1. Created on or after the cutoff
             // 2. riskAction is twilio_short or twilio_long

@@ -185,19 +185,20 @@ const PerformancePage: React.FC = () => {
     const failed = filtered.filter(o => ['Exception', 'Expired', 'Cancelled'].includes(o.orderStatus)).length;
     const pending = filtered.filter(o => o.confirmationStatus === 'Pending' || o.orderStatus === 'Pending').length;
 
-    const totalRevenue = filtered.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
-    const confirmedRevenue = filtered.filter(o => o.confirmationStatus === 'Confirmed').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    const shippedOrders = filtered.filter(o => ['Shipped', 'InTransit', 'OutForDelivery', 'Delivered'].includes(o.orderStatus));
+    const totalRevenue = shippedOrders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
     const collectedRevenue = filtered.filter(o => o.orderStatus === 'Delivered').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
     const totalProfit = filtered.reduce((sum, o) => sum + Number(o.profitMargin || 0), 0);
     const confirmRate = totalLeads > 0 ? (confirmLeads / totalLeads) * 100 : 0;
     const deliveryRate = confirmLeads > 0 ? (delivered / confirmLeads) * 100 : 0;
     const returnRate = (delivered + undelivered) > 0 ? (undelivered / (delivered + undelivered)) * 100 : 0;
+    const shippedCount = shippedOrders.length;
 
     return {
       totalLeads, confirmLeads, rejectLeads, shipped, delivered,
       undelivered, outForDelivery, failed, pending,
-      totalRevenue, confirmedRevenue, collectedRevenue, totalProfit,
-      confirmRate, deliveryRate, returnRate,
+      totalRevenue, collectedRevenue, totalProfit,
+      confirmRate, deliveryRate, returnRate, shippedCount,
     };
   }, [filtered]);
 
@@ -352,8 +353,7 @@ const PerformancePage: React.FC = () => {
 
       {/* ── KPI Cards ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
-        <StatCard label="Total Revenue" value={formatK(metrics.totalRevenue)} sub={`${metrics.totalLeads} total leads`} icon="payments" iconColor="bg-primary/15 text-primary" spark={dailyData} />
-        <StatCard label="Confirmed Revenue" value={formatK(metrics.confirmedRevenue)} sub={`${metrics.confirmLeads} confirmed orders`} icon="verified" iconColor="bg-emerald-500/15 text-emerald-400" />
+        <StatCard label="Total Revenue" value={formatK(metrics.totalRevenue)} sub={`${metrics.shippedCount} shipped orders`} icon="payments" iconColor="bg-primary/15 text-primary" spark={dailyData} />
         <StatCard label="Confirm Rate" value={`${metrics.confirmRate.toFixed(1)}%`} sub={`${metrics.confirmLeads} / ${metrics.totalLeads}`} icon="check_circle" iconColor="bg-emerald-500/15 text-emerald-400" />
         <StatCard label="Total Orders" value={metrics.totalLeads.toLocaleString()} sub={`${selectedCountry !== 'All' ? selectedCountry : 'All countries'}`} icon="package_2" iconColor="bg-violet-500/15 text-violet-400" />
         <StatCard label="Delivered" value={metrics.delivered.toLocaleString()} sub={`${metrics.failed} failed/exception`} icon="task_alt" iconColor="bg-teal-500/15 text-teal-400" />
@@ -455,8 +455,8 @@ const PerformancePage: React.FC = () => {
           <div className="p-6 flex flex-col gap-4">
             {/* Big Revenue Number */}
             <div className="flex flex-col items-center justify-center py-4 gap-1">
-              <p className="text-4xl font-black text-white">{formatK(metrics.confirmedRevenue)}</p>
-              <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Confirmed Revenue</p>
+              <p className="text-4xl font-black text-white">{formatK(metrics.totalRevenue)}</p>
+              <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Shipped Revenue</p>
             </div>
             <div className="h-px bg-border-dark"></div>
             {/* Country breakdown */}
@@ -464,7 +464,7 @@ const PerformancePage: React.FC = () => {
               {(() => {
                 const cMap = new Map<string, number>();
                 for (const o of filtered) {
-                  if (o.confirmationStatus === 'Confirmed') {
+                  if (['Shipped', 'InTransit', 'OutForDelivery', 'Delivered'].includes(o.orderStatus)) {
                     cMap.set(o.shippingCountry || 'Unknown', (cMap.get(o.shippingCountry || 'Unknown') || 0) + Number(o.totalAmount || 0));
                   }
                 }
@@ -480,8 +480,8 @@ const PerformancePage: React.FC = () => {
                   </div>
                 ));
               })()}
-              {filtered.filter(o => o.confirmationStatus === 'Confirmed').length === 0 && (
-                <p className="text-xs text-text-muted text-center py-4 italic">No confirmed orders in range</p>
+              {filtered.filter(o => ['Shipped', 'InTransit', 'OutForDelivery', 'Delivered'].includes(o.orderStatus)).length === 0 && (
+                <p className="text-xs text-text-muted text-center py-4 italic">No shipped orders in range</p>
               )}
             </div>
           </div>

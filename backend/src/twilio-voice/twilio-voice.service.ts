@@ -57,6 +57,13 @@ export class TwilioVoiceService {
             return;
         }
 
+        // Check if Twilio calls are enabled in store settings
+        const storeSettings = await this.prisma.storeSettings.findFirst();
+        if (!storeSettings?.enableTwilioCalls) {
+            this.logger.log(`Order ${orderId}: Twilio calls disabled in store settings. Skipping.`);
+            return;
+        }
+
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
             include: { customer: true },
