@@ -73,6 +73,10 @@ const CommunicationPage: React.FC = () => {
     const [skuConfirmEnabled, setSkuConfirmEnabled] = useState(false);
     const [skuConfirmToggling, setSkuConfirmToggling] = useState(false);
 
+    // Script preview toggles
+    const [showScriptPreview, setShowScriptPreview] = useState(false);
+    const [showSkuScriptPreview, setShowSkuScriptPreview] = useState(false);
+
     // Condition editor
     const [showConditionEditor, setShowConditionEditor] = useState(false);
     const [editingConditions, setEditingConditions] = useState<any>({});
@@ -661,6 +665,171 @@ const CommunicationPage: React.FC = () => {
                                                 <p className="text-[10px] text-text-muted">Twilio call (short/long script). DTMF: <span className="text-amber-400">Press 1</span> → Confirm · <span className="text-amber-400">Press 2</span> → Cancel</p>
                                             </div>
                                         </div>
+
+                                        {/* Script Preview Toggle */}
+                                        <button
+                                            onClick={() => setShowScriptPreview(!showScriptPreview)}
+                                            className="w-full flex items-center justify-between px-3 py-2 bg-[#0d1520] rounded-xl border border-[#1c2d3d] hover:border-primary/30 transition-all group"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-amber-400" style={{ fontSize: 14 }}>code</span>
+                                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Call Script Preview (TwiML)</span>
+                                            </div>
+                                            <span className={`material-symbols-outlined text-text-muted transition-transform ${showScriptPreview ? 'rotate-180' : ''}`} style={{ fontSize: 16 }}>expand_more</span>
+                                        </button>
+
+                                        {showScriptPreview && (
+                                            <div className="space-y-3 animate-in fade-in">
+                                                {/* ── SHORT SCRIPT ── */}
+                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">SHORT SCRIPT</span>
+                                                        <span className="text-[9px] text-text-muted">(Low Risk)</span>
+                                                    </div>
+
+                                                    {/* Spanish Short */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇪🇸</span>
+                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 5s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Para confirmar, diga SÍ o presione uno. Para cancelar, diga NO o presione dos."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"No hemos recibido respuesta. Volveremos a intentar más tarde. Gracias."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Italian Short */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇮🇹</span>
+                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 5s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Per confermare, dica SÌ o prema uno. Per annullare, dica NO o prema due."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Non abbiamo ricevuto risposta. Riproveremo più tardi. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* ── LONG SCRIPT ── */}
+                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">LONG SCRIPT</span>
+                                                        <span className="text-[9px] text-text-muted">(Medium Risk)</span>
+                                                    </div>
+
+                                                    {/* Spanish Long */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇪🇸</span>
+                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Tiene <span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Los productos son: <span className="text-amber-300">{'{ProductList}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"¿Puede confirmar su dirección de entrega? <span className="text-amber-300">{'{Address}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 7s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"¿Es correcto? Para confirmar todo, diga SÍ o presione uno. Si hay algún problema, diga NO o presione dos."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"No hemos recibido respuesta. Un agente le contactará pronto. Gracias."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Italian Long */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇮🇹</span>
+                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Ha <span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"I prodotti sono: <span className="text-amber-300">{'{ProductList}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Può confermare il suo indirizzo di consegna? <span className="text-amber-300">{'{Address}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 7s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"È corretto? Per confermare, dica SÌ o prema uno. Per segnalare un problema, dica NO o prema due."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Non abbiamo ricevuto risposta. Un agente la contatterà a breve. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* ── RESPONSE HANDLING ── */}
+                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">RESPONSE HANDLING</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-emerald-400 text-[10px] mt-0.5">✅</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-bold">Confirmed (DTMF 1 / Speech "Sí")</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "Perfecto. Su pedido está confirmado. Recibirá la entrega pronto. Gracias."</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Perfetto. Il suo ordine è confermato. Riceverà la consegna a breve. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-red-400 text-[10px] mt-0.5">❌</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-bold">Cancelled (DTMF 2 / Speech "No")</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "De acuerdo. Su pedido ha sido cancelado. Gracias por avisar."</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Va bene. Il suo ordine è stato annullato. Grazie per aver avvisato."</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-amber-400 text-[10px] mt-0.5">⚠️</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-bold">Unclear → Forward to Call Center</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "No hemos entendido su respuesta. Un agente le contactará pronto. Gracias."</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Non abbiamo compreso la sua risposta. Un agente la contatterà a breve. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         {/* Read-only config summary */}
                                         <div className="mt-1 p-3 bg-[#0d1520] rounded-xl border border-[#1c2d3d] space-y-2">
                                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">⚙ Configuration (managed in backend)</p>
@@ -814,6 +983,7 @@ const CommunicationPage: React.FC = () => {
                                                 </div>
                                                 <p className="text-[10px] text-text-muted">Twilio call (short/long by risk). DTMF: <span className="text-amber-400">Press 1</span> → Confirm · <span className="text-amber-400">Press 2</span> → Cancel</p>
                                             </div>
+                                            {/* Same scripts as Confirmation Call — shared TwiML endpoint */}
                                             <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3 border-dashed">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="text-xs font-black text-text-muted">↻ Repeat</span>
@@ -831,6 +1001,172 @@ const CommunicationPage: React.FC = () => {
                                                 <p className="text-[10px] text-text-muted">After 8 failed attempts → forward to call center for manual follow-up</p>
                                             </div>
                                         </div>
+
+                                        {/* Script Preview Toggle */}
+                                        <button
+                                            onClick={() => setShowSkuScriptPreview(!showSkuScriptPreview)}
+                                            className="w-full flex items-center justify-between px-3 py-2 bg-[#0d1520] rounded-xl border border-[#1c2d3d] hover:border-primary/30 transition-all group"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-purple-400" style={{ fontSize: 14 }}>code</span>
+                                                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Call Script Preview (TwiML)</span>
+                                            </div>
+                                            <span className={`material-symbols-outlined text-text-muted transition-transform ${showSkuScriptPreview ? 'rotate-180' : ''}`} style={{ fontSize: 16 }}>expand_more</span>
+                                        </button>
+
+                                        {showSkuScriptPreview && (
+                                            <div className="space-y-3 animate-in fade-in">
+                                                {/* ── SHORT SCRIPT ── */}
+                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">SHORT SCRIPT</span>
+                                                        <span className="text-[9px] text-text-muted">(Low Risk)</span>
+                                                    </div>
+
+                                                    {/* Spanish Short */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇪🇸</span>
+                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 5s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Para confirmar, diga SÍ o presione uno. Para cancelar, diga NO o presione dos."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"No hemos recibido respuesta. Volveremos a intentar más tarde. Gracias."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Italian Short */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇮🇹</span>
+                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 5s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Per confermare, dica SÌ o prema uno. Per annullare, dica NO o prema due."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Non abbiamo ricevuto risposta. Riproveremo più tardi. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* ── LONG SCRIPT ── */}
+                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">LONG SCRIPT</span>
+                                                        <span className="text-[9px] text-text-muted">(Medium Risk)</span>
+                                                    </div>
+
+                                                    {/* Spanish Long */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇪🇸</span>
+                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Tiene <span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Los productos son: <span className="text-amber-300">{'{ProductList}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"¿Puede confirmar su dirección de entrega? <span className="text-amber-300">{'{Address}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 7s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"¿Es correcto? Para confirmar todo, diga SÍ o presione uno. Si hay algún problema, diga NO o presione dos."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"No hemos recibido respuesta. Un agente le contactará pronto. Gracias."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Italian Long */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px]">🇮🇹</span>
+                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
+                                                        </div>
+                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Ha <span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"I prodotti sono: <span className="text-amber-300">{'{ProductList}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Può confermare il suo indirizzo di consegna? <span className="text-amber-300">{'{Address}'}</span>."</p>
+                                                            <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-amber-400 font-bold mb-0.5">⌨ DTMF Gather (speech + dtmf, timeout: 7s, 1 digit)</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"È corretto? Per confermare, dica SÌ o prema uno. Per segnalare un problema, dica NO o prema due."</p>
+                                                            </div>
+                                                            <div className="border-t border-border-dark pt-1 mt-1">
+                                                                <p className="text-[9px] text-red-400 font-bold mb-0.5">⏰ No response fallback</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Non abbiamo ricevuto risposta. Un agente la contatterà a breve. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* ── RESPONSE HANDLING ── */}
+                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">RESPONSE HANDLING</span>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-emerald-400 text-[10px] mt-0.5">✅</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-bold">Confirmed (DTMF 1 / Speech "Sí")</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "Perfecto. Su pedido está confirmado. Recibirá la entrega pronto. Gracias."</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Perfetto. Il suo ordine è confermato. Riceverà la consegna a breve. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-red-400 text-[10px] mt-0.5">❌</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-bold">Cancelled (DTMF 2 / Speech "No")</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "De acuerdo. Su pedido ha sido cancelado. Gracias por avisar."</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Va bene. Il suo ordine è stato annullato. Grazie per aver avvisato."</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-amber-400 text-[10px] mt-0.5">⚠️</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-bold">Unclear → Forward to Call Center</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "No hemos entendido su respuesta. Un agente le contactará pronto. Gracias."</p>
+                                                                <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Non abbiamo compreso la sua risposta. Un agente la contatterà a breve. Grazie."</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {/* Config summary */}
                                         <div className="mt-1 p-3 bg-[#0d1520] rounded-xl border border-[#1c2d3d] space-y-2">
                                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">⚙ Configuration (managed in backend)</p>
