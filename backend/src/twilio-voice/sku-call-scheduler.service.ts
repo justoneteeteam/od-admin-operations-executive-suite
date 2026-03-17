@@ -31,10 +31,10 @@ export class SkuCallSchedulerService {
         this.logger.log('Starting SKU call scheduler cron...');
 
         try {
-            // Check if Twilio calls are enabled
+            // Check if SKU confirmation calls are enabled
             const storeSettings = await this.prisma.storeSettings.findFirst();
-            if (!storeSettings?.enableTwilioCalls) {
-                this.logger.log('Twilio calls disabled. Skipping SKU scheduler.');
+            if (!storeSettings?.enableSkuConfirmationCalls) {
+                this.logger.log('SKU confirmation calls disabled. Skipping SKU scheduler.');
                 return;
             }
 

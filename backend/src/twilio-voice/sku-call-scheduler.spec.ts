@@ -47,9 +47,9 @@ describe('SKU Call Scheduler', () => {
 
     // ─── Toggle guard ──────────────────────────────────────────────────
 
-    it('should SKIP when enableTwilioCalls is false', async () => {
+    it('should SKIP when enableSkuConfirmationCalls is false', async () => {
         mockPrisma.storeSettings.findFirst.mockResolvedValue({
-            enableTwilioCalls: false,
+            enableSkuConfirmationCalls: false,
         });
 
         await service.handleCron();
@@ -97,7 +97,7 @@ describe('SKU Call Scheduler', () => {
 
     it('should SKIP orders with 4+ calls today', async () => {
         mockPrisma.storeSettings.findFirst.mockResolvedValue({
-            enableTwilioCalls: true,
+            enableSkuConfirmationCalls: true,
         });
 
         const todayCalls = Array.from({ length: 4 }, (_, i) => ({
@@ -124,7 +124,7 @@ describe('SKU Call Scheduler', () => {
 
     it('should SKIP orders where customer already picked up', async () => {
         mockPrisma.storeSettings.findFirst.mockResolvedValue({
-            enableTwilioCalls: true,
+            enableSkuConfirmationCalls: true,
         });
 
         mockPrisma.order.findMany.mockResolvedValue([{
@@ -152,7 +152,7 @@ describe('SKU Call Scheduler', () => {
 
     it('should PROCEED for eligible SKU order with no previous calls', async () => {
         mockPrisma.storeSettings.findFirst.mockResolvedValue({
-            enableTwilioCalls: true,
+            enableSkuConfirmationCalls: true,
         });
 
         mockPrisma.order.findMany.mockResolvedValue([{
@@ -170,7 +170,7 @@ describe('SKU Call Scheduler', () => {
 
     it('should PROCEED for order with 3 no-answer calls (under limits)', async () => {
         mockPrisma.storeSettings.findFirst.mockResolvedValue({
-            enableTwilioCalls: true,
+            enableSkuConfirmationCalls: true,
         });
 
         const calls = Array.from({ length: 3 }, (_, i) => ({
@@ -195,7 +195,7 @@ describe('SKU Call Scheduler', () => {
 
     it('should SKIP orders with last call less than 2 hours ago', async () => {
         mockPrisma.storeSettings.findFirst.mockResolvedValue({
-            enableTwilioCalls: true,
+            enableSkuConfirmationCalls: true,
         });
 
         mockPrisma.order.findMany.mockResolvedValue([{

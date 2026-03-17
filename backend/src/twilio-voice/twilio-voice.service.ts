@@ -301,10 +301,10 @@ export class TwilioVoiceService {
             return;
         }
 
-        // Check if Twilio calls are enabled
+        // Check if SKU confirmation calls are enabled
         const storeSettings = await this.prisma.storeSettings.findFirst();
-        if (!storeSettings?.enableTwilioCalls) {
-            this.logger.log(`Order ${orderId}: Twilio calls disabled. Skipping SKU call.`);
+        if (!storeSettings?.enableSkuConfirmationCalls) {
+            this.logger.log(`Order ${orderId}: SKU confirmation calls disabled. Skipping.`);
             return;
         }
 

@@ -69,6 +69,10 @@ const CommunicationPage: React.FC = () => {
     const [outOfDeliveryEnabled, setOutOfDeliveryEnabled] = useState(true);
     const [outOfDeliveryToggling, setOutOfDeliveryToggling] = useState(false);
 
+    // SKU Confirmation toggle state
+    const [skuConfirmEnabled, setSkuConfirmEnabled] = useState(false);
+    const [skuConfirmToggling, setSkuConfirmToggling] = useState(false);
+
     // Condition editor
     const [showConditionEditor, setShowConditionEditor] = useState(false);
     const [editingConditions, setEditingConditions] = useState<any>({});
@@ -88,6 +92,7 @@ const CommunicationPage: React.FC = () => {
                 setStoreSettingsId(stores[0].id);
                 setTwilioEnabled(!!stores[0].enableTwilioCalls);
                 setOutOfDeliveryEnabled(stores[0].enableOutOfDeliveryNotifications !== false);
+                setSkuConfirmEnabled(!!(stores[0] as any).enableSkuConfirmationCalls);
             }
         }).catch(err => console.error('Failed to fetch store settings:', err));
     }, []);
@@ -133,6 +138,21 @@ const CommunicationPage: React.FC = () => {
             toast('error', 'Failed to toggle Out of Delivery notifications');
         } finally {
             setOutOfDeliveryToggling(false);
+        }
+    };
+
+    const handleToggleSkuConfirm = async () => {
+        if (!storeSettingsId || skuConfirmToggling) return;
+        setSkuConfirmToggling(true);
+        const newValue = !skuConfirmEnabled;
+        try {
+            await storeSettingsService.update(storeSettingsId, { enableSkuConfirmationCalls: newValue } as any);
+            setSkuConfirmEnabled(newValue);
+            toast('success', `SKU confirmation calls ${newValue ? 'enabled' : 'disabled'}`);
+        } catch (err) {
+            toast('error', 'Failed to toggle SKU confirmation calls');
+        } finally {
+            setSkuConfirmToggling(false);
         }
     };
 
@@ -747,17 +767,20 @@ const CommunicationPage: React.FC = () => {
                                     </div>
 
                                     {/* Fix Confirmation — SKU Products Card */}
-                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${twilioEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
+                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${skuConfirmEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#a78bfa' }}>repeat</span>
                                                 <span className="text-sm font-bold text-white">Fix Confirmation — SKU Products</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${twilioEnabled ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                                    {twilioEnabled ? 'Active' : 'Inactive'}
+                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                    <input type="checkbox" checked={skuConfirmEnabled} onChange={handleToggleSkuConfirm} disabled={skuConfirmToggling || !storeSettingsId} className="sr-only peer" />
+                                                    <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:bg-purple-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                </label>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${skuConfirmEnabled ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                                    {skuConfirmToggling ? '...' : skuConfirmEnabled ? 'Active' : 'Inactive'}
                                                 </span>
-                                                <span className="text-[10px] text-text-muted italic">(uses Twilio toggle)</span>
                                             </div>
                                         </div>
                                         <p className="text-xs text-text-muted">Multi-day confirmation for SKU product orders: sends pre-SMS → waits 5 min → calls. Repeats up to 8 times (4/day × 2 days). Forwards to call center if no answer.</p>

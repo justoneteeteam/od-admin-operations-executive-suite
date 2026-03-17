@@ -698,6 +698,9 @@ model StoreSettings {
   // Twilio Settings
   enableTwilioCalls   Boolean   @default(false) @map("enable_twilio_calls")
 
+  // SKU Confirmation Call Settings
+  enableSkuConfirmationCalls Boolean @default(false) @map("enable_sku_confirmation_calls")
+
   // Out of Delivery Notification Settings
   enableOutOfDeliveryNotifications Boolean @default(true) @map("enable_out_of_delivery_notifications")
 
