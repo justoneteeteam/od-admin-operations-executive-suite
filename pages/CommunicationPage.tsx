@@ -745,6 +745,122 @@ const CommunicationPage: React.FC = () => {
                                             <span className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#1a2332] text-text-muted border border-border-dark">🔗 17Track webhook trigger</span>
                                         </div>
                                     </div>
+
+                                    {/* Fix Confirmation — SKU Products Card */}
+                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${twilioEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#a78bfa' }}>repeat</span>
+                                                <span className="text-sm font-bold text-white">Fix Confirmation — SKU Products</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${twilioEnabled ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                                    {twilioEnabled ? 'Active' : 'Inactive'}
+                                                </span>
+                                                <span className="text-[10px] text-text-muted italic">(uses Twilio toggle)</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-text-muted">Multi-day confirmation for SKU product orders: sends pre-SMS → waits 5 min → calls. Repeats up to 8 times (4/day × 2 days). Forwards to call center if no answer.</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[10px] text-text-muted font-bold">Channels:</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: '#5b8def', borderColor: '#5b8def30', backgroundColor: '#5b8def10' }}>SMS</span>
+                                            <span className="text-[10px] px-2 py-0.5 rounded border font-bold" style={{ color: '#f5a623', borderColor: '#f5a62330', backgroundColor: '#f5a62310' }}>Call</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 1</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#5b8def' }}>sms</span>
+                                                    <span className="text-[10px] text-text-muted">SMS · 1st call only</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Pre-call SMS warning (by country: ES/IT). Template: <span className="text-white font-mono">{'sms_pre_call_{{country}}'}</span></p>
+                                            </div>
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 2</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#a78bfa' }}>timer</span>
+                                                    <span className="text-[10px] text-text-muted">Wait · 5 min</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Wait 5 minutes after pre-SMS before initiating the call</p>
+                                            </div>
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">Step 3</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#f5a623' }}>call</span>
+                                                    <span className="text-[10px] text-text-muted">Call · risk-based script</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Twilio call (short/long by risk). DTMF: <span className="text-amber-400">Press 1</span> → Confirm · <span className="text-amber-400">Press 2</span> → Cancel</p>
+                                            </div>
+                                            <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3 border-dashed">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-text-muted">↻ Repeat</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#a78bfa' }}>repeat</span>
+                                                    <span className="text-[10px] text-text-muted">Up to 8× (4/day × 2 days)</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">Calls again every 2hr if no pickup. <span className="text-amber-400 font-bold">Stops immediately</span> if customer picks up on any attempt.</p>
+                                            </div>
+                                            <div className="bg-[#1a2332] rounded-lg border border-red-500/20 p-3">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-black text-red-400">Fallback</span>
+                                                    <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#f05252' }}>support_agent</span>
+                                                    <span className="text-[10px] text-red-400">Call Center</span>
+                                                </div>
+                                                <p className="text-[10px] text-text-muted">After 8 failed attempts → forward to call center for manual follow-up</p>
+                                            </div>
+                                        </div>
+                                        {/* Config summary */}
+                                        <div className="mt-1 p-3 bg-[#0d1520] rounded-xl border border-[#1c2d3d] space-y-2">
+                                            <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">⚙ Configuration (managed in backend)</p>
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] text-text-muted">Pre-call Delay</span>
+                                                    <span className="text-[10px] text-white font-mono">5 min</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] text-text-muted">Max Attempts</span>
+                                                    <span className="text-[10px] text-white font-mono">8</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] text-text-muted">Per Day</span>
+                                                    <span className="text-[10px] text-white font-mono">4 calls/day</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] text-text-muted">Min Gap</span>
+                                                    <span className="text-[10px] text-white font-mono">2 hours</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] text-text-muted">Scheduler</span>
+                                                    <span className="text-[10px] text-white font-mono">Every 5 min</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] text-text-muted">Script</span>
+                                                    <span className="text-[10px] text-white font-mono">Auto (risk-based)</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 pt-1 border-t border-[#1c2d3d]">
+                                                <span className="text-[10px] text-text-muted">DTMF:</span>
+                                                <span className="text-[10px] text-amber-400 font-bold">1 → Confirm</span>
+                                                <span className="text-[10px] text-amber-400 font-bold">2 → Cancel</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 pt-1 border-t border-[#1c2d3d]">
+                                                <span className="text-[10px] text-text-muted">SMS Templates:</span>
+                                                <span className="text-[10px] text-cyan-400 font-mono">ES</span>
+                                                <span className="text-[10px] text-cyan-400 font-mono">IT</span>
+                                                <span className="text-[10px] text-cyan-400 font-mono">EN</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 pt-1 border-t border-[#1c2d3d]">
+                                                <span className="text-[10px] text-text-muted">Picked-up guard:</span>
+                                                <span className="text-[10px] text-emerald-400 font-bold">Stops all calls if answered</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">Condition: SKU Products</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Condition: Pending</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: scored</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Country: IT / ES</span>
+                                            <span className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#1a2332] text-text-muted border border-border-dark">⏱ 4/day · 2hr gap · Max 8</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="flex-1 flex items-center justify-center text-text-muted">
                                     <div className="text-center">

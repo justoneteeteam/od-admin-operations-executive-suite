@@ -291,6 +291,225 @@ export class TwilioVoiceService {
     }
 
     /**
+     * Initiate a confirmation call for SKU product orders.
+     * Separate flow: 8 max attempts, 4/day, 5-min pre-SMS delay on first call.
+     * After 8 exhausted → forward to call center.
+     */
+    async initiateSkuConfirmationCall(orderId: string, scriptType: 'short' | 'long') {
+        if (!this.client) {
+            this.logger.warn(`Twilio not configured. Skipping SKU call for order ${orderId}.`);
+            return;
+        }
+
+        // Check if Twilio calls are enabled
+        const storeSettings = await this.prisma.storeSettings.findFirst();
+        if (!storeSettings?.enableTwilioCalls) {
+            this.logger.log(`Order ${orderId}: Twilio calls disabled. Skipping SKU call.`);
+            return;
+        }
+
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { customer: true },
+        });
+
+        if (!order || !order.customer) {
+            this.logger.error(`Order ${orderId} or customer not found. Cannot make SKU call.`);
+            return;
+        }
+
+        const language = this.detectLanguage(order.shippingCountry);
+        const SKU_MAX_ATTEMPTS = 8;
+        const SKU_PRE_CALL_DELAY_MS = 300000; // 5 minutes
+
+        // Rule 1: Check if already finalized
+        if (
+            ['Confirmed', 'Declined', 'Call Center'].includes(order.confirmationStatus || '') ||
+            order.orderStatus === 'Cancelled'
+        ) {
+            await this.logSkip(orderId, scriptType, language, 'sku_already_finalized');
+            return;
+        }
+
+        // Rule 2: PICKED-UP GUARD — if customer answered ANY previous call, STOP
+        const successfulCall = await this.prisma.callLog.findFirst({
+            where: {
+                orderId,
+                callStatus: { in: ['completed', 'answered'] },
+                callSid: { not: { startsWith: 'SKIPPED-' } },
+            },
+        });
+        if (successfulCall) {
+            await this.logSkip(orderId, scriptType, language, 'sku_already_picked_up');
+            return;
+        }
+
+        // Rule 3: Check max attempts (8 for SKU)
+        const existingAttempts = await this.prisma.callLog.count({
+            where: { orderId },
+        });
+        const attemptNumber = existingAttempts + 1;
+
+        if (attemptNumber > SKU_MAX_ATTEMPTS) {
+            await this.logSkip(orderId, scriptType, language, 'sku_max_attempts');
+            // SKU products → forward to call center
+            await this.forwardToCallCenter(orderId, null, null,
+                `SKU product: ${SKU_MAX_ATTEMPTS} call attempts exhausted`);
+            return;
+        }
+
+        // Rule 4: Active call in progress
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const activeCall = await this.prisma.callLog.findFirst({
+            where: {
+                orderId,
+                callStatus: { in: ['queued', 'ringing', 'in-progress', 'initiated'] },
+                createdAt: { gte: tenMinutesAgo },
+            },
+        });
+        if (activeCall) {
+            await this.logSkip(orderId, scriptType, language, 'sku_active_call_exists');
+            return;
+        }
+
+        const customerPhone = order.customer.phone;
+        if (!customerPhone || customerPhone === '0000000000') {
+            this.logger.warn(`Order ${orderId}: No valid phone for SKU call. Forwarding to call center.`);
+            await this.forwardToCallCenter(orderId, null, null, 'SKU product: No valid phone number');
+            return;
+        }
+
+        // Build TwiML webhook URL
+        const appUrl = process.env.APP_URL
+            || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null)
+            || 'http://localhost:3000';
+
+        const twimlUrl = `${appUrl}/twilio/call-script?` +
+            `orderId=${orderId}&` +
+            `scriptType=${scriptType}&` +
+            `language=${language}`;
+
+        // Idempotency check
+        const idempotencyKey = `sku-call:${orderId}:${scriptType}:${attemptNumber}`;
+
+        let callLogEntry;
+        try {
+            callLogEntry = await this.prisma.callLog.create({
+                data: {
+                    orderId,
+                    callSid: `PENDING-SKU-${Date.now()}`,
+                    attemptNumber,
+                    callStatus: 'initiated',
+                    scriptType,
+                    scriptLanguage: language,
+                    idempotencyKey,
+                },
+            });
+        } catch (dbError: any) {
+            if (dbError.code === 'P2002') {
+                this.logger.warn(`Order ${orderId}: SKU idempotency key ${idempotencyKey} exists. Skipping.`);
+                return;
+            }
+            throw dbError;
+        }
+
+        // Final re-check before calling
+        const finalCheck = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            select: { confirmationStatus: true, orderStatus: true },
+        });
+
+        if (
+            ['Confirmed', 'Declined', 'Call Center'].includes(finalCheck?.confirmationStatus || '') ||
+            finalCheck?.orderStatus === 'Cancelled'
+        ) {
+            await this.prisma.callLog.update({
+                where: { id: callLogEntry.id },
+                data: { callStatus: 'skipped', skipReason: 'sku_finalized_race' },
+            });
+            return;
+        }
+
+        // ── Pre-Call SMS (first attempt only, 5 min delay) ──
+        if (attemptNumber === 1) {
+            try {
+                const preCallTemplate = this.getPreCallTemplateForCountry(order.shippingCountry);
+                const twilioPhone = process.env.TWILIO_PHONE_NUMBER || '+12765311327';
+                const customerName = order.customer.name || 'Customer';
+
+                await this.smsService.sendTemplateMessage(
+                    customerPhone,
+                    preCallTemplate,
+                    [customerName, order.orderNumber, twilioPhone],
+                    { orderId, customerId: order.customerId },
+                );
+                this.logger.log(`Order ${orderId}: SKU pre-call SMS sent. Waiting ${SKU_PRE_CALL_DELAY_MS / 1000}s...`);
+
+                // 5-minute delay before calling
+                await new Promise(resolve => setTimeout(resolve, SKU_PRE_CALL_DELAY_MS));
+            } catch (smsError) {
+                this.logger.warn(`Order ${orderId}: SKU pre-call SMS failed (${smsError.message}). Proceeding.`);
+            }
+        }
+
+        try {
+            const call = await this.client.calls.create({
+                to: customerPhone,
+                from: process.env.TWILIO_PHONE_NUMBER || '+12765311327',
+                url: twimlUrl,
+                record: true,
+                recordingStatusCallback: `${appUrl}/twilio/recording-callback?orderId=${orderId}`,
+                recordingStatusCallbackMethod: 'POST',
+                statusCallback: `${appUrl}/twilio/call-status?orderId=${orderId}`,
+                statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+                statusCallbackMethod: 'POST',
+                method: 'POST',
+            });
+
+            // Update log with real SID
+            await this.prisma.callLog.update({
+                where: { id: callLogEntry.id },
+                data: { callSid: call.sid, callStatus: call.status || 'initiated' },
+            });
+
+            // Update risk assessment
+            const assessment = await this.prisma.riskAssessment.findFirst({
+                where: { orderId },
+                orderBy: { createdAt: 'desc' },
+            });
+
+            if (assessment) {
+                const existingSids = (assessment.callSids as string[]) || [];
+                await this.prisma.riskAssessment.update({
+                    where: { id: assessment.id },
+                    data: {
+                        callAttempts: attemptNumber,
+                        lastCallAttempt: new Date(),
+                        callSids: [...existingSids, call.sid],
+                        actionTaken: `sku_twilio_${scriptType}`,
+                    },
+                });
+            }
+
+            this.logger.log(`Order ${orderId}: SKU call initiated (attempt ${attemptNumber}/${SKU_MAX_ATTEMPTS}, SID: ${call.sid})`);
+            return call.sid;
+        } catch (error) {
+            this.logger.error(`Order ${orderId}: SKU call failed: ${error.message}`, error.stack);
+
+            await this.prisma.callLog.update({
+                where: { id: callLogEntry.id },
+                data: { callStatus: 'failed', skipReason: 'sku_twilio_api_error' },
+            });
+
+            // If last attempt, forward to call center
+            if (attemptNumber >= SKU_MAX_ATTEMPTS) {
+                await this.forwardToCallCenter(orderId, null, null,
+                    `SKU product: Call initiation failed on final attempt: ${error.message}`);
+            }
+        }
+    }
+
+    /**
      * Schedule a retry call with delay.
      * Uses setTimeout for simplicity (in-memory; lost on restart).
      */

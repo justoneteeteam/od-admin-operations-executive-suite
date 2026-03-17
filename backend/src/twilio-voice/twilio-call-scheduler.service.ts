@@ -49,6 +49,14 @@ export class TwilioCallSchedulerService {
                     callLogs: {
                         none: {}, // No call logs exist
                     },
+                    // Exclude SKU product orders — handled by SkuCallSchedulerService
+                    items: {
+                        none: {
+                            product: {
+                                sku: { not: '' },
+                            },
+                        },
+                    },
                 },
                 include: {
                     items: true,
