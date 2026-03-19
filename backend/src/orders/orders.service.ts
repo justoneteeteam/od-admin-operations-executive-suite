@@ -499,7 +499,8 @@ export class OrdersService {
             const providedOrderNumber = firstRow.order_number?.toString()?.trim();
 
             try {
-                // 1. Process Customer (Match by phone, block if rejected, create if missing)
+                // 1. Process Customer — always create a new customer per CSV row
+                //    so the name from the CSV is always used correctly (duplicates allowed).
                 let customerId: string | null = null;
                 const phoneData = normalizePhone(firstRow.customer_phone);
                 const nameData = firstRow.customer_name?.toString()?.trim() || 'Unknown Customer';
@@ -508,34 +509,36 @@ export class OrdersService {
                     throw new Error("Missing 'customer_phone'.");
                 }
 
-                let customer = await this.prisma.customer.findFirst({
-                    where: { phone: phoneData }
+                // Check if the customer is blocked by phone
+                const blockedCustomer = await this.prisma.customer.findFirst({
+                    where: { phone: phoneData, isBlocked: true }
                 });
+                if (blockedCustomer) {
+                    throw new Error(`Customer is blocked (Phone: ${phoneData}).`);
+                }
 
-                // If not found by phone, also try by email to avoid unique constraint violation
+                // Always create a new customer record so CSV name is preserved.
+                // If email already exists, skip it to avoid unique constraint violation.
                 const emailData = firstRow.customer_email?.toString()?.trim() || null;
-                if (!customer && emailData) {
-                    customer = await this.prisma.customer.findFirst({
+                let emailForCreate = emailData;
+                if (emailData) {
+                    const existingEmail = await this.prisma.customer.findFirst({
                         where: { email: emailData }
                     });
+                    if (existingEmail) {
+                        emailForCreate = null; // Skip email to avoid unique constraint
+                    }
                 }
 
-                if (customer) {
-                    if (customer.isBlocked) {
-                        throw new Error(`Customer is blocked (Phone: ${phoneData}).`);
+                const customer = await this.prisma.customer.create({
+                    data: {
+                        name: nameData,
+                        phone: phoneData,
+                        email: emailForCreate,
+                        country: firstRow.shipping_country?.toString()?.trim() || 'Unknown'
                     }
-                    customerId = customer.id;
-                } else {
-                    customer = await this.prisma.customer.create({
-                        data: {
-                            name: nameData,
-                            phone: phoneData,
-                            email: emailData,
-                            country: firstRow.shipping_country?.toString()?.trim() || 'Unknown'
-                        }
-                    });
-                    customerId = customer.id;
-                }
+                });
+                customerId = customer.id;
 
                 // 2. Process Items & Strict SKU Lookup
                 const itemsToCreate: any[] = [];
