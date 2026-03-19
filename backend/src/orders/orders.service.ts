@@ -484,6 +484,14 @@ export class OrdersService {
                     where: { phone: phoneData }
                 });
 
+                // If not found by phone, also try by email to avoid unique constraint violation
+                const emailData = firstRow.customer_email?.toString()?.trim() || null;
+                if (!customer && emailData) {
+                    customer = await this.prisma.customer.findFirst({
+                        where: { email: emailData }
+                    });
+                }
+
                 if (customer) {
                     if (customer.isBlocked) {
                         throw new Error(`Customer is blocked (Phone: ${phoneData}).`);
@@ -494,7 +502,7 @@ export class OrdersService {
                         data: {
                             name: nameData,
                             phone: phoneData,
-                            email: firstRow.customer_email?.toString()?.trim(),
+                            email: emailData,
                             country: firstRow.shipping_country?.toString()?.trim() || 'Unknown'
                         }
                     });
