@@ -36,6 +36,7 @@ const OrdersPage: React.FC = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState('All Status');
   const [dateFilter, setDateFilter] = useState('Last 30 Days');
   const [riskFilter, setRiskFilter] = useState('All Risk Levels');
+  const [skuTab, setSkuTab] = useState<'sku' | 'non-sku'>('sku');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   // Pagination State
@@ -63,7 +64,7 @@ const OrdersPage: React.FC = () => {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
+  }, [searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter, skuTab]);
 
   // Debounced fetch for orders
   useEffect(() => {
@@ -71,7 +72,7 @@ const OrdersPage: React.FC = () => {
       fetchOrders();
     }, 300);
     return () => clearTimeout(timer);
-  }, [page, searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter]);
+  }, [page, searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter, skuTab]);
 
   // Initial fetch for static data
   useEffect(() => {
@@ -155,6 +156,7 @@ const OrdersPage: React.FC = () => {
         confirmationStatus: confirmationFilter === 'All Confirmations' ? undefined : confirmationFilter,
         search: searchTerm || undefined,
         searchType: searchTerm ? searchType : undefined,
+        skuType: skuTab,
         page: page,
         limit: 20
       });
@@ -535,6 +537,31 @@ const OrdersPage: React.FC = () => {
             <h1 className="text-white text-2xl sm:text-3xl font-black tracking-tight">Orders Console</h1>
             <p className="text-text-muted text-sm">Review, track and manage your COD order pipeline.</p>
           </div>
+          {/* SKU Type Tabs */}
+          <div className="flex gap-1 bg-[#111a22] p-1 rounded-xl border border-border-dark self-end">
+            <button
+              onClick={() => setSkuTab('sku')}
+              className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                skuTab === 'sku'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm mr-1.5 align-middle" style={{ fontSize: '16px' }}>inventory_2</span>
+              Actual Order (SKU)
+            </button>
+            <button
+              onClick={() => setSkuTab('non-sku')}
+              className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                skuTab === 'non-sku'
+                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                  : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm mr-1.5 align-middle" style={{ fontSize: '16px' }}>science</span>
+              Test Order (Non-SKU)
+            </button>
+          </div>
           <div className="flex gap-2 sm:gap-3">
             {selectedOrderIds.length > 0 && (
               <button
@@ -787,13 +814,13 @@ const OrdersPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 sm:px-6 py-6 text-sm font-black text-white text-right whitespace-nowrap">
-                        ${order.totalAmount.toLocaleString()}
+                        {skuTab === 'non-sku' ? <span className="text-text-muted">$0</span> : `$${order.totalAmount.toLocaleString()}`}
                       </td>
                       <td className="px-4 sm:px-6 py-6 text-sm font-black text-text-muted text-right whitespace-nowrap">
-                        ${(order.paymentStatus === 'Paid' ? order.totalAmount : 0).toLocaleString()}
+                        {skuTab === 'non-sku' ? '$0' : `$${(order.paymentStatus === 'Paid' ? order.totalAmount : 0).toLocaleString()}`}
                       </td>
-                      <td className={`px-4 sm:px-6 py-6 text-sm font-black text-right whitespace-nowrap ${profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
-                        {profit >= 0 ? '+' : ''}${profit.toLocaleString()}
+                      <td className={`px-4 sm:px-6 py-6 text-sm font-black text-right whitespace-nowrap ${skuTab === 'non-sku' ? 'text-text-muted' : profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
+                        {skuTab === 'non-sku' ? '$0' : `${profit >= 0 ? '+' : ''}$${profit.toLocaleString()}`}
                       </td>
                       <td className="px-4 sm:px-6 py-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">

@@ -41,6 +41,7 @@ export class OrdersController {
         @Query('limit') limit?: string,
         @Query('search') search?: string,
         @Query('searchType') searchType?: string,
+        @Query('skuType') skuType?: string,
     ) {
         return this.ordersService.findAll({
             orderStatus,
@@ -48,6 +49,7 @@ export class OrdersController {
             customerId,
             search,
             searchType,
+            skuType,
             page: page ? parseInt(page) : undefined,
             limit: limit ? parseInt(limit) : undefined,
         });

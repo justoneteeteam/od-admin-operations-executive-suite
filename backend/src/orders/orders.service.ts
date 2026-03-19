@@ -221,6 +221,7 @@ export class OrdersService {
         search?: string;
         searchType?: string;
         customerId?: string;
+        skuType?: string;
         startDate?: Date;
         endDate?: Date;
         page?: number;
@@ -234,6 +235,16 @@ export class OrdersService {
         if (where.orderStatus) whereClause.orderStatus = where.orderStatus;
         if (where.confirmationStatus) whereClause.confirmationStatus = where.confirmationStatus;
         if (where.customerId) whereClause.customerId = where.customerId;
+
+        // SKU type filter: 'sku' = at least one real SKU item, 'non-sku' = all items are NO-SKU
+        if (where.skuType === 'sku') {
+            whereClause.items = { some: { sku: { not: { startsWith: 'NO-SKU-' } } } };
+        } else if (where.skuType === 'non-sku') {
+            whereClause.AND = [
+                { items: { some: {} } },                              // has at least one item
+                { items: { every: { sku: { startsWith: 'NO-SKU-' } } } }  // all items are NO-SKU
+            ];
+        }
 
         if (where.search) {
             const searchTerm = where.search.replace(/^#/, ''); // Strip leading '#'
