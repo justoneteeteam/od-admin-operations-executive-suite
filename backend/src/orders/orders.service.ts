@@ -458,6 +458,9 @@ export class OrdersService {
         // Helper: Normalize phone numbers for strict matching
         const normalizePhone = (phone: any): string => {
             if (!phone) return '';
+            // Treat "none", "n/a", "null", etc. as empty
+            const raw = phone.toString().trim().toLowerCase();
+            if (['none', 'n/a', 'na', 'null', '-', ''].includes(raw)) return '';
             const digits = phone.toString().replace(/[\s\-().]/g, '');
             if (digits.startsWith('+') || digits.startsWith('00')) return digits;
             if (digits.length >= 10) return '+' + digits;
@@ -505,21 +508,20 @@ export class OrdersService {
                 const phoneData = normalizePhone(firstRow.customer_phone);
                 const nameData = firstRow.customer_name?.toString()?.trim() || 'Unknown Customer';
 
-                if (!phoneData) {
-                    throw new Error("Missing 'customer_phone'.");
-                }
-
-                // Check if the customer is blocked by phone
-                const blockedCustomer = await this.prisma.customer.findFirst({
-                    where: { phone: phoneData, isBlocked: true }
-                });
-                if (blockedCustomer) {
-                    throw new Error(`Customer is blocked (Phone: ${phoneData}).`);
+                // Check if the customer is blocked by phone (only if phone is provided)
+                if (phoneData) {
+                    const blockedCustomer = await this.prisma.customer.findFirst({
+                        where: { phone: phoneData, isBlocked: true }
+                    });
+                    if (blockedCustomer) {
+                        throw new Error(`Customer is blocked (Phone: ${phoneData}).`);
+                    }
                 }
 
                 // Always create a new customer record so CSV name is preserved.
                 // If email already exists, skip it to avoid unique constraint violation.
-                const emailData = firstRow.customer_email?.toString()?.trim() || null;
+                const rawEmail = firstRow.customer_email?.toString()?.trim() || null;
+                const emailData = rawEmail && !['none', 'n/a', 'na', 'null', '-'].includes(rawEmail.toLowerCase()) ? rawEmail : null;
                 let emailForCreate = emailData;
                 if (emailData) {
                     const existingEmail = await this.prisma.customer.findFirst({
