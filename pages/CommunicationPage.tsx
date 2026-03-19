@@ -864,6 +864,7 @@ const CommunicationPage: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap gap-2 mt-1">
+                                            <span className="px-2 py-1 rounded text-[10px] font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">Condition: Non-SKU Orders</span>
                                             <span className="px-2 py-1 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Condition: Pending</span>
                                             <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Risk: medium+</span>
                                             <span className="px-2 py-1 rounded text-[10px] font-mono font-bold bg-[#1a2332] text-text-muted border border-border-dark">⏱ Every 5 min · Max 1 attempt</span>

@@ -518,6 +518,8 @@ const CreateOrderPage: React.FC = () => {
                                     <option value="Confirmed">Confirmed</option>
                                     <option value="Cancelled">Cancelled</option>
                                     <option value="No Answer">No Answer</option>
+                                    <option value="Out of Area">Out of Area</option>
+                                    <option value="Duplicated">Duplicated</option>
                                 </select>
                             </div>
                             <div className="space-y-2">

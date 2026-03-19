@@ -435,7 +435,7 @@ const OrdersPage: React.FC = () => {
       "0",                          // discount
       "2025-03-01",                 // order_date (YYYY-MM-DD)
       "Pending",                    // order_status: Pending / Shipped / Delivered
-      "Pending",                    // confirmation_status: Pending / Confirmed / Declined
+      "Pending",                    // confirmation_status: Pending / Confirmed / Declined / Out of Area / Duplicated
       "Pending",                    // payment_status: Pending / Paid / Refused
       "Calle Mayor 12",             // shipping_address
       "28001",                      // shipping_zipcode
@@ -606,6 +606,8 @@ const OrdersPage: React.FC = () => {
               <option>Cancelled</option>
               <option>No Answer</option>
               <option>Wait Until Stock</option>
+              <option>Out of Area</option>
+              <option>Duplicated</option>
             </select>
             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
           </div>
@@ -752,7 +754,9 @@ const OrdersPage: React.FC = () => {
                       <td className="px-4 sm:px-6 py-6">
                         <div className={`inline-flex items-center px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest bg-opacity-10 border ${(order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                           (order.confirmationStatus || 'Pending') === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                            'bg-red-500/10 text-red-400 border-red-500/20'
+                            (order.confirmationStatus || 'Pending') === 'Out of Area' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                              (order.confirmationStatus || 'Pending') === 'Duplicated' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                'bg-red-500/10 text-red-400 border-red-500/20'
                           }`}>
                           {order.confirmationStatus || 'Pending'}
                         </div>
@@ -1268,6 +1272,8 @@ const OrdersPage: React.FC = () => {
                           <option value="Cancelled">Cancelled</option>
                           <option value="No Answer">No Answer</option>
                           <option value="Wait Until Stock">Wait Until Stock</option>
+                          <option value="Out of Area">Out of Area</option>
+                          <option value="Duplicated">Duplicated</option>
                         </select>
                       </div>
                       {editOrder.confirmationStatus !== 'Cancelled' && (
