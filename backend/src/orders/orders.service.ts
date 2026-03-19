@@ -187,6 +187,34 @@ export class OrdersService {
         }
     }
 
+    /**
+     * Parse date strings from CSV, handling European formats (DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY).
+     * Falls back to current date if the value is empty or unparseable.
+     */
+    private parseDate(value: any): Date {
+        if (!value || value.toString().trim() === '') return new Date();
+
+        const raw = value.toString().trim();
+
+        // Try DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY patterns
+        const euroMatch = raw.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+        if (euroMatch) {
+            const day = parseInt(euroMatch[1], 10);
+            const month = parseInt(euroMatch[2], 10) - 1; // JS months are 0-indexed
+            let year = parseInt(euroMatch[3], 10);
+            if (year < 100) year += 2000;
+            const d = new Date(year, month, day);
+            if (!isNaN(d.getTime())) return d;
+        }
+
+        // Fallback: let JS try to parse natively (ISO, US formats, etc.)
+        const parsed = new Date(raw);
+        if (!isNaN(parsed.getTime())) return parsed;
+
+        // If nothing works, default to now
+        return new Date();
+    }
+
     async findAll(filters?: {
         orderStatus?: string;
         confirmationStatus?: string;
@@ -570,7 +598,7 @@ export class OrdersService {
                 const orderPayloadData = {
                     customerId,
                     storeId: resolvedStoreId,                                          // FIX 3
-                    orderDate: firstRow.order_date ? new Date(firstRow.order_date) : new Date(),
+                    orderDate: this.parseDate(firstRow.order_date),
                     orderStatus: firstRow.order_status?.toString()?.trim() || 'Pending',
                     confirmationStatus: firstRow.confirmation_status?.toString()?.trim() || 'Pending',
                     // REMOVED: paymentMethod — column does not exist on Order model   // FIX 1
