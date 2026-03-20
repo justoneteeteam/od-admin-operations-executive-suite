@@ -233,7 +233,7 @@ model Order {
   riskAssessments    RiskAssessment[]
   callLogs           CallLog[]
   tickets            Ticket[]
-  adsCampaigns       AdsCampaign[]
+
 
   @@map("orders")
 }
@@ -896,16 +896,13 @@ model AdsCampaign {
   metaPurchases Int?     @default(0) @map("meta_purchases")
   reportStart   DateTime? @map("report_start") @db.Date
   reportEnd     DateTime? @map("report_end") @db.Date
-  orderId       String?  @map("order_id") @db.Uuid
+  orderIds      String?  @map("order_ids")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  order Order? @relation(fields: [orderId], references: [id])
 
   @@index([date])
   @@index([sku])
   @@index([country])
-  @@index([orderId])
   @@map("ads_campaigns")
 }
 

@@ -31,7 +31,7 @@ export interface AdsCampaign {
     metaPurchases?: number;
     reportStart?: string;
     reportEnd?: string;
-    orderId?: string;
+    orderIds?: string;  // semicolon-separated order numbers e.g. "#1234;#1235"
     orderNumber?: string;
 }
 

@@ -40,14 +40,20 @@ export class AdsCampaignsService {
     async create(dto: CreateAdsCampaignDto) {
         if (dto.sku) await this.validateSku(dto.sku);
 
-        // Resolve orderNumber → order_id
-        let orderId: string | undefined;
+        // Resolve orderNumber(s) → semicolon-separated order numbers
+        let orderIds: string | null = null;
         if (dto.orderNumber) {
-            const order = await this.prisma.order.findUnique({
-                where: { orderNumber: dto.orderNumber },
-                select: { id: true },
-            });
-            if (order) orderId = order.id;
+            // Support semicolon-separated order numbers
+            const nums = dto.orderNumber.split(';').map(s => s.trim()).filter(Boolean);
+            const matched: string[] = [];
+            for (const num of nums) {
+                const order = await this.prisma.order.findUnique({
+                    where: { orderNumber: num },
+                    select: { orderNumber: true },
+                });
+                if (order) matched.push(order.orderNumber);
+            }
+            if (matched.length > 0) orderIds = matched.join(';');
         }
 
         return this.prisma.adsCampaign.create({
@@ -72,7 +78,7 @@ export class AdsCampaignsService {
                 metaPurchases: dto.metaPurchases,
                 reportStart: dto.reportStart ? new Date(dto.reportStart) : null,
                 reportEnd: dto.reportEnd ? new Date(dto.reportEnd) : null,
-                orderId,
+                orderIds,
             },
         });
     }
@@ -95,52 +101,69 @@ export class AdsCampaignsService {
             }
         }
 
-        // Batch-resolve all orderNumbers → order UUIDs
-        const orderNumbers = [...new Set(records.map(r => r.orderNumber).filter((n): n is string => !!n))];
-        const orderMap = new Map<string, string>(); // orderNumber → order.id
-        const unresolvedOrderNumbers: string[] = [];
-
-        if (orderNumbers.length > 0) {
-            const orders = await this.prisma.order.findMany({
-                where: { orderNumber: { in: orderNumbers } },
-                select: { id: true, orderNumber: true },
-            });
-            for (const order of orders) {
-                orderMap.set(order.orderNumber, order.id);
-            }
-            for (const num of orderNumbers) {
-                if (!orderMap.has(num)) unresolvedOrderNumbers.push(num);
+        // Batch-resolve all orderNumbers → validated order numbers
+        // Each record's orderNumber may contain semicolon-separated values
+        const allOrderNums = new Set<string>();
+        for (const r of records) {
+            if (r.orderNumber) {
+                for (const num of r.orderNumber.split(';').map(s => s.trim()).filter(Boolean)) {
+                    allOrderNums.add(num);
+                }
             }
         }
 
-        const data = records.map(r => ({
-            date: new Date(r.date),
-            campaign: r.campaign,
-            country: r.country,
-            platform: r.platform,
-            sku: r.sku || '',
-            stage: r.stage,
-            pic: r.pic,
-            spendVnd: r.spendVnd,
-            notes: r.notes,
-            source: r.source || 'upload',
-            adName: r.adName,
-            adSetName: r.adSetName,
-            cpc: r.cpc,
-            cpm: r.cpm,
-            ctr: r.ctr,
-            resultType: r.resultType,
-            costPerResult: r.costPerResult,
-            metaPurchases: r.metaPurchases,
-            reportStart: r.reportStart ? new Date(r.reportStart) : null,
-            reportEnd: r.reportEnd ? new Date(r.reportEnd) : null,
-            orderId: r.orderNumber ? (orderMap.get(r.orderNumber) || null) : null,
-        }));
+        const matchedOrderNums = new Set<string>();
+        const unresolvedOrderNumbers: string[] = [];
+
+        if (allOrderNums.size > 0) {
+            const orders = await this.prisma.order.findMany({
+                where: { orderNumber: { in: [...allOrderNums] } },
+                select: { orderNumber: true },
+            });
+            for (const order of orders) {
+                matchedOrderNums.add(order.orderNumber);
+            }
+            for (const num of allOrderNums) {
+                if (!matchedOrderNums.has(num)) unresolvedOrderNumbers.push(num);
+            }
+        }
+
+        const data = records.map(r => {
+            let orderIds: string | null = null;
+            if (r.orderNumber) {
+                const nums = r.orderNumber.split(';').map(s => s.trim()).filter(Boolean);
+                const matched = nums.filter(n => matchedOrderNums.has(n));
+                if (matched.length > 0) orderIds = matched.join(';');
+            }
+            return {
+                date: new Date(r.date),
+                campaign: r.campaign,
+                country: r.country,
+                platform: r.platform,
+                sku: r.sku || '',
+                stage: r.stage,
+                pic: r.pic,
+                spendVnd: r.spendVnd,
+                notes: r.notes,
+                source: r.source || 'upload',
+                adName: r.adName,
+                adSetName: r.adSetName,
+                cpc: r.cpc,
+                cpm: r.cpm,
+                ctr: r.ctr,
+                resultType: r.resultType,
+                costPerResult: r.costPerResult,
+                metaPurchases: r.metaPurchases,
+                reportStart: r.reportStart ? new Date(r.reportStart) : null,
+                reportEnd: r.reportEnd ? new Date(r.reportEnd) : null,
+                orderIds,
+            };
+        });
 
         const result = await this.prisma.adsCampaign.createMany({ data });
         return {
             created: result.count,
-            orderMatchedCount: orderMap.size,
+            orderMatchedCount: matchedOrderNums.size,
             unresolvedOrderNumbers,
         };
     }
