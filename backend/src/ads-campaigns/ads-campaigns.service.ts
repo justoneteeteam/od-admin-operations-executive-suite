@@ -56,7 +56,7 @@ export class AdsCampaignsService {
                 campaign: dto.campaign,
                 country: dto.country,
                 platform: dto.platform,
-                sku: dto.sku || null,
+                sku: dto.sku || '',
                 stage: dto.stage,
                 pic: dto.pic,
                 spendVnd: dto.spendVnd,
@@ -118,7 +118,7 @@ export class AdsCampaignsService {
             campaign: r.campaign,
             country: r.country,
             platform: r.platform,
-            sku: r.sku || null,
+            sku: r.sku || '',
             stage: r.stage,
             pic: r.pic,
             spendVnd: r.spendVnd,
@@ -289,9 +289,9 @@ export class AdsCampaignsService {
             const dateStr = c.date.toISOString().split('T')[0];
             const rate = rateMap.get(dateStr) || defaultRate;
             const spendEur = Number(c.spendVnd) * rate;
-            const leads = skuLeads[c.sku] || 0;
-            const orders = skuOrders[c.sku] || 0;
-            const revenue = skuRevenue[c.sku] || 0;
+            const leads = c.sku ? (skuLeads[c.sku] || 0) : 0;
+            const orders = c.sku ? (skuOrders[c.sku] || 0) : 0;
+            const revenue = c.sku ? (skuRevenue[c.sku] || 0) : 0;
             const roas = spendEur > 0 ? revenue / spendEur : 0;
             const cpo = orders > 0 ? spendEur / orders : 0;
             const cpl = leads > 0 ? spendEur / leads : 0;
