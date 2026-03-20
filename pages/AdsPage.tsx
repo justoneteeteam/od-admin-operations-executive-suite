@@ -9,8 +9,534 @@ interface StagedRecord {
     date: string; campaign: string; country: string; platform: string;
     sku: string; stage: string; pic: string; spendVnd: number; notes: string;
     source?: string;
+    // Meta Ads fields
+    adName?: string; adSetName?: string; cpc?: number; cpm?: number; ctr?: number;
+    resultType?: string; costPerResult?: number; metaPurchases?: number;
+    reportStart?: string; reportEnd?: string; orderNumber?: string;
+    _orderMatched?: boolean; // frontend-only: whether order was found
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// INPUT TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Vietnamese header keywords for Meta CSV auto-detection
+const META_HEADERS = [
+    'Tên chiến dịch', 'Số tiền đã chi tiêu', 'Lượt mua',
+    'Tên quảng cáo', 'Tên nhóm quảng cáo', 'Chi phí trên mỗi kết quả',
+];
+
+// Country mapping from campaign name keywords
+const COUNTRY_MAP: Record<string, string> = {
+    SPAIN: 'ES', ITALY: 'IT', GERMANY: 'DE', POLAND: 'PL',
+    FRANCE: 'FR', PORTUGAL: 'PT', NETHERLANDS: 'NL', BELGIUM: 'BE',
+    AUSTRIA: 'AT', CZECH: 'CZ', ROMANIA: 'RO', HUNGARY: 'HU',
+};
+
+const inferCountry = (campaign: string): string => {
+    const upper = campaign.toUpperCase();
+    for (const [keyword, code] of Object.entries(COUNTRY_MAP)) {
+        if (upper.includes(keyword)) return code;
+    }
+    return '';
+};
+
+const InputTab: React.FC = () => {
+    const [staged, setStaged] = useState<StagedRecord[]>([]);
+    const [saving, setSaving] = useState(false);
+    const [result, setResult] = useState<string | null>(null);
+    const [isMetaCsv, setIsMetaCsv] = useState(false);
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    // Defaults panel
+    const [defaults, setDefaults] = useState({ platform: 'Meta', sku: '', stage: '', pic: '' });
+
+    // Manual entry state
+    const [manual, setManual] = useState<StagedRecord>({
+        date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual'
+    });
+
+    const [products, setProducts] = useState<any[]>([]);
+    const [countries, setCountries] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchValidationData = async () => {
+            try {
+                const [prodsRes, custsRes] = await Promise.all([
+                    productsService.getAll(),
+                    customersService.getAll()
+                ]);
+                const prods = Array.isArray(prodsRes) ? prodsRes : (prodsRes.data || []);
+                setProducts(prods);
+
+                const custs = Array.isArray(custsRes) ? custsRes : (custsRes.data || []);
+                const uniqueCountries = [...new Set(custs.map((c: any) => c.country).filter(Boolean))] as string[];
+                setCountries(uniqueCountries);
+            } catch (err) {
+                console.error("Failed to fetch validation data", err);
+            }
+        };
+        fetchValidationData();
+    }, []);
+
+    // Check order existence in batch
+    const checkOrderMatches = async (records: StagedRecord[]): Promise<StagedRecord[]> => {
+        const orderNumbers = [...new Set(records.map(r => r.orderNumber).filter(Boolean))];
+        if (orderNumbers.length === 0) return records;
+
+        try {
+            const matchedSet = new Set<string>();
+            // Query orders in batch by searching each number
+            for (const num of orderNumbers) {
+                try {
+                    const res = await adsCampaignsService.getAll(); // We'll check via the order service
+                    // Use a direct API call for order lookup
+                    const apiClient = (await import('../src/services/apiClient')).default;
+                    const resp = await apiClient.get('/orders', { params: { search: num, searchType: 'orderNumber', limit: 1 } });
+                    const data = resp.data?.data || resp.data || [];
+                    if (Array.isArray(data) && data.length > 0) {
+                        matchedSet.add(num!);
+                    }
+                } catch { /* ignore individual lookup errors */ }
+            }
+
+            return records.map(r => ({
+                ...r,
+                _orderMatched: r.orderNumber ? matchedSet.has(r.orderNumber) : undefined,
+            }));
+        } catch {
+            return records;
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs' as any);
+            const data = await file.arrayBuffer();
+            const wb = XLSX.read(data, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const json: any[] = XLSX.utils.sheet_to_json(ws);
+
+            if (json.length === 0) {
+                setResult('❌ File is empty or could not be parsed.');
+                return;
+            }
+
+            // Auto-detect Meta CSV by checking Vietnamese header keywords
+            const headers = Object.keys(json[0]);
+            const metaMatch = META_HEADERS.filter(h => headers.some(hdr => hdr.includes(h)));
+            const isMeta = metaMatch.length >= 2;
+
+            if (isMeta) {
+                setIsMetaCsv(true);
+                await parseMetaCsv(json);
+            } else {
+                setIsMetaCsv(false);
+                parseGenericCsv(json);
+            }
+        } catch (err) {
+            console.error('File parse error:', err);
+            setResult('❌ Failed to parse file. Please check the format.');
+        }
+
+        // Reset the file input so the same file can be re-uploaded
+        if (fileRef.current) fileRef.current.value = '';
+    };
+
+    // ─── META CSV PARSER ──────────────────────────────────────────────────
+    const parseMetaCsv = async (json: any[]) => {
+        const records: StagedRecord[] = [];
+
+        for (const row of json) {
+            const getCol = (keywords: string[]) => {
+                const key = Object.keys(row).find(k => keywords.some(kw => k.includes(kw)));
+                return key ? row[key] : '';
+            };
+
+            const campaign = String(getCol(['Tên chiến dịch']) || '').trim();
+            if (!campaign) continue;
+
+            const adName = String(getCol(['Tên quảng cáo']) || '').trim();
+            const adSetName = String(getCol(['Tên nhóm quảng cáo']) || '').trim();
+
+            // Numeric parsing — Vietnamese numbers may use comma as decimal separator
+            const parseNum = (val: any): number => {
+                if (!val && val !== 0) return 0;
+                const s = String(val).replace(/\s/g, '').replace(',', '.');
+                return parseFloat(s) || 0;
+            };
+
+            const cpc = parseNum(getCol(['CPC']));
+            const cpm = parseNum(getCol(['CPM']));
+            const ctr = parseNum(getCol(['CTR']));
+            const spendVnd = parseNum(getCol(['Số tiền đã chi tiêu']));
+            const resultType = String(getCol(['Loại kết quả']) || '').trim();
+            const costPerResult = parseNum(getCol(['Chi phí trên mỗi kết quả']));
+            const metaPurchases = parseInt(String(getCol(['Lượt mua']) || '0'), 10) || 0;
+            const reportStart = String(getCol(['Bắt đầu báo cáo']) || '').trim();
+            const reportEnd = String(getCol(['Kết thúc báo cáo']) || '').trim();
+            const orderNumber = String(getCol(['Order ID']) || '').trim();
+
+            const country = inferCountry(campaign);
+
+            records.push({
+                date: reportStart || new Date().toISOString().split('T')[0],
+                campaign,
+                country: country || defaults.sku ? country : '',
+                platform: defaults.platform || 'Meta',
+                sku: defaults.sku || '',
+                stage: defaults.stage || '',
+                pic: defaults.pic || '',
+                spendVnd,
+                notes: '',
+                source: 'meta_upload',
+                adName,
+                adSetName,
+                cpc,
+                cpm,
+                ctr,
+                resultType,
+                costPerResult,
+                metaPurchases,
+                reportStart,
+                reportEnd,
+                orderNumber: orderNumber || undefined,
+            });
+        }
+
+        // Batch check order matches
+        const matched = await checkOrderMatches(records);
+        setStaged(matched);
+
+        const totalSpend = matched.reduce((s, r) => s + r.spendVnd, 0);
+        const matchedOrders = matched.filter(r => r._orderMatched).length;
+        const countriesDetected = [...new Set(matched.map(r => r.country).filter(Boolean))];
+
+        setResult(`✅ Meta CSV detected — ${matched.length} rows parsed. Total spend: ₫${totalSpend.toLocaleString()} | Orders matched: ${matchedOrders}/${matched.filter(r => r.orderNumber).length} | Countries: ${countriesDetected.join(', ') || 'None'}`);
+    };
+
+    // ─── GENERIC CSV PARSER ───────────────────────────────────────────────
+    const parseGenericCsv = (json: any[]) => {
+        const records: StagedRecord[] = [];
+        let invalidSkus = 0;
+        let invalidCountries = 0;
+
+        for (const row of json) {
+            const getVal = (keys: string[]) => {
+                const foundKey = Object.keys(row).find(k => keys.some(search => k.toLowerCase().includes(search.toLowerCase())));
+                return foundKey ? row[foundKey] : '';
+            };
+
+            let dateStr = '';
+            const rawDate = getVal(['date']);
+            if (rawDate) {
+                if (typeof rawDate === 'number') {
+                    const d = new Date((rawDate - 25569) * 86400 * 1000);
+                    dateStr = d.toISOString().split('T')[0];
+                } else {
+                    const parts = String(rawDate).split('/');
+                    if (parts.length === 3) {
+                        dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    } else {
+                        dateStr = String(rawDate);
+                    }
+                }
+            }
+
+            const sku = String(getVal(['sku'])).trim();
+            const country = String(getVal(['country'])).trim();
+            const campaign = String(getVal(['campaign'])).trim();
+
+            if (!campaign || !sku) continue;
+
+            if (products.length > 0 && !products.some(p => p.sku === sku)) {
+                invalidSkus++;
+                continue;
+            }
+
+            if (countries.length > 0 && country && !countries.includes(country)) {
+                invalidCountries++;
+                continue;
+            }
+
+            const rawSpend = getVal(['spend']);
+            const spendVnd = rawSpend ? Number(String(rawSpend).replace(/[^0-9]/g, "")) : 0;
+
+            records.push({
+                date: dateStr,
+                campaign,
+                country,
+                platform: String(getVal(['platform']) || ''),
+                sku,
+                stage: String(getVal(['stage']) || ''),
+                pic: String(getVal(['pic', 'person']) || ''),
+                spendVnd,
+                notes: String(getVal(['note']) || ''),
+                source: 'upload',
+            });
+        }
+
+        setStaged(records);
+        let resMsg = `✅ Parsed ${records.length} records.`;
+        if (invalidSkus > 0 || invalidCountries > 0) {
+            resMsg = `⚠️ Parsed ${records.length} records. Skipped: ${invalidSkus} invalid SKUs, ${invalidCountries} invalid countries.`;
+        }
+        setResult(resMsg);
+    };
+
+    // ─── TEMPLATE DOWNLOAD ────────────────────────────────────────────────
+    const downloadMetaTemplate = () => {
+        const header = 'Tên chiến dịch,Tên quảng cáo,Tên nhóm quảng cáo,Tên nhóm quảng cáo,CPC (tất cả),CPM (Chi phí trên mỗi 1.000 lượt hiển thị),CTR (Tất cả),Số tiền đã chi tiêu (VND),Loại kết quả,Chi phí trên mỗi kết quả,Lượt mua,Bắt đầu báo cáo,Kết thúc báo cáo,Order ID – Match';
+        const rows = [
+            'TEST-SPAIN-5ADS-LONG-1203,TEST025,TEST-SET,TEST-SET,3074.67,266589.60,8.67,46120,Lượt mua trên web,46120,1,2026-03-12,2026-03-12,ORD-1234567-ABCDEF',
+            'TEST-ITALY-VIDEO-LONG-1203,IT_AD001,IT-SET,IT-SET,2500.00,220000.00,7.50,85000,Lượt mua trên web,85000,2,2026-03-12,2026-03-12,',
+            'TEST-GERMANY-IMG-LONG-1203,DE_AD001,DE-SET,DE-SET,,,,,,,0,2026-03-12,2026-03-12,',
+        ];
+        const csv = [header, ...rows].join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'meta_ads_template.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const addManualRecord = () => {
+        if (!manual.campaign || !manual.date) {
+            setResult('❌ Date and Campaign are required.');
+            return;
+        }
+
+        if (manual.sku && products.length > 0 && !products.some(p => p.sku === manual.sku)) {
+            setResult('❌ Invalid - SKU not in the database');
+            return;
+        }
+
+        setStaged(prev => [...prev, { ...manual, source: 'manual' }]);
+        setManual({ date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual' });
+        setResult('✅ Record added successfully');
+    };
+
+    const removeStaged = (index: number) => {
+        setStaged(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const saveAll = async () => {
+        if (staged.length === 0) return;
+        setSaving(true);
+        setResult(null);
+        try {
+            // Apply defaults to records before saving
+            const records = staged.map(r => ({
+                ...r,
+                platform: r.platform || defaults.platform,
+                sku: r.sku || defaults.sku || undefined,
+                stage: r.stage || defaults.stage || undefined,
+                pic: r.pic || defaults.pic || undefined,
+            }));
+            const res = await adsCampaignsService.bulkCreate(records as any);
+            let msg = `✅ Successfully saved ${res.created} records to database.`;
+            if (res.orderMatchedCount !== undefined) {
+                msg += ` Orders matched: ${res.orderMatchedCount}.`;
+            }
+            if (res.unresolvedOrderNumbers?.length > 0) {
+                msg += ` ⚠️ Unresolved order IDs: ${res.unresolvedOrderNumbers.join(', ')}`;
+            }
+            setResult(msg);
+            setStaged([]);
+            setIsMetaCsv(false);
+        } catch (err: any) {
+            setResult(`❌ ${err.response?.data?.message || 'Failed to save records.'}`);
+        } finally { setSaving(false); }
+    };
+
+    // ─── Preview columns differ for Meta vs Generic ───────────────────────
+    const previewHeaders = isMetaCsv
+        ? ['Campaign', 'Ad Name', 'Country', 'Spend (VND)', 'Purchases', 'Order ID', 'Match', '']
+        : ['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'PIC', 'Spend (VND)', ''];
+
+    return (
+        <div className="flex flex-col gap-6">
+            {/* File Upload + Template Download */}
+            <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
+                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">📁 Upload Meta CSV / Excel</h3>
+                <div className="flex items-center gap-4 flex-wrap">
+                    <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" />
+                    <button onClick={() => fileRef.current?.click()}
+                        className="px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                        <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: 18 }}>upload_file</span>
+                        Choose File
+                    </button>
+                    <button onClick={downloadMetaTemplate}
+                        className="px-5 py-3 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-xl font-bold text-sm hover:bg-cyan-500/20 transition-all">
+                        <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: 18 }}>download</span>
+                        Download Template
+                    </button>
+                    <span className="text-text-muted text-sm">Auto-detects Meta CSV (Vietnamese headers) vs generic format</span>
+                </div>
+            </div>
+
+            {/* Meta Defaults Panel — only shown for Meta uploads or empty state */}
+            <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
+                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">⚙️ Upload Defaults (applied to all rows)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Platform</label>
+                        <input value={defaults.platform} onChange={e => setDefaults(d => ({ ...d, platform: e.target.value }))}
+                            className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="e.g. Meta" />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Default SKU</label>
+                        <select value={defaults.sku} onChange={e => setDefaults(d => ({ ...d, sku: e.target.value }))}
+                            className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
+                            <option value="">— None —</option>
+                            {products.map(p => <option key={p.sku} value={p.sku}>{p.sku} — {p.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Stage</label>
+                        <select value={defaults.stage} onChange={e => setDefaults(d => ({ ...d, stage: e.target.value }))}
+                            className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
+                            <option value="">— None —</option>
+                            <option>Test</option><option>POC</option><option>Win</option><option>Scale</option>
+                        </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">PIC</label>
+                        <input value={defaults.pic} onChange={e => setDefaults(d => ({ ...d, pic: e.target.value }))}
+                            className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="e.g. Thanh Long" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Manual Entry */}
+            <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
+                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">✍️ Manual Entry</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <input type="date" value={manual.date} onChange={e => setManual(m => ({ ...m, date: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Date" />
+                    <input value={manual.campaign} onChange={e => setManual(m => ({ ...m, campaign: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Campaign Name" />
+                    <select value={manual.country} onChange={e => setManual(m => ({ ...m, country: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
+                        <option value="">Country</option>
+                        {countries.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <input value={manual.sku} onChange={e => setManual(m => ({ ...m, sku: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="SKU (optional)" />
+                    <input value={manual.platform} onChange={e => setManual(m => ({ ...m, platform: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Platform" />
+                    <select value={manual.stage} onChange={e => setManual(m => ({ ...m, stage: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
+                        <option value="">Stage</option>
+                        <option>Test</option><option>POC</option><option>Win</option><option>Scale</option>
+                    </select>
+                    <input value={manual.pic} onChange={e => setManual(m => ({ ...m, pic: e.target.value }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="PIC" />
+                    <input type="number" value={manual.spendVnd || ''} onChange={e => setManual(m => ({ ...m, spendVnd: Number(e.target.value) }))}
+                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Spend (VND)" />
+                </div>
+                <button onClick={addManualRecord}
+                    className="mt-4 px-5 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-bold hover:bg-emerald-500/20 transition-all">
+                    + Add Record
+                </button>
+            </div>
+
+            {/* Result Message */}
+            {result && (
+                <div className={`px-5 py-3 rounded-xl text-sm font-medium ${result.startsWith('✅') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : result.startsWith('❌') ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                    {result}
+                </div>
+            )}
+
+            {/* Staged Records Preview */}
+            {staged.length > 0 && (
+                <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+                    <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">
+                                Preview ({staged.length} staged records)
+                            </h3>
+                            {isMetaCsv && (
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                    META CSV
+                                </span>
+                            )}
+                        </div>
+                        <button onClick={saveAll} disabled={saving}
+                            className="px-5 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20">
+                            {saving ? 'Saving...' : `💾 Save All (${staged.length})`}
+                        </button>
+                    </div>
+                    <div className="overflow-x-auto custom-scrollbar max-h-[500px] overflow-y-auto">
+                        <table className="w-full text-left border-collapse min-w-[900px]">
+                            <thead className="sticky top-0 bg-[#17232f]">
+                                <tr>
+                                    {previewHeaders.map(h => (
+                                        <th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border-dark/50">
+                                {staged.map((r, i) => (
+                                    <tr key={i} className="hover:bg-primary/[0.02]">
+                                        {isMetaCsv ? (
+                                            <>
+                                                <td className="px-4 py-2.5 text-xs text-white font-bold max-w-[220px] truncate" title={r.campaign}>{r.campaign}</td>
+                                                <td className="px-4 py-2.5 text-xs text-text-muted max-w-[150px] truncate" title={r.adName}>{r.adName || '—'}</td>
+                                                <td className="px-4 py-2.5">
+                                                    {r.country ? (
+                                                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{r.country}</span>
+                                                    ) : <span className="text-text-muted text-xs">—</span>}
+                                                </td>
+                                                <td className="px-4 py-2.5 text-xs text-white font-bold">₫{r.spendVnd.toLocaleString()}</td>
+                                                <td className="px-4 py-2.5 text-xs text-white font-bold">{r.metaPurchases || 0}</td>
+                                                <td className="px-4 py-2.5 text-xs text-primary font-mono">{r.orderNumber || '—'}</td>
+                                                <td className="px-4 py-2.5">
+                                                    {r.orderNumber ? (
+                                                        r._orderMatched ? (
+                                                            <span className="text-[11px] font-black text-emerald-400">✅</span>
+                                                        ) : (
+                                                            <span className="text-[11px] font-black text-red-400" title="Order not found">❌</span>
+                                                        )
+                                                    ) : <span className="text-text-muted text-xs">—</span>}
+                                                </td>
+                                                <td className="px-4 py-2.5">
+                                                    <button onClick={() => removeStaged(i)} className="text-red-400 hover:text-red-300">
+                                                        <span className="material-symbols-outlined text-sm">close</span>
+                                                    </button>
+                                                </td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td className="px-4 py-2.5 text-xs text-white font-mono">{r.date}</td>
+                                                <td className="px-4 py-2.5 text-xs text-white font-bold max-w-[180px] truncate">{r.campaign}</td>
+                                                <td className="px-4 py-2.5 text-xs text-text-muted uppercase font-bold">{r.country}</td>
+                                                <td className="px-4 py-2.5 text-xs text-primary font-mono">{r.sku}</td>
+                                                <td className="px-4 py-2.5 text-xs text-text-muted">{r.stage}</td>
+                                                <td className="px-4 py-2.5 text-xs text-text-muted">{r.pic}</td>
+                                                <td className="px-4 py-2.5 text-xs text-white font-bold">₫{r.spendVnd.toLocaleString()}</td>
+                                                <td className="px-4 py-2.5">
+                                                    <button onClick={() => removeStaged(i)} className="text-red-400 hover:text-red-300">
+                                                        <span className="material-symbols-outlined text-sm">close</span>
+                                                    </button>
+                                                </td>
+                                            </>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 // ─── ADS PAGE ────────────────────────────────────────────────────────────────
 const AdsPage: React.FC = () => {
     const [tab, setTab] = useState<'dashboard' | 'input' | 'adjust' | 'rates'>('dashboard');
@@ -64,7 +590,6 @@ const DashboardTab: React.FC = () => {
     const [dateRangePreset, setDateRangePreset] = useState('All Time');
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
 
-    // Global Database filter options
     const [dbProducts, setDbProducts] = useState<any[]>([]);
     const [dbCountries, setDbCountries] = useState<string[]>([]);
 
@@ -77,13 +602,10 @@ const DashboardTab: React.FC = () => {
                 ]);
                 const prods = Array.isArray(prodsRes) ? prodsRes : (prodsRes.data || []);
                 setDbProducts(prods);
-
                 const custs = Array.isArray(custsRes) ? custsRes : (custsRes.data || []);
                 const uniqueCountries = [...new Set(custs.map((c: any) => c.country).filter(Boolean))] as string[];
                 setDbCountries(uniqueCountries);
-            } catch (err) {
-                console.error("Failed to fetch filter options", err);
-            }
+            } catch (err) { console.error("Failed to fetch filter options", err); }
         };
         fetchFilters();
     }, []);
@@ -91,63 +613,15 @@ const DashboardTab: React.FC = () => {
     const handlePresetChange = (preset: string) => {
         setDateRangePreset(preset);
         const today = new Date();
-        const formatDate = (date: Date) => {
-            const yyyy = date.getFullYear();
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const dd = String(date.getDate()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}`;
-        };
-
+        const formatDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         switch (preset) {
-            case 'Today':
-                setStartDate(formatDate(today));
-                setEndDate(formatDate(today));
-                break;
-            case 'Yesterday': {
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                setStartDate(formatDate(yesterday));
-                setEndDate(formatDate(yesterday));
-                break;
-            }
-            case 'Last 7 days': {
-                const last7 = new Date(today);
-                last7.setDate(last7.getDate() - 7);
-                setStartDate(formatDate(last7));
-                setEndDate(formatDate(today));
-                break;
-            }
-            case 'This month': {
-                const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                setStartDate(formatDate(firstDayThisMonth));
-                setEndDate(formatDate(today));
-                break;
-            }
-            case 'Last month': {
-                const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-                setStartDate(formatDate(firstDayLastMonth));
-                setEndDate(formatDate(lastDayLastMonth));
-                break;
-            }
-            case 'All Time':
-                setStartDate('');
-                setEndDate('');
-                break;
-            case 'Custom':
-                // Keep current start/end dates
-                break;
+            case 'Today': setStartDate(formatDate(today)); setEndDate(formatDate(today)); break;
+            case 'Yesterday': { const y = new Date(today); y.setDate(y.getDate() - 1); setStartDate(formatDate(y)); setEndDate(formatDate(y)); break; }
+            case 'Last 7 days': { const d = new Date(today); d.setDate(d.getDate() - 7); setStartDate(formatDate(d)); setEndDate(formatDate(today)); break; }
+            case 'This month': { setStartDate(formatDate(new Date(today.getFullYear(), today.getMonth(), 1))); setEndDate(formatDate(today)); break; }
+            case 'Last month': { setStartDate(formatDate(new Date(today.getFullYear(), today.getMonth() - 1, 1))); setEndDate(formatDate(new Date(today.getFullYear(), today.getMonth(), 0))); break; }
+            case 'All Time': setStartDate(''); setEndDate(''); break;
         }
-    };
-
-    const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setStartDate(e.target.value);
-        setDateRangePreset('Custom');
-    };
-
-    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEndDate(e.target.value);
-        setDateRangePreset('Custom');
     };
 
     const fetchDashboard = async () => {
@@ -171,8 +645,6 @@ const DashboardTab: React.FC = () => {
     if (!data) return <div className="text-red-400 text-sm py-12 text-center">Failed to load dashboard data.</div>;
 
     const k = data.kpis;
-    const vndRate = k.totalSpendEur > 0 ? k.totalSpendVnd / k.totalSpendEur : 27027;
-
     const kpis = [
         { label: 'Total Spend', value: currency === 'EUR' ? `€${k.totalSpendEur.toLocaleString()}` : `₫${k.totalSpendVnd.toLocaleString()}`, icon: 'payments', color: 'text-blue-400', border: 'border-l-blue-500' },
         { label: 'Leads', value: k.totalLeads.toLocaleString(), icon: 'group', color: 'text-indigo-400', border: 'border-l-indigo-500' },
@@ -184,8 +656,6 @@ const DashboardTab: React.FC = () => {
         { label: 'ROAS', value: `${k.roas}x`, icon: 'speed', color: k.roas >= 2 ? 'text-emerald-400' : 'text-amber-400', border: k.roas >= 2 ? 'border-l-emerald-500' : 'border-l-amber-500' },
     ];
 
-    // Filter Options
-    // Country and SKU come from the global database, Stage comes from current data
     const filterCountries = dbCountries.length > 0 ? dbCountries : [...new Set(data.campaigns.map(c => c.country).filter(Boolean))] as string[];
     const filterSkus = dbProducts.length > 0 ? dbProducts.map(p => p.sku) : [...new Set(data.campaigns.map(c => c.sku).filter(Boolean))] as string[];
     const stages = [...new Set(data.campaigns.map(c => c.stage).filter(Boolean))] as string[];
@@ -196,68 +666,36 @@ const DashboardTab: React.FC = () => {
             <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Country</label>
-                    <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
-                        <option value="">All</option>
-                        {filterCountries.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]"><option value="">All</option>{filterCountries.map(c => <option key={c} value={c}>{c}</option>)}</select>
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Stage</label>
-                    <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
-                        <option value="">All</option>
-                        {stages.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <select value={stageFilter} onChange={e => setStageFilter(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]"><option value="">All</option>{stages.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">SKU</label>
-                    <select value={skuFilter} onChange={e => setSkuFilter(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
-                        <option value="">All</option>
-                        {filterSkus.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <select value={skuFilter} onChange={e => setSkuFilter(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]"><option value="">All</option>{filterSkus.map(s => <option key={s} value={s}>{s}</option>)}</select>
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Date Range</label>
-                    <select value={dateRangePreset} onChange={e => handlePresetChange(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[140px]">
-                        <option value="All Time">All Time</option>
-                        <option value="Today">Today</option>
-                        <option value="Yesterday">Yesterday</option>
-                        <option value="Last 7 days">Last 7 days</option>
-                        <option value="This month">This month</option>
-                        <option value="Last month">Last month</option>
-                        <option value="Custom">Custom range</option>
+                    <select value={dateRangePreset} onChange={e => handlePresetChange(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[140px]">
+                        <option value="All Time">All Time</option><option value="Today">Today</option><option value="Yesterday">Yesterday</option><option value="Last 7 days">Last 7 days</option><option value="This month">This month</option><option value="Last month">Last month</option><option value="Custom">Custom range</option>
                     </select>
                 </div>
                 {dateRangePreset === 'Custom' && (
                     <>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">From</label>
-                            <input type="date" value={startDate} onChange={handleStartDateChange}
-                                className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">To</label>
-                            <input type="date" value={endDate} onChange={handleEndDateChange}
-                                className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
-                        </div>
+                        <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-text-muted uppercase tracking-widest">From</label><input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setDateRangePreset('Custom'); }} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" /></div>
+                        <div className="flex flex-col gap-1"><label className="text-[10px] font-black text-text-muted uppercase tracking-widest">To</label><input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setDateRangePreset('Custom'); }} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" /></div>
                     </>
                 )}
-                <button onClick={() => setCurrency(c => c === 'EUR' ? 'VND' : 'EUR')}
-                    className="h-[38px] px-4 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-bold hover:bg-amber-500/20 transition-all">
-                    {currency === 'EUR' ? '€ EUR' : '₫ VND'}
-                </button>
+                <button onClick={() => setCurrency(c => c === 'EUR' ? 'VND' : 'EUR')} className="h-[38px] px-4 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-sm font-bold hover:bg-amber-500/20 transition-all">{currency === 'EUR' ? '€ EUR' : '₫ VND'}</button>
             </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {kpis.map((kpi, i) => (
                     <div key={i} className={`bg-card-dark p-5 rounded-2xl border border-border-dark border-l-4 ${kpi.border} relative overflow-hidden group hover:shadow-lg transition-shadow`}>
-                        <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
-                            <span className="material-symbols-outlined text-[80px]">{kpi.icon}</span>
-                        </div>
+                        <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity"><span className="material-symbols-outlined text-[80px]">{kpi.icon}</span></div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">{kpi.label}</p>
                         <h3 className={`text-2xl font-black tracking-tight mt-2 ${kpi.color}`}>{kpi.value}</h3>
                     </div>
@@ -271,14 +709,8 @@ const DashboardTab: React.FC = () => {
                     <ResponsiveContainer width="100%" height={280}>
                         <AreaChart data={data.chartData}>
                             <defs>
-                                <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                </linearGradient>
+                                <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
+                                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="95%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#233648" />
                             <XAxis dataKey="date" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
@@ -298,32 +730,20 @@ const DashboardTab: React.FC = () => {
                 </div>
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse min-w-[1200px]">
-                        <thead>
-                            <tr className="bg-[#17232f]">
-                                {['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (
-                                    <th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
+                        <thead><tr className="bg-[#17232f]">{['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}</tr></thead>
                         <tbody className="divide-y divide-border-dark/50">
                             {data.campaigns.map((c, i) => (
                                 <tr key={i} className="hover:bg-primary/[0.02] transition-colors">
                                     <td className="px-4 py-3 text-xs text-white font-mono">{new Date(c.date).toLocaleDateString('en-GB')}</td>
                                     <td className="px-4 py-3 text-xs text-white font-bold max-w-[200px] truncate">{c.campaign}</td>
                                     <td className="px-4 py-3"><span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{c.country || '—'}</span></td>
-                                    <td className="px-4 py-3 text-xs text-primary font-mono">{c.sku}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.stage === 'Win' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : c.stage === 'Scale' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : c.stage === 'POC' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>
-                                            {c.stage || '—'}
-                                        </span>
-                                    </td>
+                                    <td className="px-4 py-3 text-xs text-primary font-mono">{c.sku || '—'}</td>
+                                    <td className="px-4 py-3"><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.stage === 'Win' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : c.stage === 'Scale' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : c.stage === 'POC' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>{c.stage || '—'}</span></td>
                                     <td className="px-4 py-3 text-xs font-black text-white">€{(c.spendEur || 0).toLocaleString()}</td>
                                     <td className="px-4 py-3 text-xs font-black text-emerald-400">€{(c.revenueEur || 0).toLocaleString()}</td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">{c.leads || 0}</td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">{c.orders || 0}</td>
-                                    <td className="px-4 py-3 text-xs font-black">
-                                        <span className={(c.roas || 0) >= 2 ? 'text-emerald-400' : (c.roas || 0) >= 1 ? 'text-amber-400' : 'text-red-400'}>{(c.roas || 0).toFixed(2)}x</span>
-                                    </td>
+                                    <td className="px-4 py-3 text-xs font-black"><span className={(c.roas || 0) >= 2 ? 'text-emerald-400' : (c.roas || 0) >= 1 ? 'text-amber-400' : 'text-red-400'}>{(c.roas || 0).toFixed(2)}x</span></td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">€{(c.cpo || 0).toFixed(2)}</td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">{(c.cvr || 0).toFixed(1)}%</td>
                                 </tr>
@@ -336,267 +756,8 @@ const DashboardTab: React.FC = () => {
     );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INPUT TAB
-// ═══════════════════════════════════════════════════════════════════════════════
-const InputTab: React.FC = () => {
-    const [staged, setStaged] = useState<StagedRecord[]>([]);
-    const [saving, setSaving] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
-    const fileRef = useRef<HTMLInputElement>(null);
 
-    // Manual entry state
-    const [manual, setManual] = useState<StagedRecord>({
-        date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual'
-    });
 
-    const [products, setProducts] = useState<any[]>([]);
-    const [countries, setCountries] = useState<string[]>([]);
-
-    useEffect(() => {
-        const fetchValidationData = async () => {
-            try {
-                const [prodsRes, custsRes] = await Promise.all([
-                    productsService.getAll(),
-                    customersService.getAll()
-                ]);
-                const prods = Array.isArray(prodsRes) ? prodsRes : (prodsRes.data || []);
-                setProducts(prods);
-
-                const custs = Array.isArray(custsRes) ? custsRes : (custsRes.data || []);
-                const uniqueCountries = [...new Set(custs.map((c: any) => c.country).filter(Boolean))] as string[];
-                setCountries(uniqueCountries);
-            } catch (err) {
-                console.error("Failed to fetch validation data", err);
-            }
-        };
-        fetchValidationData();
-    }, []);
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        try {
-            // Dynamic import xlsx
-            const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs' as any);
-            const data = await file.arrayBuffer();
-            const wb = XLSX.read(data, { type: 'array' });
-            const ws = wb.Sheets[wb.SheetNames[0]];
-            const json: any[] = XLSX.utils.sheet_to_json(ws);
-
-            const records: StagedRecord[] = [];
-            let invalidSkus = 0;
-            let invalidCountries = 0;
-
-            for (const row of json) {
-                // Fuzzy key matching
-                const getVal = (keys: string[]) => {
-                    const foundKey = Object.keys(row).find(k => keys.some(search => k.toLowerCase().includes(search.toLowerCase())));
-                    return foundKey ? row[foundKey] : '';
-                };
-
-                let dateStr = '';
-                const rawDate = getVal(['date']);
-                if (rawDate) {
-                    if (typeof rawDate === 'number') {
-                        const d = new Date((rawDate - 25569) * 86400 * 1000);
-                        dateStr = d.toISOString().split('T')[0];
-                    } else {
-                        const parts = String(rawDate).split('/');
-                        if (parts.length === 3) {
-                            dateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                        } else {
-                            dateStr = String(rawDate);
-                        }
-                    }
-                }
-
-                const sku = String(getVal(['sku'])).trim();
-                const country = String(getVal(['country'])).trim();
-                const campaign = String(getVal(['campaign'])).trim();
-
-                if (!campaign || !sku) continue;
-
-                // Validate SKU
-                if (products.length > 0 && !products.some(p => p.sku === sku)) {
-                    invalidSkus++;
-                    continue;
-                }
-
-                // Validate Country
-                if (countries.length > 0 && country && !countries.includes(country)) {
-                    invalidCountries++;
-                    continue;
-                }
-
-                const rawSpend = getVal(['spend']);
-                // Remove all non-numeric characters (commas, dots) for VND
-                const spendVnd = rawSpend ? Number(String(rawSpend).replace(/[^0-9]/g, "")) : 0;
-
-                records.push({
-                    date: dateStr,
-                    campaign,
-                    country,
-                    platform: String(getVal(['platform']) || ''),
-                    sku,
-                    stage: String(getVal(['stage']) || ''),
-                    pic: String(getVal(['pic', 'person']) || ''),
-                    spendVnd,
-                    notes: String(getVal(['note']) || ''),
-                    source: 'upload',
-                });
-            }
-
-            setStaged(records);
-
-            let resMsg = `✅ Parsed ${records.length} records.`;
-            if (invalidSkus > 0 || invalidCountries > 0) {
-                resMsg = `⚠️ Parsed ${records.length} records. Skipped: ${invalidSkus} invalid SKUs, ${invalidCountries} invalid countries.`;
-            }
-            setResult(resMsg);
-        } catch (err) {
-            console.error('File parse error:', err);
-            setResult('Failed to parse file. Please check the format.');
-        }
-    };
-
-    const addManualRecord = () => {
-        if (!manual.campaign || !manual.sku || !manual.date) {
-            setResult('❌ Date, Campaign, and SKU are required.');
-            return;
-        }
-
-        const skuExists = products.some(p => p.sku === manual.sku);
-        if (!skuExists && products.length > 0) {
-            setResult('❌ Invalid - SKU not in the database');
-            return;
-        }
-
-        setStaged(prev => [...prev, { ...manual, source: 'manual' }]);
-        setManual({ date: '', campaign: '', country: '', platform: '', sku: '', stage: '', pic: '', spendVnd: 0, notes: '', source: 'manual' });
-        setResult('✅ successfully');
-    };
-
-    const removeStaged = (index: number) => {
-        setStaged(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const saveAll = async () => {
-        if (staged.length === 0) return;
-        setSaving(true);
-        setResult(null);
-        try {
-            const res = await adsCampaignsService.bulkCreate(staged as any);
-            setResult(`✅ Successfully saved ${res.created} records to database.`);
-            setStaged([]);
-        } catch (err: any) {
-            setResult(`❌ ${err.response?.data?.message || 'Failed to save records.'}`);
-        } finally { setSaving(false); }
-    };
-
-    return (
-        <div className="flex flex-col gap-6">
-            {/* File Upload */}
-            <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
-                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">📁 Upload Excel / CSV</h3>
-                <div className="flex items-center gap-4">
-                    <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" />
-                    <button onClick={() => fileRef.current?.click()}
-                        className="px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-                        <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: 18 }}>upload_file</span>
-                        Choose File
-                    </button>
-                    <span className="text-text-muted text-sm">Supported: .xlsx, .xls, .csv</span>
-                </div>
-            </div>
-
-            {/* Manual Entry */}
-            <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
-                <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">✍️ Manual Entry</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <input type="date" value={manual.date} onChange={e => setManual(m => ({ ...m, date: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Date" />
-                    <input value={manual.campaign} onChange={e => setManual(m => ({ ...m, campaign: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Campaign Name" />
-                    <select value={manual.country} onChange={e => setManual(m => ({ ...m, country: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
-                        <option value="">Country</option>
-                        {countries.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <input value={manual.sku} onChange={e => setManual(m => ({ ...m, sku: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="SKU" />
-                    <input value={manual.platform} onChange={e => setManual(m => ({ ...m, platform: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Platform" />
-                    <select value={manual.stage} onChange={e => setManual(m => ({ ...m, stage: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm appearance-none cursor-pointer">
-                        <option value="">Stage</option>
-                        <option>Test</option><option>POC</option><option>Win</option><option>Scale</option>
-                    </select>
-                    <input value={manual.pic} onChange={e => setManual(m => ({ ...m, pic: e.target.value }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="PIC" />
-                    <input type="number" value={manual.spendVnd || ''} onChange={e => setManual(m => ({ ...m, spendVnd: Number(e.target.value) }))}
-                        className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2.5 text-white text-sm" placeholder="Spend (VND)" />
-                </div>
-                <button onClick={addManualRecord}
-                    className="mt-4 px-5 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-sm font-bold hover:bg-emerald-500/20 transition-all">
-                    + Add Record
-                </button>
-            </div>
-
-            {/* Result Message */}
-            {result && (
-                <div className={`px-5 py-3 rounded-xl text-sm font-medium ${result.startsWith('✅') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : result.startsWith('❌') ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                    {result}
-                </div>
-            )}
-
-            {/* Staged Records Preview */}
-            {staged.length > 0 && (
-                <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-                    <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex justify-between items-center">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">
-                            Preview ({staged.length} staged records)
-                        </h3>
-                        <button onClick={saveAll} disabled={saving}
-                            className="px-5 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg shadow-primary/20">
-                            {saving ? 'Saving...' : `💾 Save All (${staged.length})`}
-                        </button>
-                    </div>
-                    <div className="overflow-x-auto custom-scrollbar max-h-[400px] overflow-y-auto">
-                        <table className="w-full text-left border-collapse min-w-[900px]">
-                            <thead className="sticky top-0 bg-[#17232f]">
-                                <tr>
-                                    {['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'PIC', 'Spend (VND)', ''].map(h => (
-                                        <th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border-dark/50">
-                                {staged.map((r, i) => (
-                                    <tr key={i} className="hover:bg-primary/[0.02]">
-                                        <td className="px-4 py-2.5 text-xs text-white font-mono">{r.date}</td>
-                                        <td className="px-4 py-2.5 text-xs text-white font-bold max-w-[180px] truncate">{r.campaign}</td>
-                                        <td className="px-4 py-2.5 text-xs text-text-muted uppercase font-bold">{r.country}</td>
-                                        <td className="px-4 py-2.5 text-xs text-primary font-mono">{r.sku}</td>
-                                        <td className="px-4 py-2.5 text-xs text-text-muted">{r.stage}</td>
-                                        <td className="px-4 py-2.5 text-xs text-text-muted">{r.pic}</td>
-                                        <td className="px-4 py-2.5 text-xs text-white font-bold">₫{r.spendVnd.toLocaleString()}</td>
-                                        <td className="px-4 py-2.5">
-                                            <button onClick={() => removeStaged(i)} className="text-red-400 hover:text-red-300">
-                                                <span className="material-symbols-outlined text-sm">close</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ADJUST TAB
@@ -665,7 +826,7 @@ const AdjustTab: React.FC = () => {
 
     const filtered = records.filter(r =>
         r.campaign.toLowerCase().includes(search.toLowerCase()) ||
-        r.sku.toLowerCase().includes(search.toLowerCase()) ||
+        (r.sku || '').toLowerCase().includes(search.toLowerCase()) ||
         (r.country || '').toLowerCase().includes(search.toLowerCase())
     );
 

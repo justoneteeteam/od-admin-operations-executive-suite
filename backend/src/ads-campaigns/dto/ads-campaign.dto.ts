@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsDateString, IsInt } from 'class-validator';
 
 export class CreateAdsCampaignDto {
     @IsDateString()
@@ -15,8 +15,9 @@ export class CreateAdsCampaignDto {
     @IsString()
     platform?: string;
 
+    @IsOptional()
     @IsString()
-    sku: string;
+    sku?: string;
 
     @IsOptional()
     @IsString()
@@ -36,6 +37,51 @@ export class CreateAdsCampaignDto {
     @IsOptional()
     @IsString()
     source?: string;
+
+    // ─── Meta Ads Fields ──────────────────────────────────────────────
+    @IsOptional()
+    @IsString()
+    adName?: string;
+
+    @IsOptional()
+    @IsString()
+    adSetName?: string;
+
+    @IsOptional()
+    @IsNumber()
+    cpc?: number;
+
+    @IsOptional()
+    @IsNumber()
+    cpm?: number;
+
+    @IsOptional()
+    @IsNumber()
+    ctr?: number;
+
+    @IsOptional()
+    @IsString()
+    resultType?: string;
+
+    @IsOptional()
+    @IsNumber()
+    costPerResult?: number;
+
+    @IsOptional()
+    @IsInt()
+    metaPurchases?: number;
+
+    @IsOptional()
+    @IsString()
+    reportStart?: string;
+
+    @IsOptional()
+    @IsString()
+    reportEnd?: string;
+
+    @IsOptional()
+    @IsString()
+    orderNumber?: string; // Human-readable order number — resolved to order_id by backend
 }
 
 export class UpdateAdsCampaignDto {
@@ -74,6 +120,51 @@ export class UpdateAdsCampaignDto {
     @IsOptional()
     @IsString()
     notes?: string;
+
+    // ─── Meta Ads Fields ──────────────────────────────────────────────
+    @IsOptional()
+    @IsString()
+    adName?: string;
+
+    @IsOptional()
+    @IsString()
+    adSetName?: string;
+
+    @IsOptional()
+    @IsNumber()
+    cpc?: number;
+
+    @IsOptional()
+    @IsNumber()
+    cpm?: number;
+
+    @IsOptional()
+    @IsNumber()
+    ctr?: number;
+
+    @IsOptional()
+    @IsString()
+    resultType?: string;
+
+    @IsOptional()
+    @IsNumber()
+    costPerResult?: number;
+
+    @IsOptional()
+    @IsInt()
+    metaPurchases?: number;
+
+    @IsOptional()
+    @IsString()
+    reportStart?: string;
+
+    @IsOptional()
+    @IsString()
+    reportEnd?: string;
+
+    @IsOptional()
+    @IsString()
+    orderNumber?: string;
 }
 
 export class BulkCreateAdsCampaignDto {

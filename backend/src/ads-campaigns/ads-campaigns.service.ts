@@ -38,37 +38,79 @@ export class AdsCampaignsService {
     }
 
     async create(dto: CreateAdsCampaignDto) {
-        await this.validateSku(dto.sku);
+        if (dto.sku) await this.validateSku(dto.sku);
+
+        // Resolve orderNumber → order_id
+        let orderId: string | undefined;
+        if (dto.orderNumber) {
+            const order = await this.prisma.order.findUnique({
+                where: { orderNumber: dto.orderNumber },
+                select: { id: true },
+            });
+            if (order) orderId = order.id;
+        }
+
         return this.prisma.adsCampaign.create({
             data: {
                 date: new Date(dto.date),
                 campaign: dto.campaign,
                 country: dto.country,
                 platform: dto.platform,
-                sku: dto.sku,
+                sku: dto.sku || null,
                 stage: dto.stage,
                 pic: dto.pic,
                 spendVnd: dto.spendVnd,
                 notes: dto.notes,
                 source: dto.source || 'manual',
+                adName: dto.adName,
+                adSetName: dto.adSetName,
+                cpc: dto.cpc,
+                cpm: dto.cpm,
+                ctr: dto.ctr,
+                resultType: dto.resultType,
+                costPerResult: dto.costPerResult,
+                metaPurchases: dto.metaPurchases,
+                reportStart: dto.reportStart ? new Date(dto.reportStart) : null,
+                reportEnd: dto.reportEnd ? new Date(dto.reportEnd) : null,
+                orderId,
             },
         });
     }
 
     async bulkCreate(records: CreateAdsCampaignDto[]) {
-        // Validate all SKUs exist
-        const skus = [...new Set(records.map(r => r.sku))];
-        const existingProducts = await this.prisma.product.findMany({
-            where: { sku: { in: skus } },
-            select: { sku: true },
-        });
-        const existingSkus = new Set(existingProducts.map(p => p.sku));
-        const invalidSkus = skus.filter(s => !existingSkus.has(s));
+        // Validate only non-empty SKUs
+        const skus = [...new Set(records.map(r => r.sku).filter((s): s is string => !!s))];
+        if (skus.length > 0) {
+            const existingProducts = await this.prisma.product.findMany({
+                where: { sku: { in: skus } },
+                select: { sku: true },
+            });
+            const existingSkus = new Set(existingProducts.map(p => p.sku));
+            const invalidSkus = skus.filter(s => !existingSkus.has(s));
 
-        if (invalidSkus.length > 0) {
-            throw new BadRequestException(
-                `Unknown SKUs: ${invalidSkus.join(', ')}. These must exist in the Products table.`,
-            );
+            if (invalidSkus.length > 0) {
+                throw new BadRequestException(
+                    `Unknown SKUs: ${invalidSkus.join(', ')}. These must exist in the Products table.`,
+                );
+            }
+        }
+
+        // Batch-resolve all orderNumbers → order UUIDs
+        const orderNumbers = [...new Set(records.map(r => r.orderNumber).filter((n): n is string => !!n))];
+        const orderMap = new Map<string, string>(); // orderNumber → order.id
+        const unresolvedOrderNumbers: string[] = [];
+
+        if (orderNumbers.length > 0) {
+            const orders = await this.prisma.order.findMany({
+                where: { orderNumber: { in: orderNumbers } },
+                select: { id: true, orderNumber: true },
+            });
+            for (const order of orders) {
+                orderMap.set(order.orderNumber, order.id);
+            }
+            for (const num of orderNumbers) {
+                if (!orderMap.has(num)) unresolvedOrderNumbers.push(num);
+            }
         }
 
         const data = records.map(r => ({
@@ -76,16 +118,31 @@ export class AdsCampaignsService {
             campaign: r.campaign,
             country: r.country,
             platform: r.platform,
-            sku: r.sku,
+            sku: r.sku || null,
             stage: r.stage,
             pic: r.pic,
             spendVnd: r.spendVnd,
             notes: r.notes,
             source: r.source || 'upload',
+            adName: r.adName,
+            adSetName: r.adSetName,
+            cpc: r.cpc,
+            cpm: r.cpm,
+            ctr: r.ctr,
+            resultType: r.resultType,
+            costPerResult: r.costPerResult,
+            metaPurchases: r.metaPurchases,
+            reportStart: r.reportStart ? new Date(r.reportStart) : null,
+            reportEnd: r.reportEnd ? new Date(r.reportEnd) : null,
+            orderId: r.orderNumber ? (orderMap.get(r.orderNumber) || null) : null,
         }));
 
         const result = await this.prisma.adsCampaign.createMany({ data });
-        return { created: result.count };
+        return {
+            created: result.count,
+            orderMatchedCount: orderMap.size,
+            unresolvedOrderNumbers,
+        };
     }
 
     async update(id: string, dto: UpdateAdsCampaignDto, changedBy?: string) {
@@ -174,8 +231,8 @@ export class AdsCampaignsService {
             ? Number(rates[rates.length - 1].vndToEur)
             : 0.0000370;
 
-        // 3. Get unique SKUs from campaigns
-        const skus: string[] = [...new Set(campaigns.map(c => c.sku))];
+        // 3. Get unique SKUs from campaigns (filter out nulls)
+        const skus: string[] = [...new Set(campaigns.map(c => c.sku).filter((s): s is string => !!s))];
 
         // 4. Build date range for orders query
         const allDates = campaigns.map(c => c.date);

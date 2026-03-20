@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import storeSettingsService, { StoreSettings } from '../src/services/settings.service';
+import { authService } from '../src/services/auth.service';
+import apiClient from '../src/services/apiClient';
 
-type ActiveTab = 'connection' | 'create' | 'whatsapp' | 'email';
+type ActiveTab = 'connection' | 'create' | 'whatsapp' | 'email' | 'users';
 
 const STORE_COLORS = [
   { bg: 'bg-indigo-100', text: 'text-indigo-600' },
@@ -34,7 +36,15 @@ function timeAgo(dateStr: string | null | undefined) {
   return `${days} day${days > 1 ? 's' : ''} ago`;
 }
 
+const ROLE_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  ADMIN: { bg: 'bg-purple-500/10', text: 'text-purple-400', label: 'Admin' },
+  MARKETING: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'Marketing' },
+  CS: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'Customer Service' },
+};
+
 const SettingsPage: React.FC = () => {
+  const currentRole = authService.getRole();
+  const isAdmin = currentRole === 'ADMIN';
   const [activeTab, setActiveTab] = useState<ActiveTab>('connection');
   const [stores, setStores] = useState<StoreSettings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,6 +57,15 @@ const SettingsPage: React.FC = () => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // User Management State (Admin only)
+  const [users, setUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: '', password: '', fullName: '', role: 'CS', phone: '' });
+  const [userSaving, setUserSaving] = useState(false);
+  const [userMessage, setUserMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   // WhatsApp State
   const [waConnected, setWaConnected] = useState(false);
@@ -337,6 +356,241 @@ const SettingsPage: React.FC = () => {
   const filteredStores = stores.filter(s =>
     s.storeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.gsSheetName || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // ─── USER MANAGEMENT FUNCTIONS (Admin only) ────────────────────────
+  const fetchUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await apiClient.get('/users');
+      setUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('Failed to load users', err);
+      setUserMessage({ type: 'error', text: 'Failed to load users.' });
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUser.email || !newUser.password || !newUser.fullName) {
+      setUserMessage({ type: 'error', text: 'Email, password, and full name are required.' });
+      return;
+    }
+    setUserSaving(true);
+    setUserMessage(null);
+    try {
+      await apiClient.post('/users', newUser);
+      setUserMessage({ type: 'success', text: `User ${newUser.email} created successfully!` });
+      setShowCreateUser(false);
+      setNewUser({ email: '', password: '', fullName: '', role: 'CS', phone: '' });
+      fetchUsers();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to create user.';
+      setUserMessage({ type: 'error', text: Array.isArray(msg) ? msg[0] : msg });
+    } finally {
+      setUserSaving(false);
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, role: string) => {
+    try {
+      await apiClient.put(`/users/${userId}`, { role });
+      setUserMessage({ type: 'success', text: 'Role updated.' });
+      setEditingUserId(null);
+      fetchUsers();
+    } catch (err) {
+      setUserMessage({ type: 'error', text: 'Failed to update role.' });
+    }
+  };
+
+  const handleResetPassword = async (userId: string) => {
+    const pwd = prompt('Enter new password:');
+    if (!pwd) return;
+    try {
+      await apiClient.put(`/users/${userId}/reset-password`, { password: pwd });
+      setUserMessage({ type: 'success', text: 'Password reset successfully.' });
+    } catch (err) {
+      setUserMessage({ type: 'error', text: 'Failed to reset password.' });
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    try {
+      await apiClient.put(`/users/${userId}`, { status: newStatus });
+      setUserMessage({ type: 'success', text: `User ${newStatus === 'active' ? 'activated' : 'deactivated'}.` });
+      fetchUsers();
+    } catch (err) {
+      setUserMessage({ type: 'error', text: 'Failed to update user status.' });
+    }
+  };
+
+  // ─── USERS TAB ─────────────────────────────────────────────────────
+  const renderUsersTab = () => (
+    <div className="flex flex-col gap-6">
+      {/* Message */}
+      {userMessage && (
+        <div className={`px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2 ${userMessage.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{userMessage.type === 'success' ? 'check_circle' : 'error'}</span>
+          {userMessage.text}
+        </div>
+      )}
+
+      {/* Actions Bar */}
+      <div className="flex items-center justify-between">
+        <p className="text-text-muted text-sm"><span className="text-white font-bold">{users.length}</span> team members</p>
+        <button
+          onClick={() => setShowCreateUser(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_add</span>
+          Add Team Member
+        </button>
+      </div>
+
+      {/* Create User Form */}
+      {showCreateUser && (
+        <div className="bg-card-dark rounded-2xl border border-primary/20 overflow-hidden shadow-sm">
+          <div className="p-5 border-b border-border-dark flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>person_add</span>
+              New Team Member
+            </h3>
+            <button onClick={() => setShowCreateUser(false)} className="text-text-muted hover:text-white transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
+            </button>
+          </div>
+          <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Full Name *</label>
+              <input value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} placeholder="John Doe" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Email *</label>
+              <input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} placeholder="john@company.com" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Password *</label>
+              <input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="••••••••" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Phone</label>
+              <input value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+971500000000" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Role *</label>
+              <select value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all">
+                <option value="ADMIN">Admin</option>
+                <option value="MARKETING">Marketing</option>
+                <option value="CS">Customer Service</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button onClick={handleCreateUser} disabled={userSaving} className="flex items-center gap-2 px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50">
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span>
+                {userSaving ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Users Table */}
+      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border-dark bg-[#1a2332]">
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">User</th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Role</th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Status</th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted">Last Login</th>
+                <th className="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-muted w-10">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-dark">
+              {usersLoading ? (
+                <tr><td colSpan={5} className="py-12 text-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div></td></tr>
+              ) : users.length === 0 ? (
+                <tr><td colSpan={5} className="py-12 text-center text-text-muted text-sm">No users found.</td></tr>
+              ) : (
+                users.map((u) => {
+                  const badge = ROLE_BADGE[u.role] || { bg: 'bg-gray-500/10', text: 'text-gray-400', label: u.role };
+                  return (
+                    <tr key={u.id} className="hover:bg-[#1a2332] transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="bg-center bg-no-repeat bg-cover rounded-xl size-10 border-2 border-border-dark"
+                            style={{ backgroundImage: `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${u.fullName || u.email}')` }}
+                          ></div>
+                          <div>
+                            <p className="text-sm font-bold text-white">{u.fullName || '--'}</p>
+                            <p className="text-xs text-text-muted">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        {editingUserId === u.id ? (
+                          <select
+                            value={u.role}
+                            onChange={e => handleUpdateRole(u.id, e.target.value)}
+                            className="bg-[#1a2332] border border-primary rounded-lg px-2 py-1 text-xs text-white outline-none"
+                          >
+                            <option value="ADMIN">Admin</option>
+                            <option value="MARKETING">Marketing</option>
+                            <option value="CS">Customer Service</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${badge.bg} ${badge.text} border-current/20`}>
+                            {badge.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${u.status === 'active' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                          <span className={`size-1.5 rounded-full ${u.status === 'active' ? 'bg-green-400' : 'bg-red-400'}`}></span>
+                          {u.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="text-sm text-white">{u.lastLoginAt ? timeAgo(u.lastLoginAt) : 'Never'}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setEditingUserId(editingUserId === u.id ? null : u.id)}
+                            title="Change role"
+                            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-[#2d445a] transition-colors"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(u.id)}
+                            title="Reset password"
+                            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-[#2d445a] transition-colors"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>lock_reset</span>
+                          </button>
+                          <button
+                            onClick={() => handleToggleUserStatus(u.id, u.status)}
+                            title={u.status === 'active' ? 'Deactivate' : 'Activate'}
+                            className={`p-1.5 rounded-lg transition-colors ${u.status === 'active' ? 'text-text-muted hover:text-red-400 hover:bg-red-500/10' : 'text-text-muted hover:text-green-400 hover:bg-green-500/10'}`}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{u.status === 'active' ? 'person_off' : 'person'}</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 
 
@@ -1058,10 +1312,22 @@ const SettingsPage: React.FC = () => {
           </div>
           {activeTab === 'email' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
         </button>
+        {isAdmin && (
+          <button
+            onClick={() => { setActiveTab('users'); fetchUsers(); }}
+            className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'users' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>manage_accounts</span>
+              User Management
+            </div>
+            {activeTab === 'users' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full"></div>}
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : activeTab === 'email' ? renderEmailTab() : renderCreateTab()}
+      {activeTab === 'connection' ? renderConnectionTab() : activeTab === 'whatsapp' ? renderWhatsappTab() : activeTab === 'email' ? renderEmailTab() : activeTab === 'users' ? renderUsersTab() : renderCreateTab()}
     </div>
   );
 };

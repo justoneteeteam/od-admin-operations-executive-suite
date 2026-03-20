@@ -17,38 +17,53 @@ import AdsPage from './pages/AdsPage';
 import IncidentsPage from './pages/IncidentsPage';
 import LogisticsPage from './pages/LogisticsPage';
 import CommunicationPage from './pages/CommunicationPage';
+import { authService } from './src/services/auth.service';
+import { hasAccess, getDefaultRoute } from './src/config/roleConfig';
+import type { UserRole } from './src/config/roleConfig';
+
+/** Role-guarded route: redirects to default page if user lacks access */
+const RoleRoute: React.FC<{ path: string; element: React.ReactElement }> = ({ path, element }) => {
+  const role = authService.getRole();
+  if (!hasAccess(role, path)) {
+    return <Navigate to={getDefaultRoute(role)} replace />;
+  }
+  return element;
+};
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
 
   const handleLogin = () => {
     setIsAuthenticated(true);
   };
+
+  const role: UserRole = authService.getRole();
+  const defaultRoute = getDefaultRoute(role);
 
   return (
     <Router>
       <Routes>
         <Route
           path="/login"
-          element={!isAuthenticated ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/performance" />}
+          element={!isAuthenticated ? <LoginPage onLogin={handleLogin} /> : <Navigate to={defaultRoute} />}
         />
 
         <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
-          <Route path="/performance" element={<PerformancePage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/orders/create" element={<CreateOrderPage />} />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/inventory" element={<InventoryDashboard />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/purchases" element={<PurchasesPage />} />
-          <Route path="/fulfillment" element={<FulfillmentPage />} />
-          <Route path="/suppliers" element={<SupplierPage />} />
-          <Route path="/logistics" element={<LogisticsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/ads" element={<AdsPage />} />
-          <Route path="/incidents" element={<IncidentsPage />} />
-          <Route path="/communication" element={<CommunicationPage />} />
-          <Route path="*" element={<Navigate to="/performance" />} />
+          <Route path="/performance" element={<RoleRoute path="/performance" element={<PerformancePage />} />} />
+          <Route path="/orders" element={<RoleRoute path="/orders" element={<OrdersPage />} />} />
+          <Route path="/orders/create" element={<RoleRoute path="/orders/create" element={<CreateOrderPage />} />} />
+          <Route path="/products" element={<RoleRoute path="/products" element={<ProductsPage />} />} />
+          <Route path="/inventory" element={<RoleRoute path="/inventory" element={<InventoryDashboard />} />} />
+          <Route path="/customers" element={<RoleRoute path="/customers" element={<CustomersPage />} />} />
+          <Route path="/purchases" element={<RoleRoute path="/purchases" element={<PurchasesPage />} />} />
+          <Route path="/fulfillment" element={<RoleRoute path="/fulfillment" element={<FulfillmentPage />} />} />
+          <Route path="/suppliers" element={<RoleRoute path="/suppliers" element={<SupplierPage />} />} />
+          <Route path="/logistics" element={<RoleRoute path="/logistics" element={<LogisticsPage />} />} />
+          <Route path="/settings" element={<RoleRoute path="/settings" element={<SettingsPage />} />} />
+          <Route path="/ads" element={<RoleRoute path="/ads" element={<AdsPage />} />} />
+          <Route path="/incidents" element={<RoleRoute path="/incidents" element={<IncidentsPage />} />} />
+          <Route path="/communication" element={<RoleRoute path="/communication" element={<CommunicationPage />} />} />
+          <Route path="*" element={<Navigate to={defaultRoute} />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/login" />} />

@@ -233,6 +233,7 @@ model Order {
   riskAssessments    RiskAssessment[]
   callLogs           CallLog[]
   tickets            Ticket[]
+  adsCampaigns       AdsCampaign[]
 
   @@map("orders")
 }
@@ -874,23 +875,37 @@ model LoqateAddressCache {
 }
 
 model AdsCampaign {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  date      DateTime @db.Date
-  campaign  String   @db.VarChar(255)
-  country   String?  @db.VarChar(10)
-  platform  String?  @db.VarChar(50)
-  sku       String   @db.VarChar(50)
-  stage     String?  @db.VarChar(50)
-  pic       String?  @db.VarChar(100)
-  spendVnd  Decimal  @map("spend_vnd") @db.Decimal(15, 2)
-  notes     String?
-  source    String?  @default("upload") @db.VarChar(20)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  date          DateTime @db.Date
+  campaign      String   @db.VarChar(255)
+  country       String?  @db.VarChar(10)
+  platform      String?  @db.VarChar(50)
+  sku           String?  @db.VarChar(50)
+  stage         String?  @db.VarChar(50)
+  pic           String?  @db.VarChar(100)
+  spendVnd      Decimal  @map("spend_vnd") @db.Decimal(15, 2)
+  notes         String?
+  source        String?  @default("upload") @db.VarChar(20)
+  adName        String?  @map("ad_name") @db.VarChar(500)
+  adSetName     String?  @map("ad_set_name") @db.VarChar(500)
+  cpc           Decimal? @db.Decimal(15, 2)
+  cpm           Decimal? @db.Decimal(15, 2)
+  ctr           Decimal? @db.Decimal(10, 4)
+  resultType    String?  @map("result_type") @db.VarChar(100)
+  costPerResult Decimal? @map("cost_per_result") @db.Decimal(15, 2)
+  metaPurchases Int?     @default(0) @map("meta_purchases")
+  reportStart   DateTime? @map("report_start") @db.Date
+  reportEnd     DateTime? @map("report_end") @db.Date
+  orderId       String?  @map("order_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order Order? @relation(fields: [orderId], references: [id])
 
   @@index([date])
   @@index([sku])
   @@index([country])
+  @@index([orderId])
   @@map("ads_campaigns")
 }
 

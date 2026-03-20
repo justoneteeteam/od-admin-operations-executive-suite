@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
+import { authService } from '../src/services/auth.service';
+import { getSidebarItems } from '../src/config/roleConfig';
 
 const SidebarItem: React.FC<{
   to: string;
@@ -20,9 +22,50 @@ const SidebarItem: React.FC<{
   </Link>
 );
 
+const ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Admin',
+  MARKETING: 'Marketing',
+  CS: 'Customer Service',
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  ADMIN: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  MARKETING: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  CS: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+};
+
+const PAGE_TITLES: Record<string, string> = {
+  '/performance': 'Executive Performance',
+  '/orders': 'Orders Console',
+  '/products': 'Product Management',
+  '/inventory': 'Inventory Overview',
+  '/customers': 'Customer Intelligence',
+  '/purchases': 'Procurement Console',
+  '/fulfillment': 'Logistics & Fulfillment',
+  '/suppliers': 'Supply Chain Manager',
+  '/settings': 'Platform Settings',
+  '/ads': 'Ads Campaign Analytics',
+  '/incidents': 'Incident Management',
+  '/logistics': 'Logistic Companies',
+  '/communication': 'Communication Hub',
+};
+
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const user = authService.getUser();
+  const role = authService.getRole();
+  const sidebarItems = getSidebarItems(role);
+
+  // Group sidebar items
+  const groups = ['Core', 'Logistics', 'Operations', 'Marketing', 'System'];
+  const groupedItems = groups
+    .map((group) => ({
+      group,
+      items: sidebarItems.filter((item) => item.group === group),
+    }))
+    .filter((g) => g.items.length > 0);
 
   // Close sidebar on route change for mobile
   React.useEffect(() => {
@@ -47,28 +90,20 @@ const DashboardLayout: React.FC = () => {
           </div>
 
           <nav className="flex flex-col gap-1 flex-1">
-            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mb-2 opacity-50">Core</p>
-            <SidebarItem to="/performance" icon="analytics" label="Overview" active={location.pathname === '/performance'} />
-            <SidebarItem to="/orders" icon="package_2" label="Orders" active={location.pathname === '/orders'} />
-            <SidebarItem to="/products" icon="inventory" label="Products" active={location.pathname === '/products'} />
-            <SidebarItem to="/inventory" icon="warehouse" label="Inventory" active={location.pathname === '/inventory'} />
-            <SidebarItem to="/customers" icon="group" label="Customers" active={location.pathname === '/customers'} />
-            <SidebarItem to="/purchases" icon="shopping_bag" label="Purchases" active={location.pathname === '/purchases'} />
-
-            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">Logistics</p>
-            <SidebarItem to="/fulfillment" icon="local_shipping" label="Fulfillment Center" active={location.pathname === '/fulfillment'} />
-            <SidebarItem to="/suppliers" icon="factory" label="Suppliers" active={location.pathname === '/suppliers'} />
-            <SidebarItem to="/logistics" icon="package_2" label="Logistic" active={location.pathname === '/logistics'} />
-
-            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">Operations</p>
-            <SidebarItem to="/incidents" icon="report_problem" label="Incidents" active={location.pathname === '/incidents'} />
-            <SidebarItem to="/communication" icon="forum" label="Communication" active={location.pathname === '/communication'} />
-
-            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">Marketing</p>
-            <SidebarItem to="/ads" icon="campaign" label="Ads Analytics" active={location.pathname === '/ads'} />
-
-            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-6 mb-2 opacity-50">System</p>
-            <SidebarItem to="/settings" icon="settings" label="Settings" active={location.pathname === '/settings'} />
+            {groupedItems.map(({ group, items }) => (
+              <React.Fragment key={group}>
+                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest px-3 mt-4 first:mt-0 mb-2 opacity-50">{group}</p>
+                {items.map((item) => (
+                  <SidebarItem
+                    key={item.path}
+                    to={item.path}
+                    icon={item.icon}
+                    label={item.label}
+                    active={location.pathname === item.path}
+                  />
+                ))}
+              </React.Fragment>
+            ))}
           </nav>
 
         </div>
@@ -86,19 +121,7 @@ const DashboardLayout: React.FC = () => {
               <span className="material-symbols-outlined text-[24px]">menu</span>
             </button>
             <h2 className="text-white text-base sm:text-lg font-bold tracking-tight truncate max-w-[150px] sm:max-w-none">
-              {location.pathname === '/performance' && 'Executive Performance'}
-              {location.pathname === '/orders' && 'Orders Console'}
-              {location.pathname === '/products' && 'Product Management'}
-              {location.pathname === '/inventory' && 'Inventory Overview'}
-              {location.pathname === '/customers' && 'Customer Intelligence'}
-              {location.pathname === '/purchases' && 'Procurement Console'}
-              {location.pathname === '/fulfillment' && 'Logistics & Fulfillment'}
-              {location.pathname === '/suppliers' && 'Supply Chain Manager'}
-              {location.pathname === '/settings' && 'Platform Settings'}
-              {location.pathname === '/ads' && 'Ads Campaign Analytics'}
-              {location.pathname === '/incidents' && 'Incident Management'}
-              {location.pathname === '/logistics' && 'Logistic Companies'}
-              {location.pathname === '/communication' && 'Communication Hub'}
+              {PAGE_TITLES[location.pathname] || ''}
             </h2>
             <div className="hidden lg:flex h-10 items-stretch rounded-lg bg-border-dark min-w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
               <div className="text-text-muted flex items-center justify-center pl-4">
@@ -120,20 +143,18 @@ const DashboardLayout: React.FC = () => {
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>notifications</span>
                 <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-card-dark"></span>
               </button>
-              <button className="flex size-10 items-center justify-center rounded-lg bg-border-dark text-white hover:bg-[#2d445a] transition-all relative">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>notifications</span>
-                <span className="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border-2 border-card-dark"></span>
-              </button>
             </div>
             <div className="h-8 w-px bg-border-dark mx-2"></div>
             <div className="flex items-center gap-3 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-white leading-none">Alex Rivera</p>
-                <p className="text-[10px] text-text-muted font-bold uppercase mt-1 tracking-wider opacity-60">Admin Manager</p>
+                <p className="text-sm font-bold text-white leading-none">{user?.fullName || 'User'}</p>
+                <span className={`inline-block text-[9px] font-bold uppercase mt-1 tracking-wider px-1.5 py-0.5 rounded border ${ROLE_COLORS[role] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                  {ROLE_LABELS[role] || role}
+                </span>
               </div>
               <div
                 className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-10 border-2 border-border-dark shadow-lg ring-1 ring-white/5"
-                style={{ backgroundImage: `url('https://api.dicebear.com/7.x/avataaars/svg?seed=Alex')` }}
+                style={{ backgroundImage: `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}')` }}
               ></div>
             </div>
           </div>

@@ -6,7 +6,7 @@ export interface AdsCampaign {
     campaign: string;
     country?: string;
     platform?: string;
-    sku: string;
+    sku?: string;
     stage?: string;
     pic?: string;
     spendVnd: number;
@@ -20,6 +20,19 @@ export interface AdsCampaign {
     cvr?: number;
     notes?: string;
     source?: string;
+    // Meta Ads fields
+    adName?: string;
+    adSetName?: string;
+    cpc?: number;
+    cpm?: number;
+    ctr?: number;
+    resultType?: string;
+    costPerResult?: number;
+    metaPurchases?: number;
+    reportStart?: string;
+    reportEnd?: string;
+    orderId?: string;
+    orderNumber?: string;
 }
 
 export interface ExchangeRate {
