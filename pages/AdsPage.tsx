@@ -81,29 +81,39 @@ const InputTab: React.FC = () => {
 
     // Check order existence in batch
     const checkOrderMatches = async (records: StagedRecord[]): Promise<StagedRecord[]> => {
-        const orderNumbers = [...new Set(records.map(r => r.orderNumber).filter(Boolean))];
-        if (orderNumbers.length === 0) return records;
+        // Collect all unique individual order numbers (split by ;)
+        const allNums = new Set<string>();
+        for (const r of records) {
+            if (r.orderNumber) {
+                for (const num of r.orderNumber.split(';').map(s => s.trim()).filter(Boolean)) {
+                    allNums.add(num);
+                }
+            }
+        }
+        if (allNums.size === 0) return records;
 
         try {
             const matchedSet = new Set<string>();
-            // Query orders in batch by searching each number
-            for (const num of orderNumbers) {
+            const apiClient = (await import('../src/services/apiClient')).default;
+
+            // Query each unique order number individually
+            for (const num of allNums) {
                 try {
-                    const res = await adsCampaignsService.getAll(); // We'll check via the order service
-                    // Use a direct API call for order lookup
-                    const apiClient = (await import('../src/services/apiClient')).default;
                     const resp = await apiClient.get('/orders', { params: { search: num, searchType: 'orderNumber', limit: 1 } });
                     const data = resp.data?.data || resp.data || [];
                     if (Array.isArray(data) && data.length > 0) {
-                        matchedSet.add(num!);
+                        matchedSet.add(num);
                     }
                 } catch { /* ignore individual lookup errors */ }
             }
 
-            return records.map(r => ({
-                ...r,
-                _orderMatched: r.orderNumber ? matchedSet.has(r.orderNumber) : undefined,
-            }));
+            return records.map(r => {
+                if (!r.orderNumber) return { ...r, _orderMatched: undefined };
+                // Check if ALL order numbers in this record are matched
+                const nums = r.orderNumber.split(';').map(s => s.trim()).filter(Boolean);
+                const allMatched = nums.length > 0 && nums.every(n => matchedSet.has(n));
+                return { ...r, _orderMatched: allMatched };
+            });
         } catch {
             return records;
         }
