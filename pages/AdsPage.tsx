@@ -537,44 +537,6 @@ const InputTab: React.FC = () => {
         </div>
     );
 };
-// ─── ADS PAGE ────────────────────────────────────────────────────────────────
-const AdsPage: React.FC = () => {
-    const [tab, setTab] = useState<'dashboard' | 'input' | 'adjust' | 'rates'>('dashboard');
-
-    return (
-        <div className="flex flex-col gap-6 pb-12">
-            {/* Header */}
-            <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className="text-text-muted text-xs font-bold uppercase tracking-wider opacity-60">Home</span>
-                    <span className="text-text-muted text-xs opacity-30">/</span>
-                    <span className="text-white text-xs font-bold uppercase tracking-wider">Ads Analytics</span>
-                </div>
-                <h1 className="text-white text-3xl font-black tracking-tight">Ads Campaign Analytics</h1>
-                <p className="text-text-muted text-sm">Track ad spend, compute ROAS from live order data, and manage exchange rates.</p>
-            </div>
-
-            {/* Tab Switcher */}
-            <div className="flex gap-1 p-1 bg-card-dark rounded-xl border border-border-dark w-fit">
-                {(['dashboard', 'input', 'adjust', 'rates'] as const).map(t => (
-                    <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all capitalize ${tab === t ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
-                    >
-                        {t === 'dashboard' ? '📊 Dashboard' : t === 'input' ? '📥 Input' : t === 'adjust' ? '✏️ Adjust' : '💱 Rates'}
-                    </button>
-                ))}
-            </div>
-
-            {/* Tab Content */}
-            {tab === 'dashboard' && <DashboardTab />}
-            {tab === 'input' && <InputTab />}
-            {tab === 'adjust' && <AdjustTab />}
-            {tab === 'rates' && <RatesTab />}
-        </div>
-    );
-};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD TAB
@@ -1039,6 +1001,45 @@ const RatesTab: React.FC = () => {
                     </div>
                 )}
             </div>
+        </div>
+    );
+};
+
+// ─── ADS PAGE ────────────────────────────────────────────────────────────────
+const AdsPage: React.FC = () => {
+    const [tab, setTab] = useState<'dashboard' | 'input' | 'adjust' | 'rates'>('dashboard');
+
+    return (
+        <div className="flex flex-col gap-6 pb-12">
+            {/* Header */}
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-text-muted text-xs font-bold uppercase tracking-wider opacity-60">Home</span>
+                    <span className="text-text-muted text-xs opacity-30">/</span>
+                    <span className="text-white text-xs font-bold uppercase tracking-wider">Ads Analytics</span>
+                </div>
+                <h1 className="text-white text-3xl font-black tracking-tight">Ads Campaign Analytics</h1>
+                <p className="text-text-muted text-sm">Track ad spend, compute ROAS from live order data, and manage exchange rates.</p>
+            </div>
+
+            {/* Tab Switcher */}
+            <div className="flex gap-1 p-1 bg-card-dark rounded-xl border border-border-dark w-fit">
+                {(['dashboard', 'input', 'adjust', 'rates'] as const).map(t => (
+                    <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all capitalize ${tab === t ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+                    >
+                        {t === 'dashboard' ? '📊 Dashboard' : t === 'input' ? '📥 Input' : t === 'adjust' ? '✏️ Adjust' : '💱 Rates'}
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab Content */}
+            {tab === 'dashboard' && <DashboardTab />}
+            {tab === 'input' && <InputTab />}
+            {tab === 'adjust' && <AdjustTab />}
+            {tab === 'rates' && <RatesTab />}
         </div>
     );
 };
