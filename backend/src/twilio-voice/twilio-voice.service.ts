@@ -56,14 +56,7 @@ export class TwilioVoiceService {
             this.logger.warn(`Twilio not configured. Skipping call for order ${orderId}.`);
             return;
         }
-
-        // Check if Twilio calls are enabled in store settings
-        const storeSettings = await this.prisma.storeSettings.findFirst();
-        if (!storeSettings?.enableTwilioCalls) {
-            this.logger.log(`Order ${orderId}: Twilio calls disabled in store settings. Skipping.`);
-            return;
-        }
-
+        // Fetch order first so we can check its store settings
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
             include: { customer: true },
@@ -71,6 +64,15 @@ export class TwilioVoiceService {
 
         if (!order || !order.customer) {
             this.logger.error(`Order ${orderId} or customer not found. Cannot call.`);
+            return;
+        }
+
+        // Check if Twilio calls are enabled for this order's store
+        const storeSettings = await this.prisma.storeSettings.findFirst({
+            where: { id: order.storeId },
+        });
+        if (!storeSettings?.enableTwilioCalls) {
+            this.logger.log(`Order ${orderId}: Twilio calls disabled for store "${storeSettings?.storeName || order.storeId}". Skipping.`);
             return;
         }
 
@@ -301,13 +303,7 @@ export class TwilioVoiceService {
             return;
         }
 
-        // Check if SKU confirmation calls are enabled
-        const storeSettings = await this.prisma.storeSettings.findFirst();
-        if (!storeSettings?.enableSkuConfirmationCalls) {
-            this.logger.log(`Order ${orderId}: SKU confirmation calls disabled. Skipping.`);
-            return;
-        }
-
+        // Check if SKU confirmation calls are enabled for this order's store
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
             include: { customer: true },
@@ -315,6 +311,14 @@ export class TwilioVoiceService {
 
         if (!order || !order.customer) {
             this.logger.error(`Order ${orderId} or customer not found. Cannot make SKU call.`);
+            return;
+        }
+
+        const storeSettings = await this.prisma.storeSettings.findFirst({
+            where: { id: order.storeId },
+        });
+        if (!storeSettings?.enableSkuConfirmationCalls) {
+            this.logger.log(`Order ${orderId}: SKU confirmation calls disabled for store "${storeSettings?.storeName || order.storeId}". Skipping.`);
             return;
         }
 

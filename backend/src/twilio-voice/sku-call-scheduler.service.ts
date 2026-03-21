@@ -31,13 +31,6 @@ export class SkuCallSchedulerService {
         this.logger.log('Starting SKU call scheduler cron...');
 
         try {
-            // Check if SKU confirmation calls are enabled
-            const storeSettings = await this.prisma.storeSettings.findFirst();
-            if (!storeSettings?.enableSkuConfirmationCalls) {
-                this.logger.log('SKU confirmation calls disabled. Skipping SKU scheduler.');
-                return;
-            }
-
             // Find pending orders with SKU products (product exists in catalog)
             const eligibleOrders = await this.prisma.order.findMany({
                 where: {
@@ -103,6 +96,15 @@ export class SkuCallSchedulerService {
 
             for (const order of filtered) {
                 try {
+                    // Check if SKU confirmation calls are enabled for THIS order's store
+                    const storeSettings = await this.prisma.storeSettings.findFirst({
+                        where: { id: order.storeId },
+                    });
+                    if (!storeSettings?.enableSkuConfirmationCalls) {
+                        this.logger.log(`Order ${order.orderNumber}: SKU calls disabled for store "${storeSettings?.storeName || order.storeId}". Skipping.`);
+                        continue;
+                    }
+
                     const scriptType = order.riskAction === 'twilio_long' ? 'long' : 'short';
                     this.logger.log(`Triggering SKU confirmation call for order ${order.orderNumber} (${scriptType})...`);
                     await this.twilioVoiceService.initiateSkuConfirmationCall(order.id, scriptType);

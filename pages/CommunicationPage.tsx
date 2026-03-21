@@ -60,18 +60,19 @@ const CommunicationPage: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [skuSearch, setSkuSearch] = useState('');
 
-    // Twilio toggle state (fetched from store settings)
-    const [twilioEnabled, setTwilioEnabled] = useState(false);
-    const [storeSettingsId, setStoreSettingsId] = useState<string | null>(null);
+    // Per-store settings state
+    const [allStores, setAllStores] = useState<any[]>([]);
+    const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
     const [twilioToggling, setTwilioToggling] = useState(false);
-
-    // Out of Delivery toggle state
-    const [outOfDeliveryEnabled, setOutOfDeliveryEnabled] = useState(true);
     const [outOfDeliveryToggling, setOutOfDeliveryToggling] = useState(false);
-
-    // SKU Confirmation toggle state
-    const [skuConfirmEnabled, setSkuConfirmEnabled] = useState(false);
     const [skuConfirmToggling, setSkuConfirmToggling] = useState(false);
+
+    // Derived state from selected store
+    const selectedStore = allStores.find(s => s.id === selectedStoreId);
+    const twilioEnabled = !!selectedStore?.enableTwilioCalls;
+    const outOfDeliveryEnabled = selectedStore?.enableOutOfDeliveryNotifications !== false;
+    const skuConfirmEnabled = !!(selectedStore as any)?.enableSkuConfirmationCalls;
+    const storeSettingsId = selectedStoreId;
 
     // Script preview toggles
     const [showScriptPreview, setShowScriptPreview] = useState(false);
@@ -89,14 +90,21 @@ const CommunicationPage: React.FC = () => {
         else if (activeTab === 'sequences') fetchSequences();
     }, [activeTab]);
 
-    // Fetch store settings for Twilio toggle
+    // Fetch ALL store settings (deduped by store_name, keep latest)
     useEffect(() => {
         storeSettingsService.getAll().then(stores => {
-            if (stores.length > 0) {
-                setStoreSettingsId(stores[0].id);
-                setTwilioEnabled(!!stores[0].enableTwilioCalls);
-                setOutOfDeliveryEnabled(stores[0].enableOutOfDeliveryNotifications !== false);
-                setSkuConfirmEnabled(!!(stores[0] as any).enableSkuConfirmationCalls);
+            // Deduplicate: keep only unique store names (latest entry)
+            const seen = new Map<string, any>();
+            for (const s of stores) {
+                const key = s.storeName || s.id;
+                if (!seen.has(key) || new Date(s.createdAt) > new Date(seen.get(key).createdAt)) {
+                    seen.set(key, s);
+                }
+            }
+            const unique = Array.from(seen.values());
+            setAllStores(unique);
+            if (unique.length > 0 && !selectedStoreId) {
+                setSelectedStoreId(unique[0].id);
             }
         }).catch(err => console.error('Failed to fetch store settings:', err));
     }, []);
@@ -115,14 +123,18 @@ const CommunicationPage: React.FC = () => {
         setTimeout(() => setShowToast(null), 3000);
     };
 
+    const updateStoreInList = (storeId: string, updates: Record<string, any>) => {
+        setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, ...updates } : s));
+    };
+
     const handleToggleTwilio = async () => {
         if (!storeSettingsId || twilioToggling) return;
         setTwilioToggling(true);
         const newValue = !twilioEnabled;
         try {
             await storeSettingsService.update(storeSettingsId, { enableTwilioCalls: newValue });
-            setTwilioEnabled(newValue);
-            toast('success', `Twilio calls ${newValue ? 'enabled' : 'disabled'}`);
+            updateStoreInList(storeSettingsId, { enableTwilioCalls: newValue });
+            toast('success', `Twilio calls ${newValue ? 'enabled' : 'disabled'} for ${selectedStore?.storeName}`);
         } catch (err) {
             toast('error', 'Failed to toggle Twilio calls');
         } finally {
@@ -136,8 +148,8 @@ const CommunicationPage: React.FC = () => {
         const newValue = !outOfDeliveryEnabled;
         try {
             await storeSettingsService.update(storeSettingsId, { enableOutOfDeliveryNotifications: newValue });
-            setOutOfDeliveryEnabled(newValue);
-            toast('success', `Out of Delivery notifications ${newValue ? 'enabled' : 'disabled'}`);
+            updateStoreInList(storeSettingsId, { enableOutOfDeliveryNotifications: newValue });
+            toast('success', `Out of Delivery notifications ${newValue ? 'enabled' : 'disabled'} for ${selectedStore?.storeName}`);
         } catch (err) {
             toast('error', 'Failed to toggle Out of Delivery notifications');
         } finally {
@@ -151,8 +163,8 @@ const CommunicationPage: React.FC = () => {
         const newValue = !skuConfirmEnabled;
         try {
             await storeSettingsService.update(storeSettingsId, { enableSkuConfirmationCalls: newValue } as any);
-            setSkuConfirmEnabled(newValue);
-            toast('success', `SKU confirmation calls ${newValue ? 'enabled' : 'disabled'}`);
+            updateStoreInList(storeSettingsId, { enableSkuConfirmationCalls: newValue });
+            toast('success', `SKU confirmation calls ${newValue ? 'enabled' : 'disabled'} for ${selectedStore?.storeName}`);
         } catch (err) {
             toast('error', 'Failed to toggle SKU confirmation calls');
         } finally {
@@ -623,6 +635,31 @@ const CommunicationPage: React.FC = () => {
                             <div className="flex flex-col gap-5" style={{ minHeight: 'calc(100vh - 280px)' }}>
                                 {/* Pre-built Automation Cards */}
                                 <p className="text-xs text-text-muted">Active automation sequences exposed from backend. Click a custom sequence on the left to edit.</p>
+
+                                {/* Store Selector */}
+                                {allStores.length > 1 && (
+                                    <div className="flex items-center gap-3 bg-[#111a22] rounded-xl border border-border-dark p-3">
+                                        <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>store</span>
+                                        <span className="text-xs text-text-muted font-bold uppercase tracking-wider">Store:</span>
+                                        <select
+                                            className="flex-1 px-3 py-2 bg-[#0a1018] border border-border-dark rounded-lg text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                            value={selectedStoreId || ''}
+                                            onChange={e => setSelectedStoreId(e.target.value)}
+                                        >
+                                            {allStores.map(s => (
+                                                <option key={s.id} value={s.id}>{s.storeName}</option>
+                                            ))}
+                                        </select>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                            twilioEnabled
+                                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                        }`}>
+                                            Twilio: {twilioEnabled ? 'ON' : 'OFF'}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                     {/* Confirmation Call + Pre-SMS Card */}
                                     <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${twilioEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
