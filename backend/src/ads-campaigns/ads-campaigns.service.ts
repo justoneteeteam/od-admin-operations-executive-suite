@@ -305,67 +305,102 @@ export class AdsCampaignsService {
             ? Number(rates[rates.length - 1].vndToEur)
             : 0.0000370;
 
-        // 3. Get unique SKUs from campaigns (filter out nulls)
+        // 3. Collect all order numbers from campaign order_ids AND unique SKUs
+        const allOrderNumbers = new Set<string>();
+        for (const c of campaigns) {
+            if (c.orderIds) {
+                for (const num of c.orderIds.split(';').map(s => s.trim()).filter(Boolean)) {
+                    allOrderNumbers.add(num);
+                }
+            }
+        }
         const skus: string[] = [...new Set(campaigns.map(c => c.sku).filter((s): s is string => !!s))];
 
-        // 4. Build date range for orders query
+        // 4. Fetch orders by order_ids (direct match)
+        let ordersByNumber = new Map<string, { orderNumber: string; confirmationStatus: string | null; orderStatus: string | null; totalAmount: any }>();
+        if (allOrderNumbers.size > 0) {
+            const orders = await this.prisma.order.findMany({
+                where: { orderNumber: { in: [...allOrderNumbers] } },
+                select: { orderNumber: true, confirmationStatus: true, orderStatus: true, totalAmount: true },
+            });
+            for (const o of orders) {
+                ordersByNumber.set(o.orderNumber, o);
+            }
+        }
+
+        // 5. Also fetch orders by SKU for campaigns without order_ids (fallback)
         const allDates = campaigns.map(c => c.date);
         const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
         const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
         maxDate.setHours(23, 59, 59, 999);
 
-        // 5. Count Leads: orders with confirmationStatus = 'Confirmed', matched by SKU
-        const confirmedOrders = await this.prisma.order.findMany({
-            where: {
-                confirmationStatus: 'Confirmed',
-                orderDate: { gte: minDate, lte: maxDate },
-                items: { some: { sku: { in: skus } } },
-            },
-            include: { items: { select: { sku: true } } },
-        });
-
-        // 6. Count Orders + Revenue: orders with orderStatus = 'Delivered', matched by SKU
-        const deliveredOrders = await this.prisma.order.findMany({
-            where: {
-                orderStatus: 'Delivered',
-                orderDate: { gte: minDate, lte: maxDate },
-                items: { some: { sku: { in: skus } } },
-            },
-            include: { items: { select: { sku: true } } },
-        });
-
-        // 7. Build per-SKU metrics
         const skuLeads: Record<string, number> = {};
         const skuOrders: Record<string, number> = {};
         const skuRevenue: Record<string, number> = {};
 
-        for (const order of confirmedOrders) {
-            const orderSkus = new Set(order.items.map(i => i.sku));
-            for (const sku of orderSkus) {
-                if (skus.includes(sku)) {
-                    skuLeads[sku] = (skuLeads[sku] || 0) + 1;
+        if (skus.length > 0) {
+            const confirmedOrders = await this.prisma.order.findMany({
+                where: {
+                    confirmationStatus: 'Confirmed',
+                    orderDate: { gte: minDate, lte: maxDate },
+                    items: { some: { sku: { in: skus } } },
+                },
+                include: { items: { select: { sku: true } } },
+            });
+            const deliveredOrders = await this.prisma.order.findMany({
+                where: {
+                    orderStatus: 'Delivered',
+                    orderDate: { gte: minDate, lte: maxDate },
+                    items: { some: { sku: { in: skus } } },
+                },
+                include: { items: { select: { sku: true } } },
+            });
+
+            for (const order of confirmedOrders) {
+                for (const sku of new Set(order.items.map(i => i.sku))) {
+                    if (skus.includes(sku)) skuLeads[sku] = (skuLeads[sku] || 0) + 1;
+                }
+            }
+            for (const order of deliveredOrders) {
+                for (const sku of new Set(order.items.map(i => i.sku))) {
+                    if (skus.includes(sku)) {
+                        skuOrders[sku] = (skuOrders[sku] || 0) + 1;
+                        skuRevenue[sku] = (skuRevenue[sku] || 0) + Number(order.totalAmount);
+                    }
                 }
             }
         }
 
-        for (const order of deliveredOrders) {
-            const orderSkus = new Set(order.items.map(i => i.sku));
-            for (const sku of orderSkus) {
-                if (skus.includes(sku)) {
-                    skuOrders[sku] = (skuOrders[sku] || 0) + 1;
-                    skuRevenue[sku] = (skuRevenue[sku] || 0) + Number(order.totalAmount);
-                }
-            }
-        }
-
-        // 8. Enrich campaigns with computed fields
+        // 6. Enrich campaigns — prefer order_ids-based metrics, fallback to SKU-based
         const enriched = campaigns.map(c => {
             const dateStr = c.date.toISOString().split('T')[0];
             const rate = rateMap.get(dateStr) || defaultRate;
             const spendEur = Number(c.spendVnd) * rate;
-            const leads = c.sku ? (skuLeads[c.sku] || 0) : 0;
-            const orders = c.sku ? (skuOrders[c.sku] || 0) : 0;
-            const revenue = c.sku ? (skuRevenue[c.sku] || 0) : 0;
+
+            let leads = 0;
+            let orders = 0;
+            let revenue = 0;
+
+            if (c.orderIds) {
+                // Use direct order_ids matching
+                const nums = c.orderIds.split(';').map(s => s.trim()).filter(Boolean);
+                for (const num of nums) {
+                    const order = ordersByNumber.get(num);
+                    if (order) {
+                        if (order.confirmationStatus === 'Confirmed') leads++;
+                        if (order.orderStatus === 'Delivered') {
+                            orders++;
+                            revenue += Number(order.totalAmount) || 0;
+                        }
+                    }
+                }
+            } else if (c.sku) {
+                // Fallback: SKU-based matching
+                leads = skuLeads[c.sku] || 0;
+                orders = skuOrders[c.sku] || 0;
+                revenue = skuRevenue[c.sku] || 0;
+            }
+
             const roas = spendEur > 0 ? revenue / spendEur : 0;
             const cpo = orders > 0 ? spendEur / orders : 0;
             const cpl = leads > 0 ? spendEur / leads : 0;
@@ -385,7 +420,7 @@ export class AdsCampaignsService {
             };
         });
 
-        // 9. Aggregate KPIs
+        // 7. Aggregate KPIs
         const totalSpendVnd = enriched.reduce((s, c) => s + c.spendVnd, 0);
         const totalSpendEur = enriched.reduce((s, c) => s + c.spendEur, 0);
         const totalRevenue = enriched.reduce((s, c) => s + c.revenueEur, 0);
@@ -404,7 +439,7 @@ export class AdsCampaignsService {
             cvr: totalLeads > 0 ? Math.round((totalOrders / totalLeads) * 10000) / 100 : 0,
         };
 
-        // 10. Chart data: group by date
+        // 8. Chart data: group by date
         const dateMap = new Map<string, { spendEur: number; revenue: number; leads: number; orders: number }>();
         for (const c of enriched) {
             const dateStr = c.date.toISOString().split('T')[0];
