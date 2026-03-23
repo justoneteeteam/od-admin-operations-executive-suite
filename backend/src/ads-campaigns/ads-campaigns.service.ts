@@ -106,7 +106,7 @@ export class AdsCampaignsService {
         const allOrderNums = new Set<string>();
         for (const r of records) {
             if (r.orderNumber) {
-                for (const num of r.orderNumber.split(';').map(s => s.trim()).filter(Boolean)) {
+                for (const num of r.orderNumber.split(';').map(s => s.trim().replace(/^#/, '')).filter(Boolean)) {
                     allOrderNums.add(num);
                 }
             }
@@ -131,12 +131,21 @@ export class AdsCampaignsService {
         const data = records.map(r => {
             let orderIds: string | null = null;
             if (r.orderNumber) {
-                const nums = r.orderNumber.split(';').map(s => s.trim()).filter(Boolean);
+                const nums = r.orderNumber.split(';').map(s => s.trim().replace(/^#/, '')).filter(Boolean);
                 const matched = nums.filter(n => matchedOrderNums.has(n));
                 if (matched.length > 0) orderIds = matched.join(';');
             }
+
+            // Validate date — guard against Excel serial numbers or malformed strings
+            const parsedDate = new Date(r.date);
+            if (isNaN(parsedDate.getTime())) {
+                throw new BadRequestException(
+                    `Invalid date "${r.date}" in campaign "${r.campaign}". Expected YYYY-MM-DD format.`,
+                );
+            }
+
             return {
-                date: new Date(r.date),
+                date: parsedDate,
                 campaign: r.campaign,
                 country: r.country,
                 platform: r.platform,

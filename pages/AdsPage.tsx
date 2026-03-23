@@ -179,6 +179,23 @@ const InputTab: React.FC = () => {
                 return parseFloat(s) || 0;
             };
 
+            // Date parsing — handles Excel serial numbers and DD/MM/YYYY formats
+            const parseDate = (val: any): string => {
+                if (!val && val !== 0) return '';
+                if (typeof val === 'number') {
+                    // Excel date serial number → JS Date
+                    const d = new Date((val - 25569) * 86400 * 1000);
+                    return d.toISOString().split('T')[0];
+                }
+                const s = String(val).trim();
+                // Handle DD/MM/YYYY format
+                const parts = s.split('/');
+                if (parts.length === 3) {
+                    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                }
+                return s;
+            };
+
             const cpc = parseNum(getCol(['CPC']));
             const cpm = parseNum(getCol(['CPM']));
             const ctr = parseNum(getCol(['CTR']));
@@ -186,9 +203,11 @@ const InputTab: React.FC = () => {
             const resultType = String(getCol(['Loại kết quả']) || '').trim();
             const costPerResult = parseNum(getCol(['Chi phí trên mỗi kết quả']));
             const metaPurchases = parseInt(String(getCol(['Lượt mua']) || '0'), 10) || 0;
-            const reportStart = String(getCol(['Bắt đầu báo cáo']) || '').trim();
-            const reportEnd = String(getCol(['Kết thúc báo cáo']) || '').trim();
-            const orderNumber = String(getCol(['Order ID']) || '').trim();
+            const reportStart = parseDate(getCol(['Bắt đầu báo cáo']));
+            const reportEnd = parseDate(getCol(['Kết thúc báo cáo']));
+            // Strip # prefix from order numbers for correct DB matching
+            const rawOrderNum = String(getCol(['Order ID']) || '').trim();
+            const orderNumber = rawOrderNum ? rawOrderNum.split(';').map(s => s.trim().replace(/^#/, '')).filter(Boolean).join(';') : '';
 
             const country = inferCountry(campaign);
 
@@ -340,14 +359,17 @@ const InputTab: React.FC = () => {
         setSaving(true);
         setResult(null);
         try {
-            // Apply defaults to records before saving
-            const records = staged.map(r => ({
-                ...r,
-                platform: r.platform || defaults.platform,
-                sku: r.sku || defaults.sku || undefined,
-                stage: r.stage || defaults.stage || undefined,
-                pic: r.pic || defaults.pic || undefined,
-            }));
+            // Apply defaults to records before saving, strip frontend-only fields
+            const records = staged.map(r => {
+                const { _orderMatched, ...rest } = r;
+                return {
+                    ...rest,
+                    platform: r.platform || defaults.platform,
+                    sku: r.sku || defaults.sku || undefined,
+                    stage: r.stage || defaults.stage || undefined,
+                    pic: r.pic || defaults.pic || undefined,
+                };
+            });
             const res = await adsCampaignsService.bulkCreate(records as any);
             let msg = `✅ Successfully saved ${res.created} records to database.`;
             if (res.orderMatchedCount !== undefined) {
