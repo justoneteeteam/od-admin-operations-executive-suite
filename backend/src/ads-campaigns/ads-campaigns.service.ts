@@ -169,12 +169,20 @@ export class AdsCampaignsService {
             };
         });
 
-        const result = await this.prisma.adsCampaign.createMany({ data });
-        return {
-            created: result.count,
-            orderMatchedCount: matchedOrderNums.size,
-            unresolvedOrderNumbers,
-        };
+        try {
+            const result = await this.prisma.adsCampaign.createMany({ data });
+            return {
+                created: result.count,
+                orderMatchedCount: matchedOrderNums.size,
+                unresolvedOrderNumbers,
+            };
+        } catch (err: any) {
+            console.error('bulkCreate error:', err?.message || err);
+            console.error('First record data:', JSON.stringify(data[0], null, 2));
+            throw new BadRequestException(
+                `Failed to save records: ${err?.message || 'Unknown database error'}`,
+            );
+        }
     }
 
     async update(id: string, dto: UpdateAdsCampaignDto, changedBy?: string) {
