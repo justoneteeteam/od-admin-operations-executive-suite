@@ -128,6 +128,40 @@ export class AdsCampaignsService {
             }
         }
 
+        // Helper: parse date strings that may be Excel serial numbers, DD/MM/YYYY, or YYYY-MM-DD
+        const parseDate = (val: any): Date | null => {
+            if (!val && val !== 0) return null;
+            const s = String(val).trim();
+            if (!s) return null;
+
+            // Detect pure numeric → Excel date serial number (e.g. 46100 → 2026-03-19)
+            if (/^\d{4,6}$/.test(s)) {
+                const serial = parseInt(s, 10);
+                const d = new Date((serial - 25569) * 86400 * 1000);
+                if (!isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2100) {
+                    return d;
+                }
+            }
+
+            // Handle DD/MM/YYYY format
+            const slashParts = s.split('/');
+            if (slashParts.length === 3) {
+                const iso = `${slashParts[2]}-${slashParts[1].padStart(2, '0')}-${slashParts[0].padStart(2, '0')}`;
+                const d = new Date(iso);
+                if (!isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2100) {
+                    return d;
+                }
+            }
+
+            // Standard ISO parse (YYYY-MM-DD or full ISO string)
+            const d = new Date(s);
+            if (!isNaN(d.getTime()) && d.getFullYear() >= 1900 && d.getFullYear() <= 2100) {
+                return d;
+            }
+
+            return null;
+        };
+
         const data = records.map(r => {
             let orderIds: string | null = null;
             if (r.orderNumber) {
@@ -136,9 +170,9 @@ export class AdsCampaignsService {
                 if (matched.length > 0) orderIds = matched.join(';');
             }
 
-            // Validate date — guard against Excel serial numbers or malformed strings
-            const parsedDate = new Date(r.date);
-            if (isNaN(parsedDate.getTime())) {
+            // Parse and validate date
+            const parsedDate = parseDate(r.date);
+            if (!parsedDate) {
                 throw new BadRequestException(
                     `Invalid date "${r.date}" in campaign "${r.campaign}". Expected YYYY-MM-DD format.`,
                 );
@@ -163,8 +197,8 @@ export class AdsCampaignsService {
                 resultType: r.resultType,
                 costPerResult: r.costPerResult,
                 metaPurchases: r.metaPurchases,
-                reportStart: r.reportStart ? new Date(r.reportStart) : null,
-                reportEnd: r.reportEnd ? new Date(r.reportEnd) : null,
+                reportStart: parseDate(r.reportStart),
+                reportEnd: parseDate(r.reportEnd),
                 orderIds,
             };
         });
