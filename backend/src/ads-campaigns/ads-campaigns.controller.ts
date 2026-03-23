@@ -53,6 +53,11 @@ export class AdsCampaignsController {
         return this.service.update(id, dto);
     }
 
+    @Post('bulk-delete')
+    bulkDelete(@Body() body: { ids: string[] }) {
+        return this.service.bulkDelete(body.ids);
+    }
+
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.service.remove(id);

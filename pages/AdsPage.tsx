@@ -583,6 +583,8 @@ const DashboardTab: React.FC = () => {
     const [endDate, setEndDate] = useState('');
     const [dateRangePreset, setDateRangePreset] = useState('All Time');
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [deleting, setDeleting] = useState(false);
 
     const [dbProducts, setDbProducts] = useState<any[]>([]);
     const [dbCountries, setDbCountries] = useState<string[]>([]);
@@ -719,15 +721,65 @@ const DashboardTab: React.FC = () => {
 
             {/* Campaign Breakdown Table */}
             <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-                <div className="px-6 py-4 border-b border-border-dark bg-[#14202c]">
+                <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Campaign Breakdown ({data.campaigns.length} records)</h3>
+                    {selectedIds.size > 0 && (
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-amber-400 font-bold">{selectedIds.size} selected</span>
+                            <button
+                                onClick={async () => {
+                                    if (!confirm(`Delete ${selectedIds.size} selected records?`)) return;
+                                    setDeleting(true);
+                                    try {
+                                        await adsCampaignsService.bulkDelete([...selectedIds]);
+                                        setSelectedIds(new Set());
+                                        fetchDashboard();
+                                    } catch (err) { console.error('Bulk delete error:', err); }
+                                    finally { setDeleting(false); }
+                                }}
+                                disabled={deleting}
+                                className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-bold hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                            >
+                                {deleting ? 'Deleting...' : `🗑 Delete (${selectedIds.size})`}
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse min-w-[1200px]">
-                        <thead><tr className="bg-[#17232f]">{['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}</tr></thead>
+                        <thead><tr className="bg-[#17232f]">
+                            <th className="px-3 py-3 w-10">
+                                <input
+                                    type="checkbox"
+                                    className="accent-primary w-4 h-4 cursor-pointer"
+                                    checked={data.campaigns.length > 0 && selectedIds.size === data.campaigns.length}
+                                    onChange={e => {
+                                        if (e.target.checked) {
+                                            setSelectedIds(new Set(data.campaigns.map((c: any) => c.id)));
+                                        } else {
+                                            setSelectedIds(new Set());
+                                        }
+                                    }}
+                                />
+                            </th>
+                            {['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}
+                        </tr></thead>
                         <tbody className="divide-y divide-border-dark/50">
-                            {data.campaigns.map((c, i) => (
-                                <tr key={i} className="hover:bg-primary/[0.02] transition-colors">
+                            {data.campaigns.map((c: any, i: number) => (
+                                <tr key={i} className={`hover:bg-primary/[0.02] transition-colors ${selectedIds.has(c.id) ? 'bg-primary/[0.05]' : ''}`}>
+                                    <td className="px-3 py-3">
+                                        <input
+                                            type="checkbox"
+                                            className="accent-primary w-4 h-4 cursor-pointer"
+                                            checked={selectedIds.has(c.id)}
+                                            onChange={e => {
+                                                const next = new Set(selectedIds);
+                                                if (e.target.checked) next.add(c.id);
+                                                else next.delete(c.id);
+                                                setSelectedIds(next);
+                                            }}
+                                        />
+                                    </td>
                                     <td className="px-4 py-3 text-xs text-white font-mono">{new Date(c.date).toLocaleDateString('en-GB')}</td>
                                     <td className="px-4 py-3 text-xs text-white font-bold max-w-[200px] truncate">{c.campaign}</td>
                                     <td className="px-4 py-3"><span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{c.country || '—'}</span></td>

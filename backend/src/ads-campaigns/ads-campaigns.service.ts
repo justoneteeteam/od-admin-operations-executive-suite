@@ -262,6 +262,16 @@ export class AdsCampaignsService {
         return { updated, changes };
     }
 
+    async bulkDelete(ids: string[]) {
+        if (!ids || ids.length === 0) {
+            throw new BadRequestException('No IDs provided for deletion.');
+        }
+        const result = await this.prisma.adsCampaign.deleteMany({
+            where: { id: { in: ids } },
+        });
+        return { deleted: result.count };
+    }
+
     async remove(id: string) {
         await this.findOne(id);
         return this.prisma.adsCampaign.delete({ where: { id } });

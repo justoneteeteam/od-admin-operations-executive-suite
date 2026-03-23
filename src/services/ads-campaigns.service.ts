@@ -97,6 +97,11 @@ export const adsCampaignsService = {
         return response.data;
     },
 
+    async bulkDelete(ids: string[]) {
+        const response = await apiClient.post('/ads-campaigns/bulk-delete', { ids });
+        return response.data;
+    },
+
     async getChangeLog(id: string) {
         const response = await apiClient.get(`/ads-campaigns/${id}/changelog`);
         return response.data as ChangeLogEntry[];
