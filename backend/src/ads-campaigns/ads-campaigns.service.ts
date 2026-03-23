@@ -106,7 +106,7 @@ export class AdsCampaignsService {
         const allOrderNums = new Set<string>();
         for (const r of records) {
             if (r.orderNumber) {
-                for (const num of r.orderNumber.split(';').map(s => s.trim().replace(/^#/, '')).filter(Boolean)) {
+                for (const num of r.orderNumber.split(';').map(s => s.trim()).filter(Boolean)) {
                     allOrderNums.add(num);
                 }
             }
@@ -165,7 +165,7 @@ export class AdsCampaignsService {
         const data = records.map(r => {
             let orderIds: string | null = null;
             if (r.orderNumber) {
-                const nums = r.orderNumber.split(';').map(s => s.trim().replace(/^#/, '')).filter(Boolean);
+                const nums = r.orderNumber.split(';').map(s => s.trim()).filter(Boolean);
                 const matched = nums.filter(n => matchedOrderNums.has(n));
                 if (matched.length > 0) orderIds = matched.join(';');
             }

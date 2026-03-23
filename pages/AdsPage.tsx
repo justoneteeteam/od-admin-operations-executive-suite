@@ -207,7 +207,7 @@ const InputTab: React.FC = () => {
             const reportEnd = parseDate(getCol(['Kết thúc báo cáo']));
             // Strip # prefix from order numbers for correct DB matching
             const rawOrderNum = String(getCol(['Order ID']) || '').trim();
-            const orderNumber = rawOrderNum ? rawOrderNum.split(';').map(s => s.trim().replace(/^#/, '')).filter(Boolean).join(';') : '';
+            const orderNumber = rawOrderNum ? rawOrderNum.split(';').map(s => s.trim()).filter(Boolean).join(';') : '';
 
             const country = inferCountry(campaign);
 
