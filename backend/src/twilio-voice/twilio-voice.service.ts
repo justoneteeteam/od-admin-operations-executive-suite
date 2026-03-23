@@ -10,7 +10,7 @@ export class TwilioVoiceService {
 
     // Retry delays in minutes: immediate, 30 min, 4 hours
     private readonly RETRY_DELAYS = [0, 30, 240];
-    private readonly MAX_ATTEMPTS = 1;
+    private readonly MAX_ATTEMPTS = 3; // Updated to match RETRY_DELAYS length
     private readonly PRE_CALL_DELAY_MS = 8000; // 8 seconds
 
     constructor(
@@ -32,8 +32,16 @@ export class TwilioVoiceService {
     private async logSkip(orderId: string, scriptType: string, scriptLanguage: string, reason: string) {
         this.logger.log(`Order ${orderId}: Skipping call. Reason: ${reason}`);
 
-        // Find attempt number
-        const existingAttempts = await this.prisma.callLog.count({ where: { orderId } });
+        // For 'already_answered' and 'already_confirmed', don't persist a new log entry
+        // — the scheduler re-invokes every cycle, which inflates the count unnecessarily.
+        if (['already_answered', 'already_confirmed', 'sku_already_picked_up', 'sku_already_finalized'].includes(reason)) {
+            return;
+        }
+
+        // Find attempt number (only count real attempts, not skipped entries)
+        const existingAttempts = await this.prisma.callLog.count({
+            where: { orderId, callStatus: { notIn: ['skipped'] } },
+        });
 
         await this.prisma.callLog.create({
             data: {
@@ -100,9 +108,9 @@ export class TwilioVoiceService {
             return;
         }
 
-        // Rule 3: Check max attempts
+        // Rule 3: Check max attempts (only count real attempts, not skipped entries)
         const existingAttempts = await this.prisma.callLog.count({
-            where: { orderId },
+            where: { orderId, callStatus: { notIn: ['skipped'] } },
         });
         const attemptNumber = existingAttempts + 1;
 
@@ -160,29 +168,7 @@ export class TwilioVoiceService {
         // Rule 5: Idempotency check via DB creation before Twilio call
         const idempotencyKey = `twilio-call:${orderId}:${scriptType}:${attemptNumber}`;
 
-        let callLogEntry;
-        try {
-            // We create the log entry FIRST in initiated state. 
-            // If the idempotency key already exists, Prisma will throw a unique constraint error.
-            callLogEntry = await this.prisma.callLog.create({
-                data: {
-                    orderId,
-                    callSid: `PENDING-${Date.now()}`, // Temporary SID until call is created
-                    attemptNumber,
-                    callStatus: 'initiated',
-                    scriptType,
-                    scriptLanguage: language,
-                    idempotencyKey,
-                },
-            });
-        } catch (dbError: any) {
-            // Prisma error P2002 is unique constraint violation
-            if (dbError.code === 'P2002') {
-                this.logger.warn(`Order ${orderId}: Idempotency key ${idempotencyKey} already exists. Skipping.`);
-                return;
-            }
-            throw dbError; // rethrow if it's some other DB error
-        }
+        // Removed early callLog creation; will be created after all guard checks
 
         // Rule 6: Final DB re-check
         const finalOrderCheck = await this.prisma.order.findUnique({
@@ -194,18 +180,23 @@ export class TwilioVoiceService {
             ['Confirmed', 'Declined', 'Call Center'].includes(finalOrderCheck?.confirmationStatus || '') ||
             finalOrderCheck?.orderStatus === 'Cancelled'
         ) {
-            // It got finalized in the split second before we called
-            await this.prisma.callLog.update({
-                where: { id: callLogEntry.id },
-                data: {
-                    callStatus: 'skipped',
-                    skipReason: 'already_confirmed_race',
-                }
-            });
-            this.logger.log(`Order ${orderId}: Skipped call at the last millisecond due to finalization race condition.`);
+            // Order was finalized between initial check and now — skip without creating a log
+            this.logger.log(`Order ${orderId}: Skipped call due to finalization race condition.`);
             return;
         }
 
+        // Create call log entry after all checks passed
+        const callLogEntry = await this.prisma.callLog.create({
+            data: {
+                orderId,
+                callSid: `PENDING-${Date.now()}`,
+                attemptNumber,
+                callStatus: 'initiated',
+                scriptType,
+                scriptLanguage: language,
+                idempotencyKey,
+            },
+        });
         // ── Pre-Call SMS Warning (first attempt only) ──
         if (attemptNumber === 1) {
             try {
@@ -234,6 +225,11 @@ export class TwilioVoiceService {
                 to: customerPhone,
                 from: process.env.TWILIO_PHONE_NUMBER || '+12765311327',
                 url: twimlUrl,
+                // Answering Machine Detection: hang up on voicemail, only play script to humans
+                machineDetection: 'DetectMessageEnd',
+                asyncAmd: 'true',
+                asyncAmdStatusCallback: `${appUrl}/twilio/amd-callback?orderId=${orderId}`,
+                asyncAmdStatusCallbackMethod: 'POST',
                 record: true,
                 recordingStatusCallback: `${appUrl}/twilio/recording-callback?orderId=${orderId}`,
                 recordingStatusCallbackMethod: 'POST',
@@ -348,9 +344,9 @@ export class TwilioVoiceService {
             return;
         }
 
-        // Rule 3: Check max attempts (8 for SKU)
+        // Rule 3: Check max attempts (8 for SKU, only count real attempts)
         const existingAttempts = await this.prisma.callLog.count({
-            where: { orderId },
+            where: { orderId, callStatus: { notIn: ['skipped'] } },
         });
         const attemptNumber = existingAttempts + 1;
 
@@ -461,6 +457,11 @@ export class TwilioVoiceService {
                 to: customerPhone,
                 from: process.env.TWILIO_PHONE_NUMBER || '+12765311327',
                 url: twimlUrl,
+                // Answering Machine Detection for SKU calls too
+                machineDetection: 'DetectMessageEnd',
+                asyncAmd: 'true',
+                asyncAmdStatusCallback: `${appUrl}/twilio/amd-callback?orderId=${orderId}`,
+                asyncAmdStatusCallbackMethod: 'POST',
                 record: true,
                 recordingStatusCallback: `${appUrl}/twilio/recording-callback?orderId=${orderId}`,
                 recordingStatusCallbackMethod: 'POST',

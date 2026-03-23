@@ -395,6 +395,66 @@ export class TwilioVoiceController {
     }
 
     // ───────────────────────────────────────
+    // 5. Answering Machine Detection (AMD) Callback
+    //    Twilio calls this when it detects human vs machine.
+    //    If machine → hang up immediately so the script doesn't play to voicemail.
+    // ───────────────────────────────────────
+    @Public()
+    @Post('amd-callback')
+    async handleAmdCallback(
+        @Query('orderId') orderId: string,
+        @Body() amdData: any,
+    ) {
+        const { CallSid, AnsweredBy } = amdData;
+
+        this.logger.log(
+            `Order ${orderId}: AMD callback — SID: ${CallSid}, AnsweredBy: ${AnsweredBy}`,
+        );
+
+        // If answered by machine/fax → hang up immediately
+        if (AnsweredBy && AnsweredBy !== 'human') {
+            this.logger.warn(
+                `Order ${orderId}: Answering machine detected (${AnsweredBy}). Hanging up call ${CallSid}.`,
+            );
+
+            try {
+                // Hang up the call via Twilio API
+                const accountSid = process.env.TWILIO_ACCOUNT_SID;
+                const authToken = process.env.TWILIO_AUTH_TOKEN;
+                if (accountSid && authToken) {
+                    const twilioClient = new twilio.Twilio(accountSid, authToken);
+                    await twilioClient.calls(CallSid).update({ status: 'completed' });
+                    this.logger.log(`Order ${orderId}: Call ${CallSid} terminated (machine detected).`);
+                }
+            } catch (err) {
+                this.logger.error(`Order ${orderId}: Failed to hang up machine call: ${err.message}`);
+            }
+
+            // Update call log to reflect machine detection
+            const callLog = await this.prisma.callLog.findFirst({
+                where: { orderId, callSid: CallSid },
+            });
+
+            if (callLog) {
+                await this.prisma.callLog.update({
+                    where: { id: callLog.id },
+                    data: {
+                        callStatus: 'machine_detected',
+                        skipReason: `Voicemail/machine detected: ${AnsweredBy}`,
+                        completedAt: new Date(),
+                    },
+                });
+            }
+
+            return { received: true, action: 'hung_up', answeredBy: AnsweredBy };
+        }
+
+        // Human answered — do nothing, let the TwiML script play normally
+        this.logger.log(`Order ${orderId}: Human detected. Call proceeds normally.`);
+        return { received: true, action: 'proceed', answeredBy: AnsweredBy };
+    }
+
+    // ───────────────────────────────────────
     // Helpers
     // ───────────────────────────────────────
     private async updateRiskAssessmentResult(

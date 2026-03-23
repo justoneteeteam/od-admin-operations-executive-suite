@@ -1,3 +1,18 @@
+/**
+ * CallRecordsTab Component
+ * ----------------------
+ * This component displays a searchable, filterable table of Twilio call records.
+ * It fetches call records from the backend via `communicationService.listCallRecords` with optional
+ * filters for call type, intent, and free‑text search. The component also shows aggregate statistics
+ * (total, confirmed, cancelled, no answer, unclear) derived from the `stats` field of the response.
+ *
+ * Features:
+ *  - Audio playback of call recordings using a backend proxy that adds the auth token.
+ *  - Re‑transcription request button that triggers `communicationService.retranscribe`.
+ *  - Inline CS note editing that updates the note via `communicationService.updateCsNote` on blur.
+ *  - Intent colour‑coding and intention‑score visualisation.
+ *  - Responsive UI with loading states and graceful handling of empty results.
+ */
 import React, { useState } from 'react';
 import communicationService, { CallRecord, CallRecordsResponse } from '../src/services/communication.service';
 import { API_BASE_URL } from '../src/config/api';

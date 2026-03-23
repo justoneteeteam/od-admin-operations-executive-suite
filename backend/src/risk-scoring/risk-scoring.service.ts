@@ -333,8 +333,9 @@ export class RiskScoringService {
             });
 
             const isItaly =
-                order.shippingAddress?.country?.toLowerCase() === 'italy' ||
-                order.shippingAddress?.country?.toLowerCase() === 'it';
+                (order.shippingCountry || '').toLowerCase() === 'italy' ||
+                (order.shippingCountry || '').toLowerCase() === 'it' ||
+                (order.shippingCountry || '').toLowerCase() === 'italia';
 
             const isTwilioEnabled = isItaly || storeSettings?.enableTwilioCalls === true;
 
