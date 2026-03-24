@@ -35,9 +35,6 @@ const PurchasesPage: React.FC = () => {
     trackingNumber: '',
     logisticCompanyIds: [] as string[],
     items: [] as PurchaseItem[],
-    globalTax: 0,
-    globalDiscount: 0,
-    shippingCost: 0,
     purchaseStatus: 'Ordered',
     notes: ''
   });
@@ -48,6 +45,38 @@ const PurchasesPage: React.FC = () => {
 
   // Export dropdown
   const [exportOpenId, setExportOpenId] = useState<string | null>(null);
+
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === purchases.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(purchases.map(p => p.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} purchase(s)? This cannot be undone.`)) return;
+    try {
+      await purchasesService.deleteMany(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      fetchData();
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      alert('Failed to delete selected purchases');
+    }
+  };
 
   // Derived state for warehouses based on selected FC
   const availableWarehouses = useMemo(() => {
@@ -97,9 +126,6 @@ const PurchasesPage: React.FC = () => {
       trackingNumber: '',
       logisticCompanyIds: [],
       items: [],
-      globalTax: 0,
-      globalDiscount: 0,
-      shippingCost: 0,
       purchaseStatus: 'Ordered',
       notes: ''
     });
@@ -127,8 +153,8 @@ const PurchasesPage: React.FC = () => {
         qty: Number(item.quantity) || 0,
         purchasePrice: Number(item.purchasePrice) || 0,
         discount: Number(item.purchaseDiscountAmount || item.discount) || 0,
-        taxPercent: Number(item.taxPercent) || 0,
-        taxAmount: Number(item.purchaseTaxAmount || item.taxAmount) || 0,
+        taxPercent: 0,
+        taxAmount: 0,
         unitCost: Number(item.unitCost) || 0,
         totalCost: Number(item.subtotal || item.totalCost) || 0,
         domesticShippingFeeCny: Number(item.domesticShippingFeeCny) || 0,
@@ -137,9 +163,6 @@ const PurchasesPage: React.FC = () => {
         internationalShippingFeeCny: Number(item.internationalShippingFeeCny) || 0,
         internationalShippingFeeVnd: Number(item.internationalShippingFeeVnd) || 0,
       })),
-      globalTax: Number(purchase.purchaseTaxAmount) || 0,
-      globalDiscount: Number(purchase.purchaseDiscountAmount || 0),
-      shippingCost: Number(purchase.purchaseShippingCost) || 0,
       purchaseStatus: purchase.purchaseStatus,
       notes: purchase.notes || ''
     });
@@ -162,8 +185,11 @@ const PurchasesPage: React.FC = () => {
       discount: 0,
       taxPercent: 0,
       taxAmount: 0,
-      unitCost: Number(product.unitCost) || 0,
-      totalCost: Number(product.unitCost) || 0
+      unitCost: 0,
+      totalCost: 0,
+      domesticShippingFeeCny: 0,
+      internationalShippingFeeVnd: 0,
+      parcelKg: 0,
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
   };
@@ -179,8 +205,11 @@ const PurchasesPage: React.FC = () => {
       discount: 0,
       taxPercent: 0,
       taxAmount: 0,
-      unitCost: Number(product.unitCost) || 0,
-      totalCost: Number(product.unitCost) || 0
+      unitCost: 0,
+      totalCost: 0,
+      domesticShippingFeeCny: 0,
+      internationalShippingFeeVnd: 0,
+      parcelKg: 0,
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
   };
@@ -190,10 +219,22 @@ const PurchasesPage: React.FC = () => {
       const newItems = [...prev.items];
       const item = { ...newItems[index], [field]: value };
 
-      const netPrice = Number(item.purchasePrice) - Number(item.discount);
-      item.taxAmount = netPrice * (Number(item.taxPercent) / 100);
-      item.unitCost = netPrice + item.taxAmount;
-      item.totalCost = item.unitCost * Number(item.qty);
+      // Formula: Total(VND) = (qty × productCost) + domesticShipping + internationalShipping - discount
+      const qty = Number(item.qty) || 0;
+      const productCost = Number(item.purchasePrice) || 0;
+      const domShip = Number(item.domesticShippingFeeCny) || 0;
+      const intlShip = Number(item.internationalShippingFeeVnd) || 0;
+      const discount = Number(item.discount) || 0;
+
+      const totalVnd = (qty * productCost) + domShip + intlShip - discount;
+      // Convert VND → EUR using global rate
+      const totalEur = latestVndToEur ? totalVnd * latestVndToEur : 0;
+      const costPerSkuEur = qty > 0 ? totalEur / qty : 0;
+
+      item.totalCost = totalEur;
+      item.unitCost = costPerSkuEur;
+      item.taxAmount = 0;
+      item.taxPercent = 0;
 
       newItems[index] = item;
       return { ...prev, items: newItems };
@@ -216,13 +257,22 @@ const PurchasesPage: React.FC = () => {
   };
 
   const totals = useMemo(() => {
-    const itemsSubtotal = formData.items.reduce((sum, item) => sum + item.totalCost, 0);
-    const total = itemsSubtotal + Number(formData.shippingCost) - Number(formData.globalDiscount) + Number(formData.globalTax);
+    // Items subtotal in VND (before EUR conversion)
+    const itemsSubtotalVnd = formData.items.reduce((sum, item) => {
+      const qty = Number(item.qty) || 0;
+      const productCost = Number(item.purchasePrice) || 0;
+      const domShip = Number(item.domesticShippingFeeCny) || 0;
+      const intlShip = Number(item.internationalShippingFeeVnd) || 0;
+      const discount = Number(item.discount) || 0;
+      return sum + (qty * productCost) + domShip + intlShip - discount;
+    }, 0);
+    // Grand total in EUR
+    const totalEur = formData.items.reduce((sum, item) => sum + item.totalCost, 0);
     return {
-      subtotal: itemsSubtotal,
-      total
+      subtotalVnd: itemsSubtotalVnd,
+      total: totalEur
     };
-  }, [formData.items, formData.shippingCost, formData.globalDiscount, formData.globalTax]);
+  }, [formData.items]);
 
   const handleSave = async () => {
     if (!formData.supplierId) { alert("Select Supplier"); return; }
@@ -232,33 +282,33 @@ const PurchasesPage: React.FC = () => {
     setIsLoading(true);
     setIsSaving(true);
     try {
-      const { globalTax, globalDiscount, shippingCost, fulfillmentRef, trackingNumber, logisticCompanyIds, ...rest } = formData;
+      const { fulfillmentRef, trackingNumber, logisticCompanyIds, ...rest } = formData;
 
       const payload = {
         ...rest,
         fulfillmentRef,
         trackingNumber: trackingNumber || null,
         logisticCompanyIds,
-        subtotal: totals.subtotal,
+        subtotal: totals.total,
         totalAmount: totals.total,
-        purchaseTaxAmount: globalTax,
-        purchaseDiscountAmount: globalDiscount,
-        purchaseShippingCost: shippingCost,
+        purchaseTaxAmount: 0,
+        purchaseDiscountAmount: 0,
+        purchaseShippingCost: 0,
         purchaseStatus: formData.purchaseStatus,
         items: formData.items.map(item => ({
           productId: (item as any).productId,
           quantity: item.qty,
           unitCost: item.unitCost,
           purchasePrice: item.purchasePrice,
-          taxPercent: item.taxPercent,
-          purchaseTaxAmount: item.taxAmount,
+          taxPercent: 0,
+          purchaseTaxAmount: 0,
           discountPercent: 0,
           purchaseDiscountAmount: item.discount,
           subtotal: item.totalCost,
           domesticShippingFeeCny: item.domesticShippingFeeCny || 0,
-          vndCurrencyRate: item.vndCurrencyRate || 0,
+          vndCurrencyRate: latestVndToEur || 0,
           parcelKg: item.parcelKg || 0,
-          internationalShippingFeeCny: item.internationalShippingFeeCny || 0,
+          internationalShippingFeeCny: 0,
           internationalShippingFeeVnd: item.internationalShippingFeeVnd || 0,
         }))
       };
@@ -486,6 +536,14 @@ ${items.map((item: any) => {
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
               <tr className="bg-[#17232f]/50 border-b border-border-dark">
+                <th className="px-4 py-5 w-10">
+                  <input
+                    type="checkbox"
+                    checked={purchases.length > 0 && selectedIds.size === purchases.length}
+                    onChange={toggleSelectAll}
+                    className="accent-primary w-4 h-4 cursor-pointer"
+                  />
+                </th>
                 <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Internal Ref</th>
                 <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Fulfillment Ref</th>
                 <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Supplier</th>
@@ -498,7 +556,15 @@ ${items.map((item: any) => {
             </thead>
             <tbody className="divide-y divide-border-dark/40">
               {purchases.map((purchase) => (
-                <tr key={purchase.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={purchase.id} className={`hover:bg-white/[0.02] transition-colors ${selectedIds.has(purchase.id) ? 'bg-primary/5' : ''}`}>
+                  <td className="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(purchase.id)}
+                      onChange={() => toggleSelect(purchase.id)}
+                      className="accent-primary w-4 h-4 cursor-pointer"
+                    />
+                  </td>
                   <td className="px-4 py-4 text-sm font-mono text-primary">{purchase.purchaseOrderNumber}</td>
                   <td className="px-4 py-4 text-sm text-white">{purchase.fulfillmentRef || '—'}</td>
                   <td className="px-4 py-4 text-sm font-semibold text-white">{purchase.supplier?.name || "Unknown"}</td>
@@ -508,7 +574,7 @@ ${items.map((item: any) => {
                       {purchase.purchaseStatus}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-sm font-bold text-white">${Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</td>
+                  <td className="px-4 py-4 text-sm font-bold text-white">€{Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</td>
                   <td className="px-4 py-4 text-sm font-mono">
                     {purchase.trackingNumber
                       ? <span className="text-emerald-400">{purchase.trackingNumber}</span>
@@ -556,7 +622,7 @@ ${items.map((item: any) => {
                 </tr>
               ))}
               {purchases.length === 0 && !isLoading && (
-                <tr><td colSpan={8} className="text-center py-8 text-text-muted">No purchases found</td></tr>
+                <tr><td colSpan={9} className="text-center py-8 text-text-muted">No purchases found</td></tr>
               )}
             </tbody>
           </table>
@@ -720,22 +786,18 @@ ${items.map((item: any) => {
 
                 <div className="bg-[#111a22] rounded-2xl border border-border-dark overflow-hidden mt-6">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[1400px]">
+                    <table className="w-full text-left border-collapse min-w-[1000px]">
                       <thead>
                         <tr className="bg-[#17232f]/80 border-b border-border-dark">
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Product</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-16">Qty</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20">Price($)</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20">Disc($)</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-16">Tax(%)</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Tax Amt</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Unit Cost</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Total</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20">Dom Ship(¥)</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20">VND Rate</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24">Cost(₫)</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24">Discount(₫)</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24">Dom Ship(₫)</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24">Intl Ship(₫)</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-16">KG</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20">Intl Ship(¥)</th>
-                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20">Intl Ship(₫)</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Total(€)</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Cost/SKU(€)</th>
                           <th className="px-3 py-3 w-10"></th>
                         </tr>
                       </thead>
@@ -760,36 +822,21 @@ ${items.map((item: any) => {
                             </td>
                             <td className="px-3 py-2">
                               <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
-                                value={item.taxPercent} onChange={e => updateItem(index, 'taxPercent', parseFloat(e.target.value) || 0)} />
-                            </td>
-                            <td className="px-3 py-3 text-sm text-text-muted">${Number(item.taxAmount).toFixed(2)}</td>
-                            <td className="px-3 py-3 text-sm text-text-muted">${Number(item.unitCost).toFixed(2)}</td>
-                            <td className="px-3 py-3 text-sm font-bold text-white">${Number(item.totalCost).toFixed(2)}</td>
-                            <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
                                 value={item.domesticShippingFeeCny || 0}
-                                onChange={e => updateItemField(index, 'domesticShippingFeeCny', parseFloat(e.target.value) || 0)} />
+                                onChange={e => updateItem(index, 'domesticShippingFeeCny' as any, parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
                               <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
-                                value={item.vndCurrencyRate || 0}
-                                onChange={e => updateItemField(index, 'vndCurrencyRate', parseFloat(e.target.value) || 0)} />
+                                value={item.internationalShippingFeeVnd || 0}
+                                onChange={e => updateItem(index, 'internationalShippingFeeVnd' as any, parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
                               <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
                                 value={item.parcelKg || 0}
                                 onChange={e => updateItemField(index, 'parcelKg', parseFloat(e.target.value) || 0)} />
                             </td>
-                            <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
-                                value={item.internationalShippingFeeCny || 0}
-                                onChange={e => updateItemField(index, 'internationalShippingFeeCny', parseFloat(e.target.value) || 0)} />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
-                                value={item.internationalShippingFeeVnd || 0}
-                                onChange={e => updateItemField(index, 'internationalShippingFeeVnd', parseFloat(e.target.value) || 0)} />
-                            </td>
+                            <td className="px-3 py-3 text-sm font-bold text-emerald-400">€{Number(item.totalCost).toFixed(2)}</td>
+                            <td className="px-3 py-3 text-sm text-text-muted">€{Number(item.unitCost).toFixed(2)}</td>
                             <td className="px-3 py-3 text-center">
                               <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-400">
                                 <span className="material-symbols-outlined text-lg">delete</span>
@@ -798,7 +845,7 @@ ${items.map((item: any) => {
                           </tr>
                         ))}
                         {formData.items.length === 0 && (
-                          <tr><td colSpan={14} className="text-center py-8 text-text-muted italic">No items added</td></tr>
+                          <tr><td colSpan={10} className="text-center py-8 text-text-muted italic">No items added</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -807,31 +854,7 @@ ${items.map((item: any) => {
               </div>
 
               {/* Footer Inputs */}
-              <div className="grid grid-cols-4 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Global Tax($)</label>
-                  <input type="number"
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
-                    value={formData.globalTax}
-                    onChange={e => setFormData({ ...formData, globalTax: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Global Discount($)</label>
-                  <input type="number"
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
-                    value={formData.globalDiscount}
-                    onChange={e => setFormData({ ...formData, globalDiscount: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Shipping Cost($)</label>
-                  <input type="number"
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
-                    value={formData.shippingCost}
-                    onChange={e => setFormData({ ...formData, shippingCost: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Status</label>
                   <select
@@ -844,16 +867,27 @@ ${items.map((item: any) => {
                     <option>Received</option>
                   </select>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-amber-400 uppercase tracking-[0.15em] ml-1 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">currency_exchange</span>
+                    VND → EUR Rate
+                  </label>
+                  <div className="bg-[#1c2d3d] border border-[#2d445a] rounded-xl h-12 flex items-center px-4">
+                    <span className="text-sm font-bold text-emerald-400">
+                      {latestVndToEur ? `1 VND = ${latestVndToEur} EUR` : 'No rate set'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-12 text-right pt-4 border-t border-border-dark/50">
                 <div>
-                  <p className="text-xs text-text-muted uppercase font-bold">Items Subtotal</p>
-                  <p className="text-xl font-bold text-white">${totals.subtotal.toFixed(2)}</p>
+                  <p className="text-xs text-text-muted uppercase font-bold">Items Subtotal (₫)</p>
+                  <p className="text-xl font-bold text-white">₫{totals.subtotalVnd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-text-muted uppercase font-bold">Grand Total</p>
-                  <p className="text-3xl font-black text-emerald-400">${totals.total.toFixed(2)}</p>
+                  <p className="text-xs text-text-muted uppercase font-bold">Grand Total (€)</p>
+                  <p className="text-3xl font-black text-emerald-400">€{totals.total.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -888,6 +922,25 @@ ${items.map((item: any) => {
           fulfillmentCenterId: formData.fulfillmentCenterId
         }}
       />
+      {/* Floating bulk-delete bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#14202c] border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4">
+          <span className="text-sm text-white font-bold">{selectedIds.size} selected</span>
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-2 px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">delete</span>
+            Delete Selected
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-text-muted hover:text-white text-sm transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -22,6 +22,38 @@ const ProductsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [productToEdit, setProductToEdit] = React.useState<Product | null>(null);
 
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === products.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(products.map(p => p.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} product(s)? This cannot be undone.`)) return;
+    try {
+      await productsService.deleteMany(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      fetchProducts();
+    } catch (err) {
+      console.error('Bulk delete failed:', err);
+      setError('Failed to delete selected products.');
+    }
+  };
+
   React.useEffect(() => {
     fetchProducts();
     fetchFulfillmentCenters();
@@ -167,6 +199,14 @@ const ProductsPage: React.FC = () => {
           <table className="w-full text-left border-collapse min-w-[1200px]">
             <thead>
               <tr className="bg-[#17232f] border-b border-[#233648]">
+                <th className="px-6 py-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={products.length > 0 && selectedIds.size === products.length}
+                    onChange={toggleSelectAll}
+                    className="accent-primary w-4 h-4 cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider w-20">Image</th>
                 <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider">Product & SKU</th>
                 <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider">Fulfillment</th>
@@ -182,7 +222,15 @@ const ProductsPage: React.FC = () => {
                 const stockStatus = calculateStockStatus(product.stockLevel, product.reorderPoint);
                 const imgUrl = (product as any).primaryImageUrl || ((product as any).imagesUrls ? (() => { try { return JSON.parse((product as any).imagesUrls)[0]; } catch { return null; } })() : null);
                 return (
-                  <tr key={product.id} className="hover:bg-[#1c2d3d] transition-colors group">
+                  <tr key={product.id} className={`hover:bg-[#1c2d3d] transition-colors group ${selectedIds.has(product.id) ? 'bg-primary/5' : ''}`}>
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(product.id)}
+                        onChange={() => toggleSelect(product.id)}
+                        className="accent-primary w-4 h-4 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="size-12 rounded border border-border-dark bg-center bg-cover overflow-hidden bg-gray-800 flex items-center justify-center">
                         {imgUrl ? (
@@ -243,6 +291,26 @@ const ProductsPage: React.FC = () => {
           <p className="text-xs text-[#92adc9]">Showing <span className="text-white font-bold">{products.length}</span> products</p>
         </div>
       </div>
+
+      {/* Floating bulk-delete bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#14202c] border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4 animate-in slide-in-from-bottom-4 duration-200">
+          <span className="text-sm text-white font-bold">{selectedIds.size} selected</span>
+          <button
+            onClick={handleBulkDelete}
+            className="flex items-center gap-2 px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">delete</span>
+            Delete Selected
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-text-muted hover:text-white text-sm transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 };

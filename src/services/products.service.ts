@@ -41,4 +41,9 @@ export const productsService = {
         const response = await apiClient.delete(`/products/${id}`);
         return response.data;
     },
+
+    async deleteMany(ids: string[]) {
+        const response = await apiClient.post('/products/bulk-delete', { ids });
+        return response.data;
+    },
 };

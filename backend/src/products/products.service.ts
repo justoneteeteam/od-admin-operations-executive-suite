@@ -66,4 +66,12 @@ export class ProductsService {
             throw new NotFoundException(`Product with ID ${id} not found`);
         }
     }
+
+    async removeMany(ids: string[]) {
+        if (!ids || ids.length === 0) return { count: 0 };
+        const result = await this.prisma.product.deleteMany({
+            where: { id: { in: ids } },
+        });
+        return { count: result.count };
+    }
 }

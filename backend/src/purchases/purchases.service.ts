@@ -223,6 +223,23 @@ export class PurchasesService {
         }
     }
 
+    async removeMany(ids: string[]) {
+        if (!ids || ids.length === 0) return { count: 0 };
+
+        // Delete child rows first to avoid FK constraints
+        await this.prisma.purchaseItem.deleteMany({
+            where: { purchaseId: { in: ids } },
+        });
+        await this.prisma.purchaseLogisticCompany.deleteMany({
+            where: { purchaseId: { in: ids } },
+        });
+
+        const result = await this.prisma.purchase.deleteMany({
+            where: { id: { in: ids } },
+        });
+        return { count: result.count };
+    }
+
 
     async receiveGoods(
         purchaseId: string,

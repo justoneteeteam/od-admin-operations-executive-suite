@@ -34,4 +34,9 @@ export const purchasesService = {
         const response = await apiClient.delete(`/purchases/${id}`);
         return response.data;
     },
+
+    async deleteMany(ids: string[]) {
+        const response = await apiClient.post('/purchases/bulk-delete', { ids });
+        return response.data;
+    },
 };

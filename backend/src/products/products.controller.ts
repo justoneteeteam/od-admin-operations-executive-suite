@@ -29,6 +29,11 @@ export class ProductsController {
         return this.productsService.update(id, updateProductDto);
     }
 
+    @Post('bulk-delete')
+    removeMany(@Body('ids') ids: string[]) {
+        return this.productsService.removeMany(ids);
+    }
+
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.productsService.remove(id);

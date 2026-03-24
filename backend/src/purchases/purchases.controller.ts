@@ -40,6 +40,11 @@ export class PurchasesController {
         return this.purchasesService.updateStatus(id, purchaseStatus);
     }
 
+    @Post('bulk-delete')
+    removeMany(@Body('ids') ids: string[]) {
+        return this.purchasesService.removeMany(ids);
+    }
+
     @Delete(':id')
     remove(@Param('id') id: string) {
         return this.purchasesService.remove(id);
