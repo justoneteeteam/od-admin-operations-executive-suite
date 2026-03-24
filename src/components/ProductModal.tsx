@@ -39,7 +39,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
         sku: '',
         description: '',
         category: '',
-        unitCost: 0,
         sellingPrice: 0,
         stockLevel: 0,
         reorderPoint: 10,
@@ -60,7 +59,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                     sku: productToEdit.sku || '',
                     description: (productToEdit as any).description || '',
                     category: (productToEdit as any).category || '',
-                    unitCost: Number(productToEdit.unitCost) || 0,
                     sellingPrice: Number((productToEdit as any).sellingPrice) || 0,
                     stockLevel: Number(productToEdit.stockLevel) || 0,
                     reorderPoint: Number(productToEdit.reorderPoint) || 10,
@@ -125,7 +123,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
             const payload: any = {
                 name: formData.name,
                 sku: formData.sku,
-                unitCost: formData.unitCost,
                 sellingPrice: formData.sellingPrice,
                 stockLevel: formData.stockLevel,
                 reorderPoint: formData.reorderPoint,
@@ -257,8 +254,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                     {/* Prices */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className={labelClass}>Unit Cost *</label>
-                            <input type="number" step="0.01" required className={inputClass} value={formData.unitCost} onChange={(e) => setFormData({ ...formData, unitCost: parseFloat(e.target.value) || 0 })} />
+                            <label className={labelClass}>Unit Cost (€) <span className="text-amber-400 text-[10px]">(auto from purchases)</span></label>
+                            <div className="w-full bg-[#1c2d3d]/50 border border-border-dark rounded-lg p-2.5 text-text-muted cursor-not-allowed">
+                                €{productToEdit ? Number(productToEdit.unitCost || 0).toFixed(2) : '0.00'}
+                            </div>
                         </div>
                         <div>
                             <label className={labelClass}>Selling Price *</label>

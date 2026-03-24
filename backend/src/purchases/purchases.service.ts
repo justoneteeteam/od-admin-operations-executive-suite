@@ -90,6 +90,9 @@ export class PurchasesService {
                 },
             });
 
+            // Auto-calculate weighted average product cost (EUR) for each product
+            await this.updateProductCostsFromPurchase(processedItems);
+
             return newPurchase;
 
         } catch (error) {
@@ -240,6 +243,65 @@ export class PurchasesService {
         return { count: result.count };
     }
 
+    /**
+     * Recalculate weighted average unit cost (EUR) for each product
+     * from ALL its purchase items across all purchases.
+     *
+     * Formula per purchase item:
+     *   landedCostVnd = ((buyPricePerUnit × qty) + domShip + intlShip - discount) / qty
+     *   landedCostEur = landedCostVnd × vndToEurRate
+     *
+     * Weighted average = Σ(landedCostEur × qty) / Σ(qty)
+     */
+    private async updateProductCostsFromPurchase(purchaseItems: any[]) {
+        // Get unique product IDs from this purchase
+        const productIds = [...new Set(purchaseItems.map((item: any) => item.productId))];
+
+        for (const productId of productIds) {
+            // Fetch ALL purchase items for this product across all purchases
+            const allItems = await this.prisma.purchaseItem.findMany({
+                where: { productId },
+            });
+
+            if (allItems.length === 0) continue;
+
+            let totalWeightedCost = 0;
+            let totalQuantity = 0;
+
+            for (const item of allItems) {
+                const qty = Number(item.quantity) || 0;
+                if (qty <= 0) continue;
+
+                const buyPrice = Number(item.purchasePrice) || 0;
+                const domShip = Number(item.domesticShippingFeeCny) || 0;
+                const intlShip = Number(item.internationalShippingFeeVnd) || 0;
+                const discount = Number(item.purchaseDiscountAmount) || 0;
+                const vndToEur = Number(item.vndCurrencyRate) || 0;
+
+                // Per-unit landed cost in VND
+                const totalCostVnd = (buyPrice * qty) + domShip + intlShip - discount;
+                const costPerUnitVnd = totalCostVnd / qty;
+
+                // Convert to EUR
+                const costPerUnitEur = costPerUnitVnd * vndToEur;
+
+                totalWeightedCost += costPerUnitEur * qty;
+                totalQuantity += qty;
+            }
+
+            if (totalQuantity > 0) {
+                const weightedAvgCost = totalWeightedCost / totalQuantity;
+
+                await this.prisma.product.update({
+                    where: { id: productId },
+                    data: {
+                        unitCost: Math.round(weightedAvgCost * 100) / 100,
+                        weightedAverageCost: Math.round(weightedAvgCost * 100) / 100,
+                    },
+                });
+            }
+        }
+    }
 
     async receiveGoods(
         purchaseId: string,
