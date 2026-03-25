@@ -646,7 +646,7 @@ const DashboardTab: React.FC = () => {
     const kpis = [
         { label: 'Total Spend', value: currency === 'EUR' ? `€${k.totalSpendEur.toLocaleString()}` : `₫${k.totalSpendVnd.toLocaleString()}`, icon: 'payments', color: 'text-blue-400', border: 'border-l-blue-500' },
         { label: 'Leads', value: k.totalLeads.toLocaleString(), icon: 'group', color: 'text-indigo-400', border: 'border-l-indigo-500' },
-        { label: 'Confirmed Leads', value: k.totalConfirmedLeads.toLocaleString(), icon: 'verified', color: 'text-teal-400', border: 'border-l-teal-500' },
+        { label: 'Confirmed Leads', value: (k.totalConfirmedLeads || 0).toLocaleString(), icon: 'verified', color: 'text-teal-400', border: 'border-l-teal-500' },
         { label: 'Orders', value: k.totalOrders.toLocaleString(), icon: 'package_2', color: 'text-pink-400', border: 'border-l-pink-500' },
         { label: 'Revenue', value: `€${k.totalRevenue.toLocaleString()}`, icon: 'trending_up', color: 'text-emerald-400', border: 'border-l-emerald-500' },
         { label: 'CPL', value: `€${k.cpl.toLocaleString()}`, icon: 'person_add', color: 'text-cyan-400', border: 'border-l-cyan-500' },
