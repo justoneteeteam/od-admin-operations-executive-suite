@@ -40,20 +40,30 @@ export class AdsCampaignsService {
     async create(dto: CreateAdsCampaignDto) {
         if (dto.sku) await this.validateSku(dto.sku);
 
-        // Resolve orderNumber(s) → semicolon-separated order numbers
+        // Resolve orderNumber(s) → semicolon-separated order numbers + auto-map SKU
         let orderIds: string | null = null;
+        let autoSku = dto.sku || '';
         if (dto.orderNumber) {
-            // Support semicolon-separated order numbers
             const nums = dto.orderNumber.split(';').map(s => s.trim()).filter(Boolean);
             const matched: string[] = [];
+            const skusFromOrders = new Set<string>();
             for (const num of nums) {
                 const order = await this.prisma.order.findUnique({
                     where: { orderNumber: num },
-                    select: { orderNumber: true },
+                    select: { orderNumber: true, items: { select: { sku: true } } },
                 });
-                if (order) matched.push(order.orderNumber);
+                if (order) {
+                    matched.push(order.orderNumber);
+                    for (const item of order.items) {
+                        if (item.sku) skusFromOrders.add(item.sku);
+                    }
+                }
             }
             if (matched.length > 0) orderIds = matched.join(';');
+            // Auto-set SKU from matched orders if not manually specified
+            if (!dto.sku && skusFromOrders.size > 0) {
+                autoSku = [...skusFromOrders].join(';');
+            }
         }
 
         return this.prisma.adsCampaign.create({
@@ -62,7 +72,7 @@ export class AdsCampaignsService {
                 campaign: dto.campaign,
                 country: dto.country,
                 platform: dto.platform,
-                sku: dto.sku || '',
+                sku: autoSku,
                 stage: dto.stage,
                 pic: dto.pic,
                 spendVnd: dto.spendVnd,
@@ -113,15 +123,18 @@ export class AdsCampaignsService {
         }
 
         const matchedOrderNums = new Set<string>();
+        const orderSkuMap = new Map<string, string[]>(); // orderNumber → SKUs
         const unresolvedOrderNumbers: string[] = [];
 
         if (allOrderNums.size > 0) {
             const orders = await this.prisma.order.findMany({
                 where: { orderNumber: { in: [...allOrderNums] } },
-                select: { orderNumber: true },
+                select: { orderNumber: true, items: { select: { sku: true } } },
             });
             for (const order of orders) {
                 matchedOrderNums.add(order.orderNumber);
+                const skus = order.items.map(i => i.sku).filter(Boolean);
+                if (skus.length > 0) orderSkuMap.set(order.orderNumber, skus);
             }
             for (const num of allOrderNums) {
                 if (!matchedOrderNums.has(num)) unresolvedOrderNumbers.push(num);
@@ -178,12 +191,24 @@ export class AdsCampaignsService {
                 );
             }
 
+            // Auto-map SKU from matched orders if not manually set
+            let autoSku = r.sku || '';
+            if (!r.sku && orderIds) {
+                const skusFromOrders = new Set<string>();
+                const nums = orderIds.split(';');
+                for (const num of nums) {
+                    const skus = orderSkuMap.get(num);
+                    if (skus) skus.forEach(s => skusFromOrders.add(s));
+                }
+                if (skusFromOrders.size > 0) autoSku = [...skusFromOrders].join(';');
+            }
+
             return {
                 date: parsedDate,
                 campaign: r.campaign,
                 country: r.country,
                 platform: r.platform,
-                sku: r.sku || '',
+                sku: autoSku,
                 stage: r.stage,
                 pic: r.pic,
                 spendVnd: r.spendVnd,
