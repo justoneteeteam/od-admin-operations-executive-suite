@@ -13,6 +13,7 @@ export interface AdsCampaign {
     spendEur?: number;
     revenueEur?: number;
     leads?: number;
+    confirmedLeads?: number;
     orders?: number;
     roas?: number;
     cpo?: number;
@@ -33,6 +34,7 @@ export interface AdsCampaign {
     reportEnd?: string;
     orderIds?: string;  // semicolon-separated order numbers e.g. "#1234;#1235"
     orderNumber?: string;
+    matchedOrderDetails?: { orderNumber: string; confirmationStatus: string | null; orderStatus: string | null; totalAmount: number }[];
 }
 
 export interface ExchangeRate {
@@ -47,6 +49,7 @@ export interface DashboardData {
         totalSpendEur: number;
         totalRevenue: number;
         totalLeads: number;
+        totalConfirmedLeads: number;
         totalOrders: number;
         roas: number;
         cpo: number;

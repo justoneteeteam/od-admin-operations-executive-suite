@@ -345,37 +345,34 @@ export class AdsCampaignsService {
         maxDate.setHours(23, 59, 59, 999);
 
         const skuLeads: Record<string, number> = {};
+        const skuConfirmedLeads: Record<string, number> = {};
         const skuOrders: Record<string, number> = {};
         const skuRevenue: Record<string, number> = {};
 
         if (skus.length > 0) {
-            const confirmedOrders = await this.prisma.order.findMany({
+            // Fetch ALL orders matching SKUs in date range (leads = any matched order)
+            const allSkuOrders = await this.prisma.order.findMany({
                 where: {
-                    confirmationStatus: 'Confirmed',
-                    orderDate: { gte: minDate, lte: maxDate },
-                    items: { some: { sku: { in: skus } } },
-                },
-                include: { items: { select: { sku: true } } },
-            });
-            const deliveredOrders = await this.prisma.order.findMany({
-                where: {
-                    orderStatus: 'Delivered',
                     orderDate: { gte: minDate, lte: maxDate },
                     items: { some: { sku: { in: skus } } },
                 },
                 include: { items: { select: { sku: true } } },
             });
 
-            for (const order of confirmedOrders) {
-                for (const sku of new Set(order.items.map(i => i.sku))) {
-                    if (skus.includes(sku)) skuLeads[sku] = (skuLeads[sku] || 0) + 1;
-                }
-            }
-            for (const order of deliveredOrders) {
+            for (const order of allSkuOrders) {
                 for (const sku of new Set(order.items.map(i => i.sku))) {
                     if (skus.includes(sku)) {
-                        skuOrders[sku] = (skuOrders[sku] || 0) + 1;
-                        skuRevenue[sku] = (skuRevenue[sku] || 0) + Number(order.totalAmount);
+                        // Leads = all matched orders
+                        skuLeads[sku] = (skuLeads[sku] || 0) + 1;
+                        // Confirmed leads = orders with confirmationStatus 'Confirmed'
+                        if (order.confirmationStatus === 'Confirmed') {
+                            skuConfirmedLeads[sku] = (skuConfirmedLeads[sku] || 0) + 1;
+                        }
+                        // Orders & revenue = Delivered orders only
+                        if (order.orderStatus === 'Delivered') {
+                            skuOrders[sku] = (skuOrders[sku] || 0) + 1;
+                            skuRevenue[sku] = (skuRevenue[sku] || 0) + Number(order.totalAmount);
+                        }
                     }
                 }
             }
@@ -388,8 +385,10 @@ export class AdsCampaignsService {
             const spendEur = Number(c.spendVnd) * rate;
 
             let leads = 0;
+            let confirmedLeads = 0;
             let orders = 0;
             let revenue = 0;
+            const matchedOrderDetails: { orderNumber: string; confirmationStatus: string | null; orderStatus: string | null; totalAmount: number }[] = [];
 
             if (c.orderIds) {
                 // Use direct order_ids matching
@@ -397,7 +396,14 @@ export class AdsCampaignsService {
                 for (const num of nums) {
                     const order = ordersByNumber.get(num);
                     if (order) {
-                        if (order.confirmationStatus === 'Confirmed') leads++;
+                        leads++;  // Any matched order = a lead
+                        matchedOrderDetails.push({
+                            orderNumber: order.orderNumber,
+                            confirmationStatus: order.confirmationStatus,
+                            orderStatus: order.orderStatus,
+                            totalAmount: Number(order.totalAmount) || 0,
+                        });
+                        if (order.confirmationStatus === 'Confirmed') confirmedLeads++;
                         if (order.orderStatus === 'Delivered') {
                             orders++;
                             revenue += Number(order.totalAmount) || 0;
@@ -407,6 +413,7 @@ export class AdsCampaignsService {
             } else if (c.sku) {
                 // Fallback: SKU-based matching
                 leads = skuLeads[c.sku] || 0;
+                confirmedLeads = skuConfirmedLeads[c.sku] || 0;
                 orders = skuOrders[c.sku] || 0;
                 revenue = skuRevenue[c.sku] || 0;
             }
@@ -421,12 +428,14 @@ export class AdsCampaignsService {
                 spendVnd: Number(c.spendVnd),
                 spendEur: Math.round(spendEur * 100) / 100,
                 leads,
+                confirmedLeads,
                 orders,
                 revenueEur: Math.round(revenue * 100) / 100,
                 roas: Math.round(roas * 100) / 100,
                 cpo: Math.round(cpo * 100) / 100,
                 cpl: Math.round(cpl * 100) / 100,
                 cvr: Math.round(cvr * 100) / 100,
+                matchedOrderDetails,
             };
         });
 
@@ -435,6 +444,7 @@ export class AdsCampaignsService {
         const totalSpendEur = enriched.reduce((s, c) => s + c.spendEur, 0);
         const totalRevenue = enriched.reduce((s, c) => s + c.revenueEur, 0);
         const totalLeads = enriched.reduce((s, c) => s + c.leads, 0);
+        const totalConfirmedLeads = enriched.reduce((s, c) => s + c.confirmedLeads, 0);
         const totalOrders = enriched.reduce((s, c) => s + c.orders, 0);
 
         const kpis = {
@@ -442,6 +452,7 @@ export class AdsCampaignsService {
             totalSpendEur: Math.round(totalSpendEur * 100) / 100,
             totalRevenue: Math.round(totalRevenue * 100) / 100,
             totalLeads,
+            totalConfirmedLeads,
             totalOrders,
             roas: totalSpendEur > 0 ? Math.round((totalRevenue / totalSpendEur) * 100) / 100 : 0,
             cpo: totalOrders > 0 ? Math.round((totalSpendEur / totalOrders) * 100) / 100 : 0,

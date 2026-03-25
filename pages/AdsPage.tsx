@@ -205,9 +205,10 @@ const InputTab: React.FC = () => {
             const metaPurchases = parseInt(String(getCol(['Lượt mua']) || '0'), 10) || 0;
             const reportStart = parseDate(getCol(['Bắt đầu báo cáo']));
             const reportEnd = parseDate(getCol(['Kết thúc báo cáo']));
-            // Strip # prefix from order numbers for correct DB matching
             const rawOrderNum = String(getCol(['Order ID']) || '').trim();
             const orderNumber = rawOrderNum ? rawOrderNum.split(';').map(s => s.trim()).filter(Boolean).join(';') : '';
+            const stage = String(getCol(['Stage', 'Giai đoạn']) || '').trim();
+
 
             const country = inferCountry(campaign);
 
@@ -217,7 +218,7 @@ const InputTab: React.FC = () => {
                 country: country || defaults.sku ? country : '',
                 platform: defaults.platform || 'Meta',
                 sku: defaults.sku || '',
-                stage: defaults.stage || '',
+                stage: stage || defaults.stage || '',
                 pic: defaults.pic || '',
                 spendVnd,
                 notes: '',
@@ -318,11 +319,11 @@ const InputTab: React.FC = () => {
 
     // ─── TEMPLATE DOWNLOAD ────────────────────────────────────────────────
     const downloadMetaTemplate = () => {
-        const header = 'Tên chiến dịch,Tên quảng cáo,Tên nhóm quảng cáo,Tên nhóm quảng cáo,CPC (tất cả),CPM (Chi phí trên mỗi 1.000 lượt hiển thị),CTR (Tất cả),Số tiền đã chi tiêu (VND),Loại kết quả,Chi phí trên mỗi kết quả,Lượt mua,Bắt đầu báo cáo,Kết thúc báo cáo,Order ID – Match';
+        const header = 'Tên chiến dịch,Tên quảng cáo,Tên nhóm quảng cáo,Tên nhóm quảng cáo,CPC (tất cả),CPM (Chi phí trên mỗi 1.000 lượt hiển thị),CTR (Tất cả),Số tiền đã chi tiêu (VND),Loại kết quả,Chi phí trên mỗi kết quả,Lượt mua,Bắt đầu báo cáo,Kết thúc báo cáo,Order ID – Match,Stage';
         const rows = [
-            'TEST-SPAIN-5ADS-LONG-1203,TEST025,TEST-SET,TEST-SET,3074.67,266589.60,8.67,46120,Lượt mua trên web,46120,1,2026-03-12,2026-03-12,ORD-1234567-ABCDEF',
-            'TEST-ITALY-VIDEO-LONG-1203,IT_AD001,IT-SET,IT-SET,2500.00,220000.00,7.50,85000,Lượt mua trên web,85000,2,2026-03-12,2026-03-12,',
-            'TEST-GERMANY-IMG-LONG-1203,DE_AD001,DE-SET,DE-SET,,,,,,,0,2026-03-12,2026-03-12,',
+            'TEST-SPAIN-5ADS-LONG-1203,TEST025,TEST-SET,TEST-SET,3074.67,266589.60,8.67,46120,Lượt mua trên web,46120,1,2026-03-12,2026-03-12,ORD-1234567-ABCDEF,Test',
+            'TEST-ITALY-VIDEO-LONG-1203,IT_AD001,IT-SET,IT-SET,2500.00,220000.00,7.50,85000,Lượt mua trên web,85000,2,2026-03-12,2026-03-12,,POC',
+            'TEST-GERMANY-IMG-LONG-1203,DE_AD001,DE-SET,DE-SET,,,,,,,0,2026-03-12,2026-03-12,,Win',
         ];
         const csv = [header, ...rows].join('\n');
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -585,6 +586,7 @@ const DashboardTab: React.FC = () => {
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [deleting, setDeleting] = useState(false);
+    const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
     const [dbProducts, setDbProducts] = useState<any[]>([]);
     const [dbCountries, setDbCountries] = useState<string[]>([]);
@@ -644,6 +646,7 @@ const DashboardTab: React.FC = () => {
     const kpis = [
         { label: 'Total Spend', value: currency === 'EUR' ? `€${k.totalSpendEur.toLocaleString()}` : `₫${k.totalSpendVnd.toLocaleString()}`, icon: 'payments', color: 'text-blue-400', border: 'border-l-blue-500' },
         { label: 'Leads', value: k.totalLeads.toLocaleString(), icon: 'group', color: 'text-indigo-400', border: 'border-l-indigo-500' },
+        { label: 'Confirmed Leads', value: k.totalConfirmedLeads.toLocaleString(), icon: 'verified', color: 'text-teal-400', border: 'border-l-teal-500' },
         { label: 'Orders', value: k.totalOrders.toLocaleString(), icon: 'package_2', color: 'text-pink-400', border: 'border-l-pink-500' },
         { label: 'Revenue', value: `€${k.totalRevenue.toLocaleString()}`, icon: 'trending_up', color: 'text-emerald-400', border: 'border-l-emerald-500' },
         { label: 'CPL', value: `€${k.cpl.toLocaleString()}`, icon: 'person_add', color: 'text-cyan-400', border: 'border-l-cyan-500' },
@@ -762,12 +765,14 @@ const DashboardTab: React.FC = () => {
                                     }}
                                 />
                             </th>
-                            {['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}
+                            {['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Confirmed', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}
                         </tr></thead>
                         <tbody className="divide-y divide-border-dark/50">
                             {data.campaigns.map((c: any, i: number) => (
-                                <tr key={i} className={`hover:bg-primary/[0.02] transition-colors ${selectedIds.has(c.id) ? 'bg-primary/[0.05]' : ''}`}>
-                                    <td className="px-3 py-3">
+                                <React.Fragment key={i}>
+                                <tr className={`hover:bg-primary/[0.02] transition-colors cursor-pointer ${selectedIds.has(c.id) ? 'bg-primary/[0.05]' : ''}`}
+                                    onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)}>
+                                    <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
                                         <input
                                             type="checkbox"
                                             className="accent-primary w-4 h-4 cursor-pointer"
@@ -784,15 +789,52 @@ const DashboardTab: React.FC = () => {
                                     <td className="px-4 py-3 text-xs text-white font-bold max-w-[200px] truncate">{c.campaign}</td>
                                     <td className="px-4 py-3"><span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{c.country || '—'}</span></td>
                                     <td className="px-4 py-3 text-xs text-primary font-mono">{c.sku || '—'}</td>
-                                    <td className="px-4 py-3"><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.stage === 'Win' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : c.stage === 'Scale' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : c.stage === 'POC' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>{c.stage || '—'}</span></td>
+                                    <td className="px-4 py-3"><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.stage === 'Win' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : c.stage === 'Scale' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : c.stage === 'POC' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : c.stage === 'Test' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>{c.stage || '—'}</span></td>
                                     <td className="px-4 py-3 text-xs font-black text-white">€{(c.spendEur || 0).toLocaleString()}</td>
                                     <td className="px-4 py-3 text-xs font-black text-emerald-400">€{(c.revenueEur || 0).toLocaleString()}</td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">{c.leads || 0}</td>
+                                    <td className="px-4 py-3 text-xs font-bold text-teal-400">{c.confirmedLeads || 0}</td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">{c.orders || 0}</td>
                                     <td className="px-4 py-3 text-xs font-black"><span className={(c.roas || 0) >= 2 ? 'text-emerald-400' : (c.roas || 0) >= 1 ? 'text-amber-400' : 'text-red-400'}>{(c.roas || 0).toFixed(2)}x</span></td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">€{(c.cpo || 0).toFixed(2)}</td>
                                     <td className="px-4 py-3 text-xs font-bold text-white">{(c.cvr || 0).toFixed(1)}%</td>
                                 </tr>
+                                {/* Order Match Details Expansion */}
+                                {expandedRow === c.id && c.matchedOrderDetails && c.matchedOrderDetails.length > 0 && (
+                                    <tr>
+                                        <td colSpan={14} className="bg-[#0f1923] px-6 py-4 border-t border-border-dark/30">
+                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">
+                                                📎 Matched Orders ({c.matchedOrderDetails.length})
+                                            </p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                {c.matchedOrderDetails.map((o: any, j: number) => (
+                                                    <div key={j} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card-dark border border-border-dark/50">
+                                                        <span className="text-xs font-mono text-primary font-bold">{o.orderNumber}</span>
+                                                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
+                                                            o.confirmationStatus === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                            o.confirmationStatus === 'No Answer' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                            o.confirmationStatus === 'Call Center' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                                        }`}>{o.confirmationStatus || 'Pending'}</span>
+                                                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
+                                                            o.orderStatus === 'Delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                                        }`}>{o.orderStatus || 'Pending'}</span>
+                                                        <span className="text-xs text-text-muted ml-auto">€{(o.totalAmount || 0).toFixed(2)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                                {expandedRow === c.id && (!c.matchedOrderDetails || c.matchedOrderDetails.length === 0) && c.orderIds && (
+                                    <tr>
+                                        <td colSpan={14} className="bg-[#0f1923] px-6 py-3 border-t border-border-dark/30">
+                                            <p className="text-xs text-text-muted">Order IDs: <span className="text-primary font-mono">{c.orderIds}</span></p>
+                                        </td>
+                                    </tr>
+                                )}
+                                </React.Fragment>
                             ))}
                         </tbody>
                     </table>
