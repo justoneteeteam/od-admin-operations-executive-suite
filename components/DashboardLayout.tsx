@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { authService } from '../src/services/auth.service';
 import { getSidebarItems } from '../src/config/roleConfig';
@@ -53,6 +53,19 @@ const PAGE_TITLES: Record<string, string> = {
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
+  const avatarDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close avatar dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (avatarDropdownRef.current && !avatarDropdownRef.current.contains(event.target as Node)) {
+        setIsAvatarDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const user = authService.getUser();
   const role = authService.getRole();
@@ -145,17 +158,44 @@ const DashboardLayout: React.FC = () => {
               </button>
             </div>
             <div className="h-8 w-px bg-border-dark mx-2"></div>
-            <div className="flex items-center gap-3 pl-2">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-white leading-none">{user?.fullName || 'User'}</p>
-                <span className={`inline-block text-[9px] font-bold uppercase mt-1 tracking-wider px-1.5 py-0.5 rounded border ${ROLE_COLORS[role] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
-                  {ROLE_LABELS[role] || role}
-                </span>
-              </div>
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-10 border-2 border-border-dark shadow-lg ring-1 ring-white/5"
-                style={{ backgroundImage: `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}')` }}
-              ></div>
+            <div className="relative" ref={avatarDropdownRef}>
+              <button
+                onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
+                className="flex items-center gap-3 pl-2 cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-bold text-white leading-none">{user?.fullName || 'User'}</p>
+                  <span className={`inline-block text-[9px] font-bold uppercase mt-1 tracking-wider px-1.5 py-0.5 rounded border ${ROLE_COLORS[role] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                    {ROLE_LABELS[role] || role}
+                  </span>
+                </div>
+                <div
+                  className="bg-center bg-no-repeat aspect-square bg-cover rounded-xl size-10 border-2 border-border-dark shadow-lg ring-1 ring-white/5"
+                  style={{ backgroundImage: `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.fullName || 'User'}')` }}
+                ></div>
+              </button>
+
+              {/* Avatar Dropdown */}
+              {isAvatarDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-xl bg-card-dark border border-border-dark shadow-2xl shadow-black/40 z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-4 border-b border-border-dark">
+                    <p className="text-sm font-bold text-white truncate">{user?.fullName || 'User'}</p>
+                    <p className="text-xs text-text-muted truncate mt-0.5">{user?.email || ''}</p>
+                    <span className={`inline-block text-[9px] font-bold uppercase mt-2 tracking-wider px-1.5 py-0.5 rounded border ${ROLE_COLORS[role] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
+                      {ROLE_LABELS[role] || role}
+                    </span>
+                  </div>
+                  <div className="p-1.5">
+                    <button
+                      onClick={() => authService.logout()}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
+                      Log Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

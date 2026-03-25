@@ -27,6 +27,11 @@ export class PurchasesService {
             purchaseData.receivedDate = new Date(purchaseData.receivedDate);
         }
 
+        // Sanitize optional UUID fields – empty strings are not valid UUIDs
+        if (!purchaseData.warehouseId) {
+            purchaseData.warehouseId = null;
+        }
+
         try {
             const processedItems = items
                 ? items.map((item: any) => ({
@@ -34,11 +39,10 @@ export class PurchasesService {
                     quantity: item.quantity,
                     unitCost: item.unitCost,
                     purchasePrice: item.purchasePrice || item.unitCost,
-                    taxPercent: item.taxPercent,
-                    purchaseTaxAmount: item.purchaseTaxAmount || item.taxAmount,
-                    discountPercent: item.discountPercent,
-                    purchaseDiscountAmount: item.purchaseDiscountAmount || item.discountAmount,
-                    subtotal: item.quantity * item.unitCost,
+                    taxPercent: item.taxPercent || 0,
+                    purchaseTaxAmount: item.purchaseTaxAmount || item.taxAmount || 0,
+                    purchaseDiscountAmount: item.purchaseDiscountAmount || item.discountAmount || 0,
+                    subtotal: item.subtotal || (item.quantity * item.unitCost),
                     domesticShippingFeeCny: item.domesticShippingFeeCny || 0,
                     vndCurrencyRate: item.vndCurrencyRate || 0,
                     parcelKg: item.parcelKg || 0,
@@ -48,26 +52,31 @@ export class PurchasesService {
                 : [];
 
             // Auto-calculate totals if not provided
-            if (!purchaseData.subtotal && processedItems.length > 0) {
-                purchaseData.subtotal = processedItems.reduce((sum: number, item: any) => sum + item.subtotal, 0);
-            }
+            const itemsSubtotal = processedItems.length > 0
+                ? processedItems.reduce((sum: number, item: any) => sum + (Number(item.subtotal) || 0), 0)
+                : 0;
 
-            // Ensure numeric types for calculation
-            const sub = Number(purchaseData.subtotal) || 0;
+            const sub = Number(purchaseData.subtotal) || itemsSubtotal;
             const tax = Number(purchaseData.purchaseTaxAmount) || 0;
             const ship = Number(purchaseData.purchaseShippingCost) || 0;
+            const total = Number(purchaseData.totalAmount) || (sub + tax + ship);
 
-            if (!purchaseData.totalAmount) {
-                purchaseData.totalAmount = sub + tax + ship;
-            }
-
+            // Explicitly pick only valid Purchase model fields (prevent extra fields from breaking Prisma)
             const newPurchase = await this.prisma.purchase.create({
                 data: {
-                    ...purchaseData,
                     purchaseOrderNumber,
+                    supplierId: purchaseData.supplierId,
+                    fulfillmentCenterId: purchaseData.fulfillmentCenterId,
+                    warehouseId: purchaseData.warehouseId || null,
+                    orderDate: purchaseData.orderDate ? new Date(purchaseData.orderDate) : new Date(),
+                    expectedDeliveryDate: purchaseData.expectedDeliveryDate ? new Date(purchaseData.expectedDeliveryDate) : null,
+                    receivedDate: purchaseData.receivedDate ? new Date(purchaseData.receivedDate) : null,
+                    trackingNumber: purchaseData.trackingNumber || null,
+                    fulfillmentRef: purchaseData.fulfillmentRef || null,
+                    notes: purchaseData.notes || null,
+                    purchaseStatus: purchaseData.purchaseStatus || 'Draft',
                     subtotal: sub,
-                    totalAmount: purchaseData.totalAmount,
-                    purchaseStatus: 'Draft',
+                    totalAmount: total,
                     purchaseTaxAmount: tax,
                     purchaseShippingCost: ship,
                     items: {
@@ -96,6 +105,7 @@ export class PurchasesService {
             return newPurchase;
 
         } catch (error) {
+            console.error('Purchase create error:', error);
             throw new HttpException({
                 status: HttpStatus.INTERNAL_SERVER_ERROR,
                 error: `Failed to create purchase: ${String(error)}`,
@@ -189,9 +199,59 @@ export class PurchasesService {
                 }
             }
 
-            return await this.prisma.purchase.update({
+            // If items provided, delete existing items and re-create
+            let affectedProductIds: string[] = [];
+            if (items && items.length > 0) {
+                // Collect product IDs from OLD items so their costs get recalculated too
+                const oldItems = await this.prisma.purchaseItem.findMany({
+                    where: { purchaseId: id },
+                    select: { productId: true },
+                });
+                const oldProductIds = oldItems.map((i) => i.productId);
+
+                await this.prisma.purchaseItem.deleteMany({ where: { purchaseId: id } });
+
+                const processedItems = items.map((item: any) => ({
+                    purchaseId: id,
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    unitCost: item.unitCost,
+                    purchasePrice: item.purchasePrice || item.unitCost,
+                    taxPercent: item.taxPercent || 0,
+                    purchaseTaxAmount: item.purchaseTaxAmount || item.taxAmount || 0,
+                    purchaseDiscountAmount: item.purchaseDiscountAmount || item.discountAmount || 0,
+                    subtotal: item.subtotal || (item.quantity * item.unitCost),
+                    domesticShippingFeeCny: item.domesticShippingFeeCny || 0,
+                    vndCurrencyRate: item.vndCurrencyRate || 0,
+                    parcelKg: item.parcelKg || 0,
+                    internationalShippingFeeCny: item.internationalShippingFeeCny || 0,
+                    internationalShippingFeeVnd: item.internationalShippingFeeVnd || 0,
+                }));
+
+                await this.prisma.purchaseItem.createMany({ data: processedItems });
+
+                const newProductIds = processedItems.map((i) => i.productId);
+                affectedProductIds = [...new Set([...oldProductIds, ...newProductIds])];
+            }
+
+            // Explicitly pick only valid Purchase model fields
+            const updateData: any = {};
+            if (purchaseData.supplierId) updateData.supplierId = purchaseData.supplierId;
+            if (purchaseData.fulfillmentCenterId) updateData.fulfillmentCenterId = purchaseData.fulfillmentCenterId;
+            if ('warehouseId' in purchaseData) updateData.warehouseId = purchaseData.warehouseId || null;
+            if (purchaseData.orderDate) updateData.orderDate = new Date(purchaseData.orderDate);
+            if ('trackingNumber' in purchaseData) updateData.trackingNumber = purchaseData.trackingNumber || null;
+            if ('fulfillmentRef' in purchaseData) updateData.fulfillmentRef = purchaseData.fulfillmentRef || null;
+            if ('notes' in purchaseData) updateData.notes = purchaseData.notes || null;
+            if (purchaseData.purchaseStatus) updateData.purchaseStatus = purchaseData.purchaseStatus;
+            if (purchaseData.subtotal !== undefined) updateData.subtotal = Number(purchaseData.subtotal) || 0;
+            if (purchaseData.totalAmount !== undefined) updateData.totalAmount = Number(purchaseData.totalAmount) || 0;
+            if (purchaseData.purchaseTaxAmount !== undefined) updateData.purchaseTaxAmount = Number(purchaseData.purchaseTaxAmount) || 0;
+            if (purchaseData.purchaseShippingCost !== undefined) updateData.purchaseShippingCost = Number(purchaseData.purchaseShippingCost) || 0;
+
+            const updatedPurchase = await this.prisma.purchase.update({
                 where: { id },
-                data: purchaseData,
+                data: updateData,
                 include: {
                     items: { include: { product: true } },
                     supplier: true,
@@ -200,7 +260,15 @@ export class PurchasesService {
                     logisticCompanies: { include: { logisticCompany: true } },
                 },
             });
+
+            // Recalculate weighted average product costs for all affected products
+            if (affectedProductIds.length > 0) {
+                await this.updateProductCostsForProducts(affectedProductIds);
+            }
+
+            return updatedPurchase;
         } catch (error) {
+            console.error('Purchase update error:', error);
             throw new NotFoundException(`Purchase with ID ${id} not found`);
         }
     }
@@ -244,8 +312,8 @@ export class PurchasesService {
     }
 
     /**
-     * Recalculate weighted average unit cost (EUR) for each product
-     * from ALL its purchase items across all purchases.
+     * Recalculate weighted average unit cost (EUR) for specified products
+     * from ALL their purchase items across all purchases.
      *
      * Formula per purchase item:
      *   landedCostVnd = ((buyPricePerUnit × qty) + domShip + intlShip - discount) / qty
@@ -253,10 +321,7 @@ export class PurchasesService {
      *
      * Weighted average = Σ(landedCostEur × qty) / Σ(qty)
      */
-    private async updateProductCostsFromPurchase(purchaseItems: any[]) {
-        // Get unique product IDs from this purchase
-        const productIds = [...new Set(purchaseItems.map((item: any) => item.productId))];
-
+    private async updateProductCostsForProducts(productIds: string[]) {
         for (const productId of productIds) {
             // Fetch ALL purchase items for this product across all purchases
             const allItems = await this.prisma.purchaseItem.findMany({
@@ -301,6 +366,15 @@ export class PurchasesService {
                 });
             }
         }
+    }
+
+    /**
+     * Legacy wrapper – extracts product IDs from a processed items array
+     * and delegates to updateProductCostsForProducts.
+     */
+    private async updateProductCostsFromPurchase(purchaseItems: any[]) {
+        const productIds = [...new Set(purchaseItems.map((item: any) => item.productId))];
+        await this.updateProductCostsForProducts(productIds);
     }
 
     async receiveGoods(

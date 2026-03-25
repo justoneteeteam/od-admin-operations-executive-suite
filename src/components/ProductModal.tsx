@@ -141,9 +141,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
             }
             onSuccess(savedProduct);
             onClose();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to save product:', err);
-            setError('Failed to save product. Please try again.');
+            const message = err?.response?.data?.message || err?.message || 'Failed to save product. Please try again.';
+            setError(typeof message === 'string' ? message : JSON.stringify(message));
         } finally {
             setLoading(false);
         }

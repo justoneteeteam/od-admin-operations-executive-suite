@@ -144,25 +144,36 @@ const PurchasesPage: React.FC = () => {
       fulfillmentRef: purchase.fulfillmentRef || '',
       trackingNumber: purchase.trackingNumber || '',
       logisticCompanyIds: (purchase.logisticCompanies || []).map((plc: any) => plc.logisticCompanyId || plc.logisticCompany?.id),
-      items: (purchase.items as any[]).map(item => ({
-        ...item,
-        id: item.id,
-        productId: item.productId,
-        productName: item.product?.name || item.productName || 'Unknown',
-        sku: item.product?.sku || item.sku || 'N/A',
-        qty: Number(item.quantity) || 0,
-        purchasePrice: Number(item.purchasePrice) || 0,
-        discount: Number(item.purchaseDiscountAmount || item.discount) || 0,
-        taxPercent: 0,
-        taxAmount: 0,
-        unitCost: Number(item.unitCost) || 0,
-        totalCost: Number(item.subtotal || item.totalCost) || 0,
-        domesticShippingFeeCny: Number(item.domesticShippingFeeCny) || 0,
-        vndCurrencyRate: Number(item.vndCurrencyRate) || 0,
-        parcelKg: Number(item.parcelKg) || 0,
-        internationalShippingFeeCny: Number(item.internationalShippingFeeCny) || 0,
-        internationalShippingFeeVnd: Number(item.internationalShippingFeeVnd) || 0,
-      })),
+      items: (purchase.items as any[]).map(item => {
+        const qty = Number(item.quantity) || 0;
+        const purchasePrice = Number(item.purchasePrice) || 0;
+        const discount = Number(item.purchaseDiscountAmount || item.discount) || 0;
+        const domShip = Number(item.domesticShippingFeeCny) || 0;
+        const intlShip = Number(item.internationalShippingFeeVnd) || 0;
+        // Recalculate EUR values with current exchange rate
+        const totalVnd = (qty * purchasePrice) + domShip + intlShip - discount;
+        const totalEur = latestVndToEur ? totalVnd * latestVndToEur : 0;
+        const costPerSkuEur = qty > 0 ? totalEur / qty : 0;
+        return {
+          ...item,
+          id: item.id,
+          productId: item.productId,
+          productName: item.product?.name || item.productName || 'Unknown',
+          sku: item.product?.sku || item.sku || 'N/A',
+          qty,
+          purchasePrice,
+          discount,
+          taxPercent: 0,
+          taxAmount: 0,
+          unitCost: costPerSkuEur,
+          totalCost: totalEur,
+          domesticShippingFeeCny: domShip,
+          vndCurrencyRate: Number(item.vndCurrencyRate) || 0,
+          parcelKg: Number(item.parcelKg) || 0,
+          internationalShippingFeeCny: Number(item.internationalShippingFeeCny) || 0,
+          internationalShippingFeeVnd: intlShip,
+        };
+      }),
       purchaseStatus: purchase.purchaseStatus,
       notes: purchase.notes || ''
     });
@@ -266,13 +277,13 @@ const PurchasesPage: React.FC = () => {
       const discount = Number(item.discount) || 0;
       return sum + (qty * productCost) + domShip + intlShip - discount;
     }, 0);
-    // Grand total in EUR
-    const totalEur = formData.items.reduce((sum, item) => sum + item.totalCost, 0);
+    // Grand total in EUR — always recalculate from VND × rate for consistency
+    const totalEur = latestVndToEur ? itemsSubtotalVnd * latestVndToEur : 0;
     return {
       subtotalVnd: itemsSubtotalVnd,
       total: totalEur
     };
-  }, [formData.items]);
+  }, [formData.items, latestVndToEur]);
 
   const handleSave = async () => {
     if (!formData.supplierId) { alert("Select Supplier"); return; }
@@ -282,13 +293,15 @@ const PurchasesPage: React.FC = () => {
     setIsLoading(true);
     setIsSaving(true);
     try {
-      const { fulfillmentRef, trackingNumber, logisticCompanyIds, ...rest } = formData;
-
       const payload = {
-        ...rest,
-        fulfillmentRef,
-        trackingNumber: trackingNumber || null,
-        logisticCompanyIds,
+        supplierId: formData.supplierId,
+        fulfillmentCenterId: formData.fulfillmentCenterId,
+        warehouseId: formData.warehouseId || null,
+        orderDate: formData.orderDate,
+        fulfillmentRef: formData.fulfillmentRef || null,
+        trackingNumber: formData.trackingNumber || null,
+        logisticCompanyIds: formData.logisticCompanyIds,
+        notes: formData.notes || null,
         subtotal: totals.total,
         totalAmount: totals.total,
         purchaseTaxAmount: 0,
@@ -320,9 +333,10 @@ const PurchasesPage: React.FC = () => {
       }
       setShowDrawer(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save purchase", error);
-      alert("Failed to save");
+      const errMsg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Unknown error';
+      alert(`Failed to save: ${errMsg}`);
     } finally {
       setIsSaving(false);
       setIsLoading(false);
