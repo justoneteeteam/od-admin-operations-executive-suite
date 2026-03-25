@@ -586,7 +586,12 @@ const DashboardTab: React.FC = () => {
     const [currency, setCurrency] = useState<'EUR' | 'VND'>('EUR');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [deleting, setDeleting] = useState(false);
-    const [expandedRow, setExpandedRow] = useState<string | null>(null);
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const toggleExpand = (key: string) => setExpandedRows(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key); else next.add(key);
+        return next;
+    });
 
     const [dbProducts, setDbProducts] = useState<any[]>([]);
     const [dbCountries, setDbCountries] = useState<string[]>([]);
@@ -807,7 +812,7 @@ const DashboardTab: React.FC = () => {
                                 const roas = a.spendEur > 0 ? a.revenueEur / a.spendEur : 0;
                                 const cpo = a.orders > 0 ? a.spendEur / a.orders : 0;
                                 const cvr = a.leads > 0 ? (a.orders / a.leads) * 100 : 0;
-                                const isExpanded = expandedRow === campaignName;
+                                const isExpanded = expandedRows.has(campaignName);
                                 const adSetGroups = buildAdSetGroups(group.campaigns);
                                 const hasMultipleAds = group.campaigns.length > 1;
 
@@ -815,7 +820,7 @@ const DashboardTab: React.FC = () => {
                                 <React.Fragment key={campaignName}>
                                 {/* ── Campaign Row (aggregated) ── */}
                                 <tr className={`hover:bg-primary/[0.03] transition-colors ${hasMultipleAds ? 'cursor-pointer' : ''} ${a.ids.some((id: string) => selectedIds.has(id)) ? 'bg-primary/[0.05]' : ''}`}
-                                    onClick={() => hasMultipleAds && setExpandedRow(isExpanded ? null : campaignName)}>
+                                    onClick={() => hasMultipleAds && toggleExpand(campaignName)}>
                                     <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
                                         <input type="checkbox" className="accent-primary w-4 h-4 cursor-pointer"
                                             checked={a.ids.every((id: string) => selectedIds.has(id))}
@@ -858,12 +863,12 @@ const DashboardTab: React.FC = () => {
                                     const dateRange = adRows.length > 1
                                         ? `${new Date(adRows[adRows.length-1].date).toLocaleDateString('en-GB')} – ${new Date(adRows[0].date).toLocaleDateString('en-GB')}`
                                         : new Date(adRows[0].date).toLocaleDateString('en-GB');
-                                    const isAdExpanded = expandedRow === `${campaignName}::${adName}`;
+                                    const isAdExpanded = expandedRows.has(`${campaignName}::${adName}`);
 
                                     return (
                                     <React.Fragment key={adName}>
                                     <tr className="bg-[#0f1923] hover:bg-[#132233] transition-colors cursor-pointer"
-                                        onClick={() => setExpandedRow(isAdExpanded ? campaignName : `${campaignName}::${adName}`)}>
+                                        onClick={() => toggleExpand(`${campaignName}::${adName}`)}>
                                         <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
                                             <input type="checkbox" className="accent-primary w-3.5 h-3.5 cursor-pointer"
                                                 checked={adAgg.ids.every((id: string) => selectedIds.has(id))}
