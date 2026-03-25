@@ -484,7 +484,7 @@ model PurchaseItem {
   purchaseDiscountAmount Decimal?  @default(0) @map("purchase_discount_amount") @db.Decimal(10, 2)
   landedCost                    Decimal?  @map("landed_cost") @db.Decimal(10, 2)
   domesticShippingFeeCny        Decimal?  @default(0) @map("domestic_shipping_fee_cny") @db.Decimal(10, 2)
-  vndCurrencyRate               Decimal?  @default(0) @map("vnd_currency_rate") @db.Decimal(15, 2)
+  vndCurrencyRate               Decimal?  @default(0) @map("vnd_currency_rate") @db.Decimal(15, 10)
   parcelKg                      Decimal?  @default(0) @map("parcel_kg") @db.Decimal(8, 2)
   internationalShippingFeeCny   Decimal?  @default(0) @map("international_shipping_fee_cny") @db.Decimal(10, 2)
   internationalShippingFeeVnd   Decimal?  @default(0) @map("international_shipping_fee_vnd") @db.Decimal(12, 2)
