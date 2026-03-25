@@ -722,10 +722,44 @@ const DashboardTab: React.FC = () => {
                 </div>
             )}
 
-            {/* Campaign Breakdown Table */}
-            <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+            {/* Campaign Breakdown — Hierarchical View */}
+            {(() => {
+                // Group campaigns: Campaign → Ad Set → Ads
+                const campaignGroups = new Map<string, { campaigns: any[]; country: string; sku: string; stage: string; }>();
+                for (const c of data.campaigns as any[]) {
+                    const key = c.campaign;
+                    if (!campaignGroups.has(key)) {
+                        campaignGroups.set(key, { campaigns: [], country: c.country || '', sku: c.sku || '', stage: c.stage || '' });
+                    }
+                    campaignGroups.get(key)!.campaigns.push(c);
+                }
+
+                // Build ad-set groups within each campaign
+                const buildAdSetGroups = (rows: any[]) => {
+                    const groups = new Map<string, any[]>();
+                    for (const r of rows) {
+                        const adSet = r.adName || r.adSetName || '(no ad)';
+                        if (!groups.has(adSet)) groups.set(adSet, []);
+                        groups.get(adSet)!.push(r);
+                    }
+                    return groups;
+                };
+
+                // Aggregate metrics for a group of rows
+                const agg = (rows: any[]) => ({
+                    spendEur: rows.reduce((s, c) => s + (c.spendEur || 0), 0),
+                    revenueEur: rows.reduce((s, c) => s + (c.revenueEur || 0), 0),
+                    leads: rows.reduce((s, c) => s + (c.leads || 0), 0),
+                    confirmedLeads: rows.reduce((s, c) => s + (c.confirmedLeads || 0), 0),
+                    orders: rows.reduce((s, c) => s + (c.orders || 0), 0),
+                    matchedOrderDetails: rows.flatMap(c => c.matchedOrderDetails || []),
+                    ids: rows.map(c => c.id),
+                });
+
+                return (
+                <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
                 <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Campaign Breakdown ({data.campaigns.length} records)</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">Campaign Breakdown ({data.campaigns.length} records · {campaignGroups.size} campaigns)</h3>
                     {selectedIds.size > 0 && (
                         <div className="flex items-center gap-3">
                             <span className="text-xs text-amber-400 font-bold">{selectedIds.size} selected</span>
@@ -749,7 +783,7 @@ const DashboardTab: React.FC = () => {
                     )}
                 </div>
                 <div className="overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left border-collapse min-w-[1200px]">
+                    <table className="w-full text-left border-collapse min-w-[1300px]">
                         <thead><tr className="bg-[#17232f]">
                             <th className="px-3 py-3 w-10">
                                 <input
@@ -765,81 +799,165 @@ const DashboardTab: React.FC = () => {
                                     }}
                                 />
                             </th>
-                            {['Date', 'Campaign', 'Country', 'SKU', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Confirmed', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}
+                            {['Campaign / Ad', 'Country', 'Stage', 'Spend (EUR)', 'Revenue', 'Leads', 'Confirmed', 'Orders', 'ROAS', 'CPO', 'CVR'].map(h => (<th key={h} className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">{h}</th>))}
                         </tr></thead>
                         <tbody className="divide-y divide-border-dark/50">
-                            {data.campaigns.map((c: any, i: number) => (
-                                <React.Fragment key={i}>
-                                <tr className={`hover:bg-primary/[0.02] transition-colors cursor-pointer ${selectedIds.has(c.id) ? 'bg-primary/[0.05]' : ''}`}
-                                    onClick={() => setExpandedRow(expandedRow === c.id ? null : c.id)}>
+                            {[...campaignGroups.entries()].map(([campaignName, group]) => {
+                                const a = agg(group.campaigns);
+                                const roas = a.spendEur > 0 ? a.revenueEur / a.spendEur : 0;
+                                const cpo = a.orders > 0 ? a.spendEur / a.orders : 0;
+                                const cvr = a.leads > 0 ? (a.orders / a.leads) * 100 : 0;
+                                const isExpanded = expandedRow === campaignName;
+                                const adSetGroups = buildAdSetGroups(group.campaigns);
+                                const hasMultipleAds = group.campaigns.length > 1;
+
+                                return (
+                                <React.Fragment key={campaignName}>
+                                {/* ── Campaign Row (aggregated) ── */}
+                                <tr className={`hover:bg-primary/[0.03] transition-colors ${hasMultipleAds ? 'cursor-pointer' : ''} ${a.ids.some((id: string) => selectedIds.has(id)) ? 'bg-primary/[0.05]' : ''}`}
+                                    onClick={() => hasMultipleAds && setExpandedRow(isExpanded ? null : campaignName)}>
                                     <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
-                                        <input
-                                            type="checkbox"
-                                            className="accent-primary w-4 h-4 cursor-pointer"
-                                            checked={selectedIds.has(c.id)}
+                                        <input type="checkbox" className="accent-primary w-4 h-4 cursor-pointer"
+                                            checked={a.ids.every((id: string) => selectedIds.has(id))}
                                             onChange={e => {
                                                 const next = new Set(selectedIds);
-                                                if (e.target.checked) next.add(c.id);
-                                                else next.delete(c.id);
+                                                if (e.target.checked) a.ids.forEach((id: string) => next.add(id));
+                                                else a.ids.forEach((id: string) => next.delete(id));
                                                 setSelectedIds(next);
-                                            }}
-                                        />
+                                            }} />
                                     </td>
-                                    <td className="px-4 py-3 text-xs text-white font-mono">{new Date(c.date).toLocaleDateString('en-GB')}</td>
-                                    <td className="px-4 py-3 text-xs text-white font-bold max-w-[200px] truncate">{c.campaign}</td>
-                                    <td className="px-4 py-3"><span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{c.country || '—'}</span></td>
-                                    <td className="px-4 py-3 text-xs text-primary font-mono">{c.sku || '—'}</td>
-                                    <td className="px-4 py-3"><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${c.stage === 'Win' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : c.stage === 'Scale' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : c.stage === 'POC' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : c.stage === 'Test' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>{c.stage || '—'}</span></td>
-                                    <td className="px-4 py-3 text-xs font-black text-white">€{(c.spendEur || 0).toLocaleString()}</td>
-                                    <td className="px-4 py-3 text-xs font-black text-emerald-400">€{(c.revenueEur || 0).toLocaleString()}</td>
-                                    <td className="px-4 py-3 text-xs font-bold text-white">{c.leads || 0}</td>
-                                    <td className="px-4 py-3 text-xs font-bold text-teal-400">{c.confirmedLeads || 0}</td>
-                                    <td className="px-4 py-3 text-xs font-bold text-white">{c.orders || 0}</td>
-                                    <td className="px-4 py-3 text-xs font-black"><span className={(c.roas || 0) >= 2 ? 'text-emerald-400' : (c.roas || 0) >= 1 ? 'text-amber-400' : 'text-red-400'}>{(c.roas || 0).toFixed(2)}x</span></td>
-                                    <td className="px-4 py-3 text-xs font-bold text-white">€{(c.cpo || 0).toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-xs font-bold text-white">{(c.cvr || 0).toFixed(1)}%</td>
+                                    <td className="px-4 py-3">
+                                        <div className="flex items-center gap-2">
+                                            {hasMultipleAds && (
+                                                <span className={`material-symbols-outlined text-[14px] text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`}>chevron_right</span>
+                                            )}
+                                            <span className="text-xs text-white font-bold">{campaignName}</span>
+                                            {hasMultipleAds && (
+                                                <span className="text-[9px] font-bold text-text-muted bg-white/5 px-1.5 py-0.5 rounded-full">{group.campaigns.length} ads</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-3"><span className="text-[10px] font-black text-text-muted uppercase tracking-widest">{group.country || '—'}</span></td>
+                                    <td className="px-4 py-3"><span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${group.stage === 'Win' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : group.stage === 'Scale' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : group.stage === 'POC' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : group.stage === 'Test' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-gray-500/10 text-gray-400 border-gray-500/20'}`}>{group.stage || '—'}</span></td>
+                                    <td className="px-4 py-3 text-xs font-black text-white">€{Math.round(a.spendEur * 100) / 100}</td>
+                                    <td className="px-4 py-3 text-xs font-black text-emerald-400">€{Math.round(a.revenueEur * 100) / 100}</td>
+                                    <td className="px-4 py-3 text-xs font-bold text-white">{a.leads}</td>
+                                    <td className="px-4 py-3 text-xs font-bold text-teal-400">{a.confirmedLeads}</td>
+                                    <td className="px-4 py-3 text-xs font-bold text-white">{a.orders}</td>
+                                    <td className="px-4 py-3 text-xs font-black"><span className={roas >= 2 ? 'text-emerald-400' : roas >= 1 ? 'text-amber-400' : 'text-red-400'}>{roas.toFixed(2)}x</span></td>
+                                    <td className="px-4 py-3 text-xs font-bold text-white">€{cpo.toFixed(2)}</td>
+                                    <td className="px-4 py-3 text-xs font-bold text-white">{cvr.toFixed(1)}%</td>
                                 </tr>
-                                {/* Order Match Details Expansion */}
-                                {expandedRow === c.id && c.matchedOrderDetails && c.matchedOrderDetails.length > 0 && (
+
+                                {/* ── Expanded: Ad-level rows ── */}
+                                {isExpanded && [...adSetGroups.entries()].map(([adName, adRows]) => {
+                                    const adAgg = agg(adRows);
+                                    const adRoas = adAgg.spendEur > 0 ? adAgg.revenueEur / adAgg.spendEur : 0;
+                                    const adCpo = adAgg.orders > 0 ? adAgg.spendEur / adAgg.orders : 0;
+                                    const adCvr = adAgg.leads > 0 ? (adAgg.orders / adAgg.leads) * 100 : 0;
+                                    const dateRange = adRows.length > 1
+                                        ? `${new Date(adRows[adRows.length-1].date).toLocaleDateString('en-GB')} – ${new Date(adRows[0].date).toLocaleDateString('en-GB')}`
+                                        : new Date(adRows[0].date).toLocaleDateString('en-GB');
+                                    const isAdExpanded = expandedRow === `${campaignName}::${adName}`;
+
+                                    return (
+                                    <React.Fragment key={adName}>
+                                    <tr className="bg-[#0f1923] hover:bg-[#132233] transition-colors cursor-pointer"
+                                        onClick={() => setExpandedRow(isAdExpanded ? campaignName : `${campaignName}::${adName}`)}>
+                                        <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
+                                            <input type="checkbox" className="accent-primary w-3.5 h-3.5 cursor-pointer"
+                                                checked={adAgg.ids.every((id: string) => selectedIds.has(id))}
+                                                onChange={e => {
+                                                    const next = new Set(selectedIds);
+                                                    if (e.target.checked) adAgg.ids.forEach((id: string) => next.add(id));
+                                                    else adAgg.ids.forEach((id: string) => next.delete(id));
+                                                    setSelectedIds(next);
+                                                }} />
+                                        </td>
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex items-center gap-2 pl-6">
+                                                {adAgg.matchedOrderDetails.length > 0 && (
+                                                    <span className={`material-symbols-outlined text-[12px] text-text-muted transition-transform ${isAdExpanded ? 'rotate-90' : ''}`}>chevron_right</span>
+                                                )}
+                                                <span className="text-[11px] text-cyan-400 font-bold font-mono">{adName}</span>
+                                                <span className="text-[9px] text-text-muted/60">{dateRange}</span>
+                                                {adRows.length > 1 && <span className="text-[9px] text-text-muted bg-white/5 px-1.5 py-0.5 rounded-full">{adRows.length} rows</span>}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2.5"><span className="text-[10px] text-text-muted/60 uppercase">{group.country || '—'}</span></td>
+                                        <td className="px-4 py-2.5"></td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-white/80">€{(Math.round(adAgg.spendEur * 100) / 100).toLocaleString()}</td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-emerald-400/80">€{(Math.round(adAgg.revenueEur * 100) / 100).toLocaleString()}</td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-white/80">{adAgg.leads}</td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-teal-400/80">{adAgg.confirmedLeads}</td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-white/80">{adAgg.orders}</td>
+                                        <td className="px-4 py-2.5 text-[11px] font-black"><span className={adRoas >= 2 ? 'text-emerald-400/80' : adRoas >= 1 ? 'text-amber-400/80' : 'text-red-400/80'}>{adRoas.toFixed(2)}x</span></td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-white/80">€{adCpo.toFixed(2)}</td>
+                                        <td className="px-4 py-2.5 text-[11px] font-bold text-white/80">{adCvr.toFixed(1)}%</td>
+                                    </tr>
+                                    {/* Ad-level order match details */}
+                                    {isAdExpanded && adAgg.matchedOrderDetails.length > 0 && (
+                                        <tr>
+                                            <td colSpan={12} className="bg-[#0a1218] px-6 py-3 border-t border-border-dark/20">
+                                                <div className="pl-10">
+                                                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">📎 Matched Orders ({adAgg.matchedOrderDetails.length})</p>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                                                        {adAgg.matchedOrderDetails.map((o: any, j: number) => (
+                                                            <div key={j} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-card-dark border border-border-dark/40">
+                                                                <span className="text-[11px] font-mono text-primary font-bold">{o.orderNumber}</span>
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
+                                                                    o.confirmationStatus === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                                    o.confirmationStatus === 'No Answer' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                                    o.confirmationStatus === 'Call Center' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                                    'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                                                }`}>{o.confirmationStatus || 'Pending'}</span>
+                                                                <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
+                                                                    o.orderStatus === 'Delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                                    'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                                                                }`}>{o.orderStatus || 'Pending'}</span>
+                                                                <span className="text-[10px] text-text-muted ml-auto">€{(o.totalAmount || 0).toFixed(2)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </React.Fragment>
+                                    );
+                                })}
+
+                                {/* Single-ad campaign (no children) — show order details directly */}
+                                {!hasMultipleAds && isExpanded && a.matchedOrderDetails.length > 0 && (
                                     <tr>
-                                        <td colSpan={14} className="bg-[#0f1923] px-6 py-4 border-t border-border-dark/30">
-                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">
-                                                📎 Matched Orders ({c.matchedOrderDetails.length})
-                                            </p>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                {c.matchedOrderDetails.map((o: any, j: number) => (
-                                                    <div key={j} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-card-dark border border-border-dark/50">
-                                                        <span className="text-xs font-mono text-primary font-bold">{o.orderNumber}</span>
-                                                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
+                                        <td colSpan={12} className="bg-[#0f1923] px-6 py-3 border-t border-border-dark/30">
+                                            <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">📎 Matched Orders ({a.matchedOrderDetails.length})</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                                                {a.matchedOrderDetails.map((o: any, j: number) => (
+                                                    <div key={j} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-card-dark border border-border-dark/40">
+                                                        <span className="text-[11px] font-mono text-primary font-bold">{o.orderNumber}</span>
+                                                        <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
                                                             o.confirmationStatus === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                             o.confirmationStatus === 'No Answer' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                                                             o.confirmationStatus === 'Call Center' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                                             'bg-gray-500/10 text-gray-400 border-gray-500/20'
                                                         }`}>{o.confirmationStatus || 'Pending'}</span>
-                                                        <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
-                                                            o.orderStatus === 'Delivered' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
-                                                        }`}>{o.orderStatus || 'Pending'}</span>
-                                                        <span className="text-xs text-text-muted ml-auto">€{(o.totalAmount || 0).toFixed(2)}</span>
+                                                        <span className="text-[10px] text-text-muted ml-auto">€{(o.totalAmount || 0).toFixed(2)}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </td>
                                     </tr>
                                 )}
-                                {expandedRow === c.id && (!c.matchedOrderDetails || c.matchedOrderDetails.length === 0) && c.orderIds && (
-                                    <tr>
-                                        <td colSpan={14} className="bg-[#0f1923] px-6 py-3 border-t border-border-dark/30">
-                                            <p className="text-xs text-text-muted">Order IDs: <span className="text-primary font-mono">{c.orderIds}</span></p>
-                                        </td>
-                                    </tr>
-                                )}
                                 </React.Fragment>
-                            ))}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
             </div>
+                );
+            })()}
         </div>
     );
 };
