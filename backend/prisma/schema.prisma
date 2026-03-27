@@ -878,7 +878,7 @@ model LoqateAddressCache {
 model AdsCampaign {
   id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   date          DateTime @db.Date
-  campaign      String   @db.VarChar(255)
+  campaign      String
   country       String?  @db.VarChar(10)
   platform      String?  @db.VarChar(50)
   sku           String?  @db.VarChar(50)
@@ -887,8 +887,8 @@ model AdsCampaign {
   spendVnd      Decimal  @map("spend_vnd") @db.Decimal(15, 2)
   notes         String?
   source        String?  @default("upload") @db.VarChar(20)
-  adName        String?  @map("ad_name") @db.VarChar(500)
-  adSetName     String?  @map("ad_set_name") @db.VarChar(500)
+  adName        String?  @map("ad_name")
+  adSetName     String?  @map("ad_set_name")
   cpc           Decimal? @db.Decimal(15, 2)
   cpm           Decimal? @db.Decimal(15, 2)
   ctr           Decimal? @db.Decimal(10, 4)
