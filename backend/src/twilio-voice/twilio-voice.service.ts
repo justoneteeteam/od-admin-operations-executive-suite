@@ -225,11 +225,11 @@ export class TwilioVoiceService {
                 to: customerPhone,
                 from: process.env.TWILIO_PHONE_NUMBER || '+12765311327',
                 url: twimlUrl,
-                // Answering Machine Detection: hang up on voicemail, only play script to humans
+                // Synchronous AMD: Twilio waits for detection result BEFORE
+                // requesting the TwiML URL.  The call-script endpoint receives
+                // `AnsweredBy` in the POST body and hangs up on machines,
+                // so the script never plays to voicemail.
                 machineDetection: 'DetectMessageEnd',
-                asyncAmd: 'true',
-                asyncAmdStatusCallback: `${appUrl}/twilio/amd-callback?orderId=${orderId}`,
-                asyncAmdStatusCallbackMethod: 'POST',
                 record: true,
                 recordingStatusCallback: `${appUrl}/twilio/recording-callback?orderId=${orderId}`,
                 recordingStatusCallbackMethod: 'POST',
@@ -457,11 +457,8 @@ export class TwilioVoiceService {
                 to: customerPhone,
                 from: process.env.TWILIO_PHONE_NUMBER || '+12765311327',
                 url: twimlUrl,
-                // Answering Machine Detection for SKU calls too
+                // Synchronous AMD for SKU calls too — see initiateConfirmationCall
                 machineDetection: 'DetectMessageEnd',
-                asyncAmd: 'true',
-                asyncAmdStatusCallback: `${appUrl}/twilio/amd-callback?orderId=${orderId}`,
-                asyncAmdStatusCallbackMethod: 'POST',
                 record: true,
                 recordingStatusCallback: `${appUrl}/twilio/recording-callback?orderId=${orderId}`,
                 recordingStatusCallbackMethod: 'POST',

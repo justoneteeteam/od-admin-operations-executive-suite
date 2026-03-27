@@ -32,9 +32,39 @@ export class TwilioVoiceController {
         @Query('orderId') orderId: string,
         @Query('scriptType') scriptType: 'short' | 'long',
         @Query('language') language: string,
+        @Body() body: any,
         @Res() res: Response,
     ) {
-        this.logger.log(`Generating ${scriptType} TwiML script for order ${orderId} (${language})`);
+        const answeredBy = body?.AnsweredBy || '';
+        this.logger.log(`Generating ${scriptType} TwiML script for order ${orderId} (${language}), AnsweredBy=${answeredBy}`);
+
+        // ── Synchronous AMD: if Twilio detected a machine, hang up immediately ──
+        if (answeredBy && answeredBy !== 'human') {
+            this.logger.warn(`Order ${orderId}: Machine detected (${answeredBy}). Returning hangup TwiML.`);
+
+            // Update the call log to reflect machine detection
+            const callSid = body?.CallSid;
+            if (callSid) {
+                const callLog = await this.prisma.callLog.findFirst({
+                    where: { orderId, callSid },
+                });
+                if (callLog) {
+                    await this.prisma.callLog.update({
+                        where: { id: callLog.id },
+                        data: {
+                            callStatus: 'machine_detected',
+                            skipReason: `Voicemail/machine detected: ${answeredBy}`,
+                            completedAt: new Date(),
+                        },
+                    });
+                }
+            }
+
+            const twiml = new twilio.twiml.VoiceResponse();
+            twiml.hangup();
+            res.type('text/xml');
+            return res.send(twiml.toString());
+        }
 
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
