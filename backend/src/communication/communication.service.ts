@@ -175,7 +175,7 @@ export class CommunicationService {
         page?: number;
         limit?: number;
     }) {
-        const where: any = {};
+        const where: any = { callStatus: { not: 'skipped' } };
 
         if (params?.type) where.scriptType = params.type;
         if (params?.intent) where.intentDetected = params.intent;
