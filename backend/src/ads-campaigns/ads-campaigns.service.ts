@@ -503,6 +503,202 @@ export class AdsCampaignsService {
         return { kpis, campaigns: enriched, chartData };
     }
 
+    // ─── POC REPORT ──────────────────────────────────────────────────────
+
+    async getPocReport(filters?: {
+        country?: string;
+        startDate?: string;
+        endDate?: string;
+    }) {
+        // 1. Fetch all Test/POC-stage campaigns — non-SKU products only
+        const where: any = {
+            stage: { in: ['Test', 'TEST', 'test', 'POC', 'poc', 'Poc'] },
+            OR: [
+                { sku: null },
+                { sku: '' },
+                { sku: { startsWith: 'NO-SKU' } },
+                { sku: { startsWith: 'no-sku' } },
+            ],
+        };
+        if (filters?.country) where.country = filters.country;
+        if (filters?.startDate || filters?.endDate) {
+            where.date = {};
+            if (filters.startDate) where.date.gte = new Date(filters.startDate);
+            if (filters.endDate) where.date.lte = new Date(filters.endDate);
+        }
+
+        const campaigns = await this.prisma.adsCampaign.findMany({
+            where,
+            orderBy: { date: 'desc' },
+        });
+
+        if (campaigns.length === 0) {
+            return {
+                kpis: { totalTested: 0, totalSpendEur: 0, totalLeads: 0, totalConfirmedLeads: 0, cpl: 0, cpcl: 0, qualified: 0, qualifyRate: 0 },
+                funnel: { tested: 0, leads: 0, confirmedLeads: 0, qualified: 0 },
+                campaigns: [],
+            };
+        }
+
+        // 2. Exchange rates
+        const dateStrings = [...new Set(campaigns.map(c => c.date.toISOString().split('T')[0]))];
+        const rates = await this.prisma.exchangeRate.findMany({
+            where: { date: { in: dateStrings.map(d => new Date(d)) } },
+        });
+        const rateMap = new Map<string, number>(rates.map(r => [r.date.toISOString().split('T')[0], Number(r.vndToEur)]));
+        const defaultRate = rates.length > 0 ? Number(rates[rates.length - 1].vndToEur) : 0.0000370;
+
+        // 3. Collect order numbers
+        const allOrderNumbers = new Set<string>();
+        for (const c of campaigns) {
+            if (c.orderIds) {
+                for (const num of c.orderIds.split(';').map(s => s.trim()).filter(Boolean)) {
+                    allOrderNumbers.add(num);
+                }
+            }
+        }
+
+        // 4. Fetch matched orders
+        const ordersByNumber = new Map<string, { orderNumber: string; confirmationStatus: string | null; orderStatus: string | null; totalAmount: any }>();
+        if (allOrderNumbers.size > 0) {
+            const orders = await this.prisma.order.findMany({
+                where: { orderNumber: { in: [...allOrderNumbers] } },
+                select: { orderNumber: true, confirmationStatus: true, orderStatus: true, totalAmount: true },
+            });
+            for (const o of orders) ordersByNumber.set(o.orderNumber, o);
+        }
+
+        // 5. SKU-based fallback
+        const skus: string[] = [...new Set(campaigns.map(c => c.sku).filter((s): s is string => !!s))];
+        const allDates = campaigns.map(c => c.date);
+        const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+        const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+        maxDate.setHours(23, 59, 59, 999);
+
+        const skuLeads: Record<string, number> = {};
+        const skuConfirmedLeads: Record<string, number> = {};
+
+        if (skus.length > 0) {
+            const allSkuOrders = await this.prisma.order.findMany({
+                where: {
+                    orderDate: { gte: minDate, lte: maxDate },
+                    items: { some: { sku: { in: skus } } },
+                },
+                include: { items: { select: { sku: true } } },
+            });
+            for (const order of allSkuOrders) {
+                for (const sku of new Set(order.items.map(i => i.sku))) {
+                    if (skus.includes(sku)) {
+                        skuLeads[sku] = (skuLeads[sku] || 0) + 1;
+                        if (order.confirmationStatus === 'Confirmed') {
+                            skuConfirmedLeads[sku] = (skuConfirmedLeads[sku] || 0) + 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5b. Look up product names by SKU
+        const productNameMap = new Map<string, string>();
+        const allSkuValues = [...new Set(campaigns.map(c => c.sku).filter((s): s is string => !!s))];
+        if (allSkuValues.length > 0) {
+            const products = await this.prisma.product.findMany({
+                where: { sku: { in: allSkuValues } },
+                select: { sku: true, name: true },
+            });
+            for (const p of products) productNameMap.set(p.sku, p.name);
+        }
+
+        // 6. Enrich and group by campaign name
+        const campaignGroups = new Map<string, { spendEur: number; leads: number; confirmedLeads: number; sku: string; country: string; productName: string }>();
+
+        for (const c of campaigns) {
+            const dateStr = c.date.toISOString().split('T')[0];
+            const rate = rateMap.get(dateStr) || defaultRate;
+            const spendEur = Number(c.spendVnd) * rate;
+
+            let leads = 0;
+            let confirmedLeads = 0;
+
+            if (c.orderIds) {
+                const nums = c.orderIds.split(';').map(s => s.trim()).filter(Boolean);
+                for (const num of nums) {
+                    const order = ordersByNumber.get(num);
+                    if (order) {
+                        leads++;
+                        if (order.confirmationStatus === 'Confirmed') confirmedLeads++;
+                    }
+                }
+            } else if (c.sku) {
+                leads = skuLeads[c.sku] || 0;
+                confirmedLeads = skuConfirmedLeads[c.sku] || 0;
+            }
+
+            const key = c.campaign;
+            const resolvedName = c.sku ? (productNameMap.get(c.sku) || c.campaign) : c.campaign;
+            const existing = campaignGroups.get(key) || { spendEur: 0, leads: 0, confirmedLeads: 0, sku: c.sku || '', country: c.country || '', productName: resolvedName };
+            existing.spendEur += spendEur;
+            existing.leads += leads;
+            existing.confirmedLeads += confirmedLeads;
+            if (!existing.sku && c.sku) existing.sku = c.sku;
+            if (!existing.country && c.country) existing.country = c.country;
+            if (existing.productName === key && resolvedName !== key) existing.productName = resolvedName;
+            campaignGroups.set(key, existing);
+        }
+
+        // 7. Build detail rows with qualification
+        const QUALIFY_THRESHOLD = 5;
+        const allDetail = [...campaignGroups.entries()].map(([campaign, data]) => {
+            const cpl = data.leads > 0 ? data.spendEur / data.leads : 0;
+            const cpcl = data.confirmedLeads > 0 ? data.spendEur / data.confirmedLeads : 0;
+            const qualifyStatus = data.confirmedLeads >= QUALIFY_THRESHOLD ? 'QUALIFIED'
+                : data.confirmedLeads > 0 ? 'IN_PROGRESS' : 'NOT_QUALIFIED';
+
+            return {
+                campaign,
+                productName: data.productName,
+                country: data.country,
+                sku: data.sku,
+                spendEur: Math.round(data.spendEur * 100) / 100,
+                leads: data.leads,
+                confirmedLeads: data.confirmedLeads,
+                cpl: Math.round(cpl * 100) / 100,
+                cpcl: Math.round(cpcl * 100) / 100,
+                qualifyStatus,
+            };
+        });
+
+        // 7b. Only keep rows where a real product name was resolved
+        const detail = allDetail.filter(d => d.productName !== d.campaign);
+
+        // 8. Aggregate KPIs
+        const totalTested = detail.length;
+        const totalSpendEur = detail.reduce((s, d) => s + d.spendEur, 0);
+        const totalLeads = detail.reduce((s, d) => s + d.leads, 0);
+        const totalConfirmedLeads = detail.reduce((s, d) => s + d.confirmedLeads, 0);
+        const qualified = detail.filter(d => d.qualifyStatus === 'QUALIFIED').length;
+
+        return {
+            kpis: {
+                totalTested,
+                totalSpendEur: Math.round(totalSpendEur * 100) / 100,
+                totalLeads,
+                totalConfirmedLeads,
+                cpl: totalLeads > 0 ? Math.round((totalSpendEur / totalLeads) * 100) / 100 : 0,
+                cpcl: totalConfirmedLeads > 0 ? Math.round((totalSpendEur / totalConfirmedLeads) * 100) / 100 : 0,
+                qualified,
+                qualifyRate: totalTested > 0 ? Math.round((qualified / totalTested) * 10000) / 100 : 0,
+            },
+            funnel: {
+                tested: totalTested,
+                leads: totalLeads,
+                confirmedLeads: totalConfirmedLeads,
+                qualified,
+            },
+            campaigns: detail,
+        };
+    }
+
     // ─── HELPERS ─────────────────────────────────────────────────────────
 
     private async validateSku(sku: string) {

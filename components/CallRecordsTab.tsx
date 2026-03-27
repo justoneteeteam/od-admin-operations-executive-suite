@@ -17,6 +17,8 @@ import React, { useState } from 'react';
 import communicationService, { CallRecord, CallRecordsResponse } from '../src/services/communication.service';
 import { API_BASE_URL } from '../src/config/api';
 
+const PAGE_SIZE = 30;
+
 const CallRecordsTab: React.FC = () => {
   const [callRecords, setCallRecords] = useState<CallRecord[]>([]);
   const [callStats, setCallStats] = useState<CallRecordsResponse['stats']>({ total: 0, confirmed: 0, cancelled: 0, noAnswer: 0, unclear: 0 });
@@ -29,17 +31,27 @@ const CallRecordsTab: React.FC = () => {
   const [retranscribingId, setRetranscribingId] = useState<string | null>(null);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
 
-  const fetchCallRecords = async () => {
+  const fetchCallRecords = async (page = currentPage) => {
     setCrLoading(true);
     try {
       const data = await communicationService.listCallRecords({
         type: crTypeFilter || undefined,
         intent: crIntentFilter || undefined,
         search: crSearch || undefined,
+        page,
+        limit: PAGE_SIZE,
       });
-      setCallRecords(data.records);
+      // Filter out SKIPPED call records
+      const filtered = data.records.filter(r => r.callStatus !== 'SKIPPED');
+      setCallRecords(filtered);
       setCallStats(data.stats);
+      setCurrentPage(data.page || page);
+      setTotalPages(data.totalPages || 1);
+      setTotalRecords(data.total || 0);
     } catch (err) {
       console.error('Failed to fetch call records:', err);
     } finally {
@@ -147,7 +159,7 @@ const CallRecordsTab: React.FC = () => {
         <select
           className="px-3 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
           value={crTypeFilter}
-          onChange={e => { setCrTypeFilter(e.target.value); setTimeout(fetchCallRecords, 100); }}
+          onChange={e => { setCrTypeFilter(e.target.value); setCurrentPage(1); setTimeout(() => fetchCallRecords(1), 100); }}
         >
           <option value="">All Types</option>
           <option value="confirmation">Confirmation</option>
@@ -157,7 +169,7 @@ const CallRecordsTab: React.FC = () => {
         <select
           className="px-3 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
           value={crIntentFilter}
-          onChange={e => { setCrIntentFilter(e.target.value); setTimeout(fetchCallRecords, 100); }}
+          onChange={e => { setCrIntentFilter(e.target.value); setCurrentPage(1); setTimeout(() => fetchCallRecords(1), 100); }}
         >
           <option value="">All Intents</option>
           <option value="CONFIRMED">Confirmed</option>
@@ -166,7 +178,7 @@ const CallRecordsTab: React.FC = () => {
           <option value="UNCLEAR">Unclear</option>
         </select>
         <button
-          onClick={fetchCallRecords}
+          onClick={() => { setCurrentPage(1); fetchCallRecords(1); }}
           className="px-4 py-2.5 bg-primary/10 text-primary text-sm font-bold rounded-xl hover:bg-primary/20 transition-all border border-primary/20"
         >
           <span className="material-symbols-outlined mr-1 align-middle" style={{ fontSize: '16px' }}>refresh</span>
@@ -363,6 +375,56 @@ const CallRecordsTab: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#233648]">
+            <p className="text-text-muted text-xs">
+              Page <span className="text-white font-bold">{currentPage}</span> of{' '}
+              <span className="text-white font-bold">{totalPages}</span>
+              <span className="ml-2">({totalRecords} records)</span>
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                disabled={currentPage <= 1}
+                onClick={() => { const p = currentPage - 1; setCurrentPage(p); fetchCallRecords(p); }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-border-dark disabled:opacity-30 disabled:cursor-not-allowed bg-[#1c2d3d] text-text-muted hover:text-white hover:bg-primary/20"
+              >
+                ← Prev
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 7) {
+                  page = i + 1;
+                } else if (currentPage <= 4) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 3) {
+                  page = totalPages - 6 + i;
+                } else {
+                  page = currentPage - 3 + i;
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => { setCurrentPage(page); fetchCallRecords(page); }}
+                    className={'px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ' +
+                      (page === currentPage
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                        : 'bg-[#1c2d3d] text-text-muted border-border-dark hover:text-white hover:bg-primary/20')}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                disabled={currentPage >= totalPages}
+                onClick={() => { const p = currentPage + 1; setCurrentPage(p); fetchCallRecords(p); }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-border-dark disabled:opacity-30 disabled:cursor-not-allowed bg-[#1c2d3d] text-text-muted hover:text-white hover:bg-primary/20"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

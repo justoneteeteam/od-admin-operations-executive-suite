@@ -28,6 +28,15 @@ export class AdsCampaignsController {
         return this.service.getDashboard({ country, stage, sku, startDate, endDate });
     }
 
+    @Get('poc-report')
+    getPocReport(
+        @Query('country') country?: string,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+    ) {
+        return this.service.getPocReport({ country, startDate, endDate });
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.service.findOne(id);

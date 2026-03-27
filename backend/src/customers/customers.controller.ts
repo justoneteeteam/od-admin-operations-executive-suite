@@ -13,7 +13,7 @@ export class CustomersController {
   }
 
   @Post('bulk-block')
-  bulkBlock(@Body() body: { phones?: string[]; emails?: string[] }) {
+  async bulkBlock(@Body() body: { phones?: string[]; emails?: string[] }) {
     return this.customersService.bulkBlock(body.phones || [], body.emails || []);
   }
 

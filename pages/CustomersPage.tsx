@@ -153,7 +153,11 @@ const CustomersPage: React.FC = () => {
     setIsBlocking(true);
     try {
       const result = await customersService.bulkBlock(phones, emails);
-      alert(`Successfully blocked ${result.blocked} customer(s).`);
+      const parts: string[] = [];
+      if (result.blockedExisting > 0) parts.push(`Blocked ${result.blockedExisting} existing`);
+      if (result.createdAndBlocked > 0) parts.push(`Created ${result.createdAndBlocked} new profiles`);
+      const msg = parts.length > 0 ? parts.join(' + ') : 'No customers matched or created';
+      alert(msg);
       setShowBlockModal(false);
       setBlockPhones('');
       setBlockEmails('');

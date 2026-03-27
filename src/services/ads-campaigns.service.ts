@@ -109,7 +109,45 @@ export const adsCampaignsService = {
         const response = await apiClient.get(`/ads-campaigns/${id}/changelog`);
         return response.data as ChangeLogEntry[];
     },
+
+    async getPocReport(params?: { country?: string; startDate?: string; endDate?: string }) {
+        const response = await apiClient.get('/ads-campaigns/poc-report', { params });
+        return response.data as PocReportData;
+    },
 };
+
+export interface PocReportData {
+    kpis: {
+        totalTested: number;
+        totalSpendEur: number;
+        totalLeads: number;
+        totalConfirmedLeads: number;
+        cpl: number;
+        cpcl: number;
+        qualified: number;
+        qualifyRate: number;
+    };
+    funnel: {
+        tested: number;
+        leads: number;
+        confirmedLeads: number;
+        qualified: number;
+    };
+    campaigns: PocCampaignDetail[];
+}
+
+export interface PocCampaignDetail {
+    campaign: string;
+    productName: string;
+    country: string;
+    sku: string;
+    spendEur: number;
+    leads: number;
+    confirmedLeads: number;
+    cpl: number;
+    cpcl: number;
+    qualifyStatus: 'QUALIFIED' | 'IN_PROGRESS' | 'NOT_QUALIFIED';
+}
 
 export const exchangeRatesService = {
     async getAll() {

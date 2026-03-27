@@ -45,6 +45,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/suppliers': 'Supply Chain Manager',
   '/settings': 'Platform Settings',
   '/ads': 'Ads Campaign Analytics',
+  '/reports': 'Reports',
   '/incidents': 'Incident Management',
   '/logistics': 'Logistic Companies',
   '/communication': 'Communication Hub',

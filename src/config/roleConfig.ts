@@ -34,6 +34,7 @@ export const ROUTE_CONFIG: RouteConfig[] = [
 
   // Marketing
   { path: '/ads', label: 'Ads Analytics', icon: 'campaign', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
+  { path: '/reports', label: 'Reports', icon: 'assessment', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
 
   // System
   { path: '/settings', label: 'Settings', icon: 'settings', group: 'System', allowedRoles: ['ADMIN', 'CS'] },
