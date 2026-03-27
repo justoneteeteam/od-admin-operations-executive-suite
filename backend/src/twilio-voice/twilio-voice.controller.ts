@@ -266,11 +266,11 @@ export class TwilioVoiceController {
 
         const twiml = new twilio.twiml.VoiceResponse();
 
-        // Update call log with result
-        const latestLog = await this.prisma.callLog.findFirst({
-            where: { orderId },
-            orderBy: { createdAt: 'desc' },
-        });
+        // Update call log by matching CallSid (not just latest by orderId)
+        const callSid = twilioData.CallSid || '';
+        const latestLog = callSid
+            ? await this.prisma.callLog.findFirst({ where: { orderId, callSid } })
+            : await this.prisma.callLog.findFirst({ where: { orderId }, orderBy: { createdAt: 'desc' } });
         if (latestLog) {
             await this.prisma.callLog.update({
                 where: { id: latestLog.id },
@@ -376,14 +376,14 @@ export class TwilioVoiceController {
             return { received: true, skipped: 'recording not completed' };
         }
 
-        // Find the latest call log for this order
-        const callLog = await this.prisma.callLog.findFirst({
-            where: { orderId },
-            orderBy: { createdAt: 'desc' },
-        });
+        // Find the call log by CallSid (not just latest by orderId)
+        const callSid = recordingData.CallSid || '';
+        const callLog = callSid
+            ? await this.prisma.callLog.findFirst({ where: { orderId, callSid } })
+            : await this.prisma.callLog.findFirst({ where: { orderId }, orderBy: { createdAt: 'desc' } });
 
         if (!callLog) {
-            this.logger.warn(`Order ${orderId}: No call log found for recording ${RecordingSid}`);
+            this.logger.warn(`Order ${orderId}: No call log found for recording ${RecordingSid} (CallSid: ${callSid})`);
             return { received: true, error: 'no call log found' };
         }
 
