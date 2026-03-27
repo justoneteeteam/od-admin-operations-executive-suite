@@ -264,12 +264,6 @@ export class TwilioVoiceController {
 
         const intent = this.twilioVoiceService.analyzeIntent(speechResult, digits, confidence);
 
-        // Determine language from order
-        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-        const lang = order ? this.detectLang(order.shippingCountry) : 'es-ES';
-        const isItalian = lang === 'it-IT';
-        const voice = isItalian ? 'Polly.Bianca' : 'Polly.Lucia';
-
         const twiml = new twilio.twiml.VoiceResponse();
 
         // Update call log with result
@@ -291,7 +285,6 @@ export class TwilioVoiceController {
         }
 
         if (intent === 'CONFIRMED') {
-            // ✅ Confirm the order
             await this.prisma.order.update({
                 where: { id: orderId },
                 data: {
@@ -300,19 +293,10 @@ export class TwilioVoiceController {
                     confirmationNotes: `Auto-confirmed via Twilio call (${scriptType}). Speech: "${speechResult || 'DTMF-1'}", confidence: ${confidence}`,
                 },
             });
-
-            // Update risk assessment
             await this.updateRiskAssessmentResult(orderId, 'confirmed', speechResult, confidence, intent);
-
-            twiml.say({ voice, language: lang as any },
-                isItalian
-                    ? 'Perfetto. Il suo ordine è confermato. Riceverà la consegna a breve. Grazie.'
-                    : 'Perfecto. Su pedido está confirmado. Recibirá la entrega pronto. Gracias.'
-            );
             this.logger.log(`Order ${orderId}: CONFIRMED via Twilio.`);
 
         } else if (intent === 'CANCELLED') {
-            // ❌ Cancel the order
             await this.prisma.order.update({
                 where: { id: orderId },
                 data: {
@@ -321,28 +305,15 @@ export class TwilioVoiceController {
                     confirmationNotes: `Customer declined via Twilio call (${scriptType}). Speech: "${speechResult || 'DTMF-2'}"`,
                 },
             });
-
             await this.updateRiskAssessmentResult(orderId, 'cancelled', speechResult, confidence, intent);
-
-            twiml.say({ voice, language: lang as any },
-                isItalian
-                    ? 'Va bene. Il suo ordine è stato annullato. Grazie per aver avvisato.'
-                    : 'De acuerdo. Su pedido ha sido cancelado. Gracias por avisar.'
-            );
             this.logger.log(`Order ${orderId}: CANCELLED via Twilio.`);
 
         } else {
-            // ⚠️ Unclear → forward to call center
             await this.twilioVoiceService.forwardToCallCenter(orderId, speechResult, confidence, 'Unclear speech response');
-
-            twiml.say({ voice, language: lang as any },
-                isItalian
-                    ? 'Non abbiamo compreso la sua risposta. Un agente la contatterà a breve. Grazie.'
-                    : 'No hemos entendido su respuesta. Un agente le contactará pronto. Gracias.'
-            );
             this.logger.log(`Order ${orderId}: UNCLEAR response — forwarded to call center.`);
         }
 
+        // Just hang up — no spoken reply after customer presses a button
         twiml.hangup();
         res.type('text/xml');
         return res.send(twiml.toString());
