@@ -782,7 +782,7 @@ const OrdersPage: React.FC = () => {
                           <p className="text-[10px] text-text-muted uppercase tracking-widest">{order.shippingCountry || 'N/A'}</p>
                           <span className="text-[10px] text-text-muted/40">·</span>
                           <p className="text-[10px] text-text-muted/70">
-                            {(order.createdAt || order.orderDate) ? new Date(order.createdAt || order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
+                            {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
                           </p>
                         </div>
                       </td>
