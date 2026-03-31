@@ -31,16 +31,17 @@ Current structure places source files directly in the root or specifically:
   - **Backend**: Prisma `include` clauses (e.g., `include: { fulfillmentCenter: true }`) return related entity data in the same response.
   - **Frontend**: API Services define nested Typescript interfaces (e.g., `Order` has `fulfillmentCenter` object) to consume this data directly without extra round-trips.
   - **Validation**: Frontend selects send IDs (`supplierId`), Backend validates existence via Foreign Key constraints.
+  - **Inventory**: Orders link to a robust 8-state Stock Machine (e.g., Warehouse → Pending → Shipped → Delivered → Return Transfer) to accurately reflect product availability.
 
-### 2. Shipment Tracking Sync (17Track)
-- **Pattern**: Webhook (Push) & Polling (Backup)
+### 2. Shipment Tracking Sync (17Track v2.2)
+- **Pattern**: Hybrid Push-Pull Architecture (Webhook & PollingBackup)
 - **Primary Flow (Push)**:
-  1.  **Register**: Backend registers package with 17Track API upon creation/shipping.
+  1.  **Register**: Backend registers package with 17Track v2.2 API upon creation/shipping.
   2.  **Webhook**: 17Track pushes JSON payload to `/tracking/webhook` (Must be Publicly Accessible).
   3.  **Process**: `TrackingService` identifies event (e.g., `InTransit_Arrival`).
   4.  **Trigger**: Updates Order Status, Sends WhatsApp Notification, and creates Incident Ticket if delivery failure.
-- **Backup Flow (Poll)**:
-  -   Cron job (every 3h) to sync stale orders.
+- **Backup Flow (Pull/Poll)**:
+  -   Cron job (every 3h) to sync stale orders and pull the latest status.
 
 ### 3. Order Confirmation Workflow (Twilio WhatsApp & Voice)
 - **Pattern**: Deterministic State Machine with Escalation
@@ -48,7 +49,7 @@ Current structure places source files directly in the root or specifically:
 - **Trigger**: Order remains `Pending` and needs confirmation.
 - **Logic**:
   1.  **Phase 1 (SMS/WA)**: Send Pre-Call SMS ("We will call you in 8 seconds to confirm").
-  2.  **Phase 2 (Voice)**: Twilio dials number (`MAX_ATTEMPTS=1`).
+  2.  **Phase 2 (Voice)**: Twilio dials number (`MAX_ATTEMPTS=1`). Synchronous AMD (Answering Machine Detection) instantly hangs up if a voicemail/machine is detected.
   3.  **Result Handling**:
       -   **Confirmed/Declined**: Update `confirmationStatus` and trigger financial/inventory logic.
       -   **No Answer**: Set `confirmationStatus` to "No Answer" immediately after 1 attempt.
@@ -110,18 +111,19 @@ Current structure places source files directly in the root or specifically:
   3.  **Map**: Maps Sheet columns to `Order` entity fields.
   4.  **Upsert**: Creates new orders or updates existing ones based on Order ID.
 
-### 10. Robust CSV Parsing
+### 10. Robust CSV Parsing & Bulk Mapping
 - **Pattern**: Defensive Data Transformation
 - **Implementation**:
   - **Decimal Normalization**: Converts European "comma" decimals (e.g., `37,49`) to standard floats.
   - **Sanitization**: Trims all fields to remove `\r` (CRLF) characters and hidden whitespace.
-  - **Normalization**: Prepends `+` to phone numbers and maps raw CSV headers to internal DB fields.
+  - **Phone & Country Detection**: Prepends `+` to phone numbers and automatically assigns ISO country codes (e.g., Italy 32x-38x, Spain 6xx/7xx) for unmatched bulk customer blocking.
   - **Intelligent Store Resolution**: Validates storeId, falls back to name lookup, then first available store.
 
 ### 11. Ads Performance Data Mapping
-- **Pattern**: Metric Aggregation Layer
+- **Pattern**: Metric Aggregation Layer with Hierarchical Display
 - **Implementation**:
   - **Spend/Revenue**: Direct query from `AdsCampaigns` and `Orders`.
+  - **Hierarchical Structuring**: Data is grouped and expandable via Set state independently across Campaign → Ad Set → Ad levels.
   - **Leads**: Defined as `confirmationStatus = 'Confirmed'`.
   - **Orders**: Defined as `status = 'Delivered'`.
   - **Derived KPIs**: ROAS, CVR, CPL, CPO calculated in the frontend service layer.

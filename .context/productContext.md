@@ -18,17 +18,19 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 ## Key Features
 - **Real-time Dashboard**: Visual KPIs for revenue, profit, and orders.
 - **Order Management System (OMS)**: End-to-end tracking of orders (Placement -> Delivery -> Returns).
-- **Inventory & Purchasing**: Supplier management, purchase orders, and stock tracking.
+- **Inventory & Purchasing**: Supplier management, purchase orders, 8-state stock machine across the supply chain, and stock tracking.
 - **Fulfillment Center**: Warehouse performance monitoring and shipping status.
 - **Financial Module**: Detailed profit/loss analysis and COD reconciliation.
 - **Multi-Store Management**: Connect multiple stores via Google Sheets (Credentials stored securely).
-- **Shipment Tracking**: Automated 17Track sync to monitor package status (InfoReceived -> Delivered).
+- **Shipment Tracking**: Automated 17Track v2.2 sync to monitor package status (InfoReceived -> Delivered) utilizing a hybrid push-pull architecture.
 - **Risk Scoring Engine**: Two-layer scoring (Base heuristics + Loqate address verification) with automated actions per risk level (auto_reject, call_center, twilio_long, twilio_short).
 - **Automated Notifications**: WhatsApp/Voice/SMS workflows via Twilio to reduce RTO with adaptive risk-based logic.
 - **Incident Management**: Auto-created tickets from 17Track delivery failures, SLA tracking (72 business-hours), resolution workflows, canned response templates.
-- **Ads Performance Dashboard**: High-level tracking of Spend, Leads (Confirmed), Orders (Delivered), Revenue, CPL, CPO, CVR, and ROAS.
+- **Ads Performance Dashboard**: High-level tracking of Spend, Leads (Confirmed), Orders (Delivered), Revenue, CPL, CPO, CVR, and ROAS. Includes hierarchical view (Campaign → Ad Set → Ad).
+- **POC Product Dashboard**: Specific reporting for non-SKU product performance (KPIs, conversion funnel).
 - **Performance Analytics**: Operator and team performance tracking.
 - **Shopify Integration**: Automatic order ingestion via Shopify webhooks.
+- **Bulk Customer Blocking**: Automated bulk blocking for customers based on unmatched phone numbers with intelligent country detection.
 
 ## Order Lifecycle & Workflows
 ### 1. Standard Order Flow
@@ -39,7 +41,7 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 - **Action**: Automated Voice/WhatsApp confirmation to verify intent.
 - **Logic**:
   - **Phase 1**: Trigger Pre-Call SMS notification.
-  - **Phase 2**: Twilio AI Voice Call (`MAX_ATTEMPTS=1`).
+  - **Phase 2**: Twilio AI Voice Call (`MAX_ATTEMPTS=1`). Uses Synchronous AMD to hang up instantly and gracefully on voicemails, preventing duplicate voice scripts.
   - **Risk Mapping**: 
     - `auto_reject` -> Short dismissal call (BLOCKED orders auto-cancelled).
     - `call_center` -> Full confirmation inquiry (HIGH risk → Google Sheets queue).
@@ -67,10 +69,10 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 - **Twilio Call Scheduler**: Cron-based batch processing of confirmation calls for eligible orders.
 - **Data Linking**:
   - **Orders ↔ Fulfillment**: Every order can be assigned to a specific Fulfillment Center.
-  - **Purchases ↔ Suppliers**: Purchase orders linked to Suppliers with auto-populated contact info.
+  - **Purchases ↔ Suppliers**: Purchase orders linked to Suppliers with auto-populated contact info. Receiving a PO auto-recalculates the product's weighted average unit cost.
   - **Orders ↔ Tickets**: Incident tickets auto-linked to originating orders.
   - **Prisma Relations**: Changes ripple through the system.
-- **Quality of Life Fixes**: Robust CSV processing, Purchase Order data visibility, European decimal handling.
+- **Quality of Life Fixes**: Robust CSV processing, Purchase Order data visibility, European decimal handling, pagination for call records.
 
 ## Financial Logic & Formulas
 ### 1. Revenue (Booked)

@@ -25,8 +25,8 @@
 - **Validation**: class-validator / class-transformer (DTOs)
 
 ### External Services
-- **Shipment Tracking**: 17Track API (Webhook Listener Active)
-- **Notifications**: Twilio (WhatsApp Business API, Voice API, SMS — Active)
+- **Shipment Tracking**: 17Track v2.2 API (Webhook Listener Active + Polling Backup)
+- **Notifications**: Twilio (WhatsApp Business API, Voice API with Auth/AMD, SMS — Active)
 - **Data Sync**: Google Sheets API (via `google-spreadsheet` library)
 - **Address Verification**: Loqate API (with in-memory caching & retry cron)
 - **E-commerce**: Shopify (Inbound Order Webhooks)
@@ -86,7 +86,7 @@ To enable these features, the following credentials are required in the `.env` f
 | `exchange-rates/` | Currency conversion service |
 | `fulfillment-centers/` | Fulfillment center management |
 | `google-sheets/` | Two-way Google Sheets sync for orders + call center queue |
-| `inventory/` | Inventory tracking and stock levels |
+| `inventory/` | Inventory tracking and stock levels via an 8-state machine, purchase PO float syncing |
 | `notifications/` | SMS/WhatsApp delivery service, WhatsApp Personal (wwebjs), Twilio callbacks |
 | `orders/` | Order CRUD, status management, CSV import |
 | `prisma/` | Prisma client service |

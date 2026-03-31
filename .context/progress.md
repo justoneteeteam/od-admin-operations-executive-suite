@@ -52,6 +52,8 @@
 - [x] **SMS/WhatsApp Delivery Notifications**: Template messages via Twilio with GSM-7 encoding.
 - [x] **Shopify Webhooks**: Automatic order ingestion from Shopify stores.
 - [x] **Performance Page**: Operator/team performance analytics UI.
+- [x] **Bulk Customer Blocking**: Automated bulk blocking with intelligent country detection and phone normalization.
+- [x] **Twilio AMD Optimization**: Synchronous AMD filtering to prevent voicemails from receiving Voice templates.
 - [ ] **Workflow Engine**: Configurable multi-step auto-sequences per case type.
 - [ ] **Status Sync**: Sync Call Center updates (Unconfirmed, Call Later) back to App.
 - [ ] **WhatsApp RemoteAuth**: Migrate to DB-backed sessions for multi-instance.
@@ -63,10 +65,12 @@
 - [ ] **Advanced Resolution**: Assignment rules, auto-escalation to supervisors.
 
 ### Version 3.5: Advanced Fulfillment
+- [x] **Inventory Module**: 8-state stock machine, PO tables, stock float updates.
+- [x] **Tracking Sync**: 17Track v2.2 hybrid push-pull architecture.
 - [ ] **FC Connection**: Direct integration with Fulfillment Centers.
-- [ ] **Tracking Sync**: Auto-sync tracking numbers from FC to App.
 
 ### Version 4: Advanced Analytics
+- [x] **POC Product Dashboard**: Report dashboard for non-SKU product performance (KPIs, conversion funnel, metrics).
 - [ ] **Analytics Tab**: Profitability, RTO Rates, Operator Performance.
 - [ ] WhatsApp real number connection → test for in transit mode.
 - [ ] 17Track sync sample data → test for real tracking number.

@@ -158,7 +158,9 @@ const OrdersPage: React.FC = () => {
         searchType: searchTerm ? searchType : undefined,
         skuType: skuTab,
         page: page,
-        limit: 20
+        limit: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
       setOrders(data.data || []);
       if (data.meta) {
@@ -695,7 +697,7 @@ const OrdersPage: React.FC = () => {
       {/* Main Table */}
       <div className="bg-[#111a22] rounded-xl border border-border-dark overflow-hidden flex flex-col mb-12 shadow-2xl">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[1000px] lg:min-w-[1400px]">
+          <table className="w-full text-left border-collapse min-w-[900px] lg:min-w-[1200px]">
             <thead>
               <tr className="bg-[#17232f] border-b border-[#233648]">
                 <th className="px-4 py-5 w-[40px] text-center">
@@ -753,7 +755,7 @@ const OrdersPage: React.FC = () => {
                       className={`hover:bg-[#1c2d3d] transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-[#1c2d3d]/50' : ''}`}
                       onClick={() => { setSelectedOrder(order); setShowDrawer(true); }}
                     >
-                      <td className="px-4 py-6 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           className="w-4 h-4 rounded border-[#2d445a] bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary align-middle"
@@ -761,7 +763,7 @@ const OrdersPage: React.FC = () => {
                           onChange={(e) => handleSelectOrder(e, order.id)}
                         />
                       </td>
-                      <td className="px-4 sm:px-6 py-6 text-center">
+                      <td className="px-4 sm:px-6 py-3 text-center">
                         <div className="flex flex-col items-center gap-1">
                           {order.riskLevel === 'LOW' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="LOW Risk"><span className="material-symbols-outlined text-sm">shield</span></span>}
                           {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="MEDIUM Risk"><span className="material-symbols-outlined text-sm">warning</span></span>}
@@ -773,13 +775,19 @@ const OrdersPage: React.FC = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-6">
+                      <td className="px-4 sm:px-6 py-3">
                         <p className="text-sm font-bold text-primary group-hover:underline underline-offset-4">#{order.orderNumber}</p>
-                        <p className="text-xs text-white mt-1 font-medium">{order.customer?.name || 'Unknown User'}</p>
-                        <p className="text-[10px] text-text-muted mt-1 uppercase tracking-widest">{order.shippingCountry || 'N/A'}</p>
+                        <p className="text-xs text-white mt-0.5 font-medium">{order.customer?.name || 'Unknown User'}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-[10px] text-text-muted uppercase tracking-widest">{order.shippingCountry || 'N/A'}</p>
+                          <span className="text-[10px] text-text-muted/40">·</span>
+                          <p className="text-[10px] text-text-muted/70">
+                            {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
+                          </p>
+                        </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-6">
-                        <div className={`inline-flex items-center px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest bg-opacity-10 border ${(order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      <td className="px-4 sm:px-6 py-3">
+                        <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-opacity-10 border ${(order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                           (order.confirmationStatus || 'Pending') === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
                             (order.confirmationStatus || 'Pending') === 'Out of Area' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
                               (order.confirmationStatus || 'Pending') === 'Duplicated' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
@@ -788,7 +796,7 @@ const OrdersPage: React.FC = () => {
                           {order.confirmationStatus || 'Pending'}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-6">
+                      <td className="px-4 sm:px-6 py-3">
                         <div className="flex items-center gap-2">
                           <span className={`size-1.5 rounded-full ${order.orderStatus === 'Delivered' ? 'bg-emerald-500' :
                             (order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered') ? 'bg-red-500' :
@@ -813,16 +821,16 @@ const OrdersPage: React.FC = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-6 text-sm font-black text-white text-right whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3 text-sm font-black text-white text-right whitespace-nowrap">
                         {skuTab === 'non-sku' ? <span className="text-text-muted">$0</span> : `$${order.totalAmount.toLocaleString()}`}
                       </td>
-                      <td className="px-4 sm:px-6 py-6 text-sm font-black text-text-muted text-right whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3 text-sm font-black text-text-muted text-right whitespace-nowrap">
                         {skuTab === 'non-sku' ? '$0' : `$${(order.paymentStatus === 'Paid' ? order.totalAmount : 0).toLocaleString()}`}
                       </td>
-                      <td className={`px-4 sm:px-6 py-6 text-sm font-black text-right whitespace-nowrap ${skuTab === 'non-sku' ? 'text-text-muted' : profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
+                      <td className={`px-4 sm:px-6 py-3 text-sm font-black text-right whitespace-nowrap ${skuTab === 'non-sku' ? 'text-text-muted' : profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
                         {skuTab === 'non-sku' ? '$0' : `${profit >= 0 ? '+' : ''}$${profit.toLocaleString()}`}
                       </td>
-                      <td className="px-4 sm:px-6 py-6" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-4 sm:px-6 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-2">
                           <button
                             className="p-2 hover:bg-primary/10 rounded-xl text-text-muted hover:text-primary transition-all"
