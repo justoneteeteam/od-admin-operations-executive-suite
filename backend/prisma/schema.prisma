@@ -879,14 +879,14 @@ model AdsCampaign {
   id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   date          DateTime @db.Date
   campaign      String
-  country       String?  @db.VarChar(10)
-  platform      String?  @db.VarChar(50)
-  sku           String?  @db.VarChar(50)
-  stage         String?  @db.VarChar(50)
-  pic           String?  @db.VarChar(100)
+  country       String?  @db.VarChar(50)
+  platform      String?
+  sku           String?  @db.VarChar(100)
+  stage         String?  @db.VarChar(100)
+  pic           String?  @db.VarChar(255)
   spendVnd      Decimal  @map("spend_vnd") @db.Decimal(15, 2)
   notes         String?
-  source        String?  @default("upload") @db.VarChar(20)
+  source        String?  @default("upload") @db.VarChar(50)
   adName        String?  @map("ad_name")
   adSetName     String?  @map("ad_set_name")
   cpc           Decimal? @db.Decimal(15, 2)
