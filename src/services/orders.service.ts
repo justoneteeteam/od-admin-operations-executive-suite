@@ -33,6 +33,7 @@ export interface Order {
     discountGiven?: number;
     totalAmount: number;
     orderDate: string;
+    createdAt?: string;
     items?: OrderItem[];
     customer?: any;
     fulfillmentCenterId?: string;
