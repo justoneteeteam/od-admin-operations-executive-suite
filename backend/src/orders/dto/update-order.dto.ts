@@ -24,4 +24,7 @@ export class UpdateOrderDto extends PartialType(CreateOrderDto) {
     courier?: string;
     @IsOptional()
     shippingStatus?: string;
+
+    @IsOptional()
+    orderDate?: string | Date;
 }

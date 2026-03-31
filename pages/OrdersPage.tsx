@@ -315,6 +315,7 @@ const OrdersPage: React.FC = () => {
           taxCollected: editOrder.taxCollected,
           discountGiven: editOrder.discountGiven,
           paymentStatus: editOrder.paymentStatus,
+          orderDate: editOrder.orderDate ? new Date(editOrder.orderDate).toISOString() : undefined,
           items: cleanItems
         };
 
@@ -934,7 +935,7 @@ const OrdersPage: React.FC = () => {
                     Identity & Store
                   </h3>
                   <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order ID</label>
                         <input
@@ -944,9 +945,25 @@ const OrdersPage: React.FC = () => {
                         />
                       </div>
                       <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order Date</label>
+                        <input
+                          type="date"
+                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all text-text-muted focus:text-white"
+                          value={editOrder.orderDate ? new Date(new Date(editOrder.orderDate).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0] : ''}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const d = new Date(e.target.value);
+                              // Fix timezone drift by adding time
+                              const localString = e.target.value + 'T00:00:00';
+                              setEditOrder(prev => prev ? ({ ...prev, orderDate: new Date(localString).toISOString() }) : null);
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Store Name</label>
                         <select
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none"
+                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none cursor-pointer"
                           value={editOrder.storeId || ''}
                           onChange={(e) => {
                             const selected = storeNames.find(s => s.id === e.target.value);
