@@ -36,6 +36,7 @@ const OrdersPage: React.FC = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState('All Status');
   const [dateFilter, setDateFilter] = useState('Last 30 Days');
   const [riskFilter, setRiskFilter] = useState('All Risk Levels');
+  const [trafficChannelFilter, setTrafficChannelFilter] = useState('All Channels');
   const [skuTab, setSkuTab] = useState<'sku' | 'non-sku'>('sku');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
@@ -64,7 +65,7 @@ const OrdersPage: React.FC = () => {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter, skuTab]);
+  }, [searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter, trafficChannelFilter, skuTab]);
 
   // Debounced fetch for orders
   useEffect(() => {
@@ -72,7 +73,7 @@ const OrdersPage: React.FC = () => {
       fetchOrders();
     }, 300);
     return () => clearTimeout(timer);
-  }, [page, searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter, skuTab]);
+  }, [page, searchTerm, searchType, confirmationFilter, orderStatusFilter, dateFilter, riskFilter, trafficChannelFilter, skuTab]);
 
   // Initial fetch for static data
   useEffect(() => {
@@ -154,6 +155,7 @@ const OrdersPage: React.FC = () => {
       const data = await ordersService.getAll({
         orderStatus: orderStatusFilter === 'All Status' ? undefined : orderStatusFilter,
         confirmationStatus: confirmationFilter === 'All Confirmations' ? undefined : confirmationFilter,
+        trafficChannel: trafficChannelFilter === 'All Channels' ? undefined : trafficChannelFilter,
         search: searchTerm || undefined,
         searchType: searchTerm ? searchType : undefined,
         skuType: skuTab,
@@ -316,6 +318,7 @@ const OrdersPage: React.FC = () => {
           discountGiven: editOrder.discountGiven,
           paymentStatus: editOrder.paymentStatus,
           orderDate: editOrder.orderDate ? new Date(editOrder.orderDate).toISOString() : undefined,
+          trafficChannel: editOrder.trafficChannel || null,
           items: cleanItems
         };
 
@@ -597,7 +600,7 @@ const OrdersPage: React.FC = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4">
           <div className="md:col-span-2 lg:col-span-2 flex gap-0">
             <div className="relative flex-shrink-0">
               <select
@@ -691,6 +694,20 @@ const OrdersPage: React.FC = () => {
               <option value="Unassessed">Unassessed</option>
             </select>
             <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">shield</span>
+            </div>
+            <div className="relative">
+            <select
+              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm appearance-none cursor-pointer"
+              value={trafficChannelFilter}
+              onChange={(e) => setTrafficChannelFilter(e.target.value)}
+            >
+              <option>All Channels</option>
+              <option value="tiktok">TikTok</option>
+              <option value="facebook">Facebook</option>
+              <option value="google">Google</option>
+              <option value="seo">SEO</option>
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">campaign</span>
             </div>
         </div>
       </div>
@@ -786,6 +803,18 @@ const OrdersPage: React.FC = () => {
                             {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
                           </p>
                         </div>
+                        {order.trafficChannel && (
+                          <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
+                            order.trafficChannel === 'tiktok' ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25' :
+                            order.trafficChannel === 'facebook' ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' :
+                            order.trafficChannel === 'google' ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' :
+                            order.trafficChannel === 'seo' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' :
+                            'bg-purple-500/15 text-purple-400 border-purple-500/25'
+                          }`}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>campaign</span>
+                            {order.trafficChannel}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 sm:px-6 py-3">
                         <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-opacity-10 border ${(order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
@@ -1340,6 +1369,39 @@ const OrdersPage: React.FC = () => {
                         value={editOrder.notes || ''}
                         onChange={(e) => handleInputChange('notes', e.target.value)}
                       />
+                    </div>
+                    {/* Traffic Channel & Browser IP */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase ml-1">Traffic Channel (UTM Source)</label>
+                        <div className="relative">
+                          <select
+                            className={`w-full h-12 pl-10 pr-4 rounded-xl border text-sm font-bold appearance-none cursor-pointer transition-all ${
+                              editOrder.trafficChannel === 'tiktok' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25 focus:ring-cyan-500/40' :
+                              editOrder.trafficChannel === 'facebook' ? 'bg-blue-500/10 text-blue-400 border-blue-500/25 focus:ring-blue-500/40' :
+                              editOrder.trafficChannel === 'google' ? 'bg-amber-500/10 text-amber-400 border-amber-500/25 focus:ring-amber-500/40' :
+                              editOrder.trafficChannel === 'seo' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 focus:ring-emerald-500/40' :
+                              'bg-[#1c2d3d] text-text-muted border-[#2d445a] focus:ring-primary/40'
+                            }`}
+                            value={editOrder.trafficChannel || ''}
+                            onChange={(e) => handleInputChange('trafficChannel', e.target.value || null)}
+                          >
+                            <option value="">No Channel</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="google">Google</option>
+                            <option value="seo">SEO</option>
+                          </select>
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ fontSize: '16px', color: editOrder.trafficChannel === 'tiktok' ? '#22d3ee' : editOrder.trafficChannel === 'facebook' ? '#60a5fa' : editOrder.trafficChannel === 'google' ? '#fbbf24' : editOrder.trafficChannel === 'seo' ? '#34d399' : '#6b7f95' }}>campaign</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase ml-1">Browser IP Address</label>
+                        <div className="flex items-center gap-2 h-12 px-4 rounded-xl border border-border-dark bg-[#1c2d3d] text-sm font-mono">
+                          <span className="material-symbols-outlined text-text-muted" style={{ fontSize: '16px' }}>language</span>
+                          <span className={editOrder.browserIp ? 'text-white' : 'text-text-muted/50'}>{editOrder.browserIp || 'N/A'}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </section>

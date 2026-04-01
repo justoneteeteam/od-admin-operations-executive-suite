@@ -53,6 +53,8 @@ export interface Order {
     riskScore?: number;
     riskLevel?: string;
     riskAction?: string;
+    trafficChannel?: string;
+    browserIp?: string;
 }
 
 export const ordersService = {

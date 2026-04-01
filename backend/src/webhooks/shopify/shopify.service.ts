@@ -180,7 +180,18 @@ export class ShopifyService {
                 });
             }
 
-            // 6. Construct CreateOrderDto
+            // 6. Extract traffic channel from note_attributes (UTM source)
+            const noteAttributes = payload.note_attributes || [];
+            const utmSource = noteAttributes.find(
+                (attr: any) => attr.name?.toLowerCase() === 'utm_source' || attr.name?.toLowerCase() === 'utm source'
+            )?.value?.toLowerCase() || null;
+
+            // 7. Extract browser IP
+            const browserIp = payload.browser_ip || null;
+
+            this.logger.log(`Order ${orderNumber}: UTM source = ${utmSource || 'N/A'}, Browser IP = ${browserIp || 'N/A'}`);
+
+            // 8. Construct CreateOrderDto
             const createOrderDto: CreateOrderDto = {
                 orderNumber,
                 customerId,
@@ -201,6 +212,8 @@ export class ShopifyService {
 
                 orderStatus: payload.fulfillment_status === 'fulfilled' ? 'Shipped' : 'Pending',
                 notes: payload.note ? `${payload.note}\n[SHOPIFY_ORDER_ID:${payload.id}]` : `[SHOPIFY_ORDER_ID:${payload.id}]`,
+                trafficChannel: utmSource,
+                browserIp: browserIp,
                 items: orderItems,
             };
 

@@ -42,6 +42,7 @@ export class OrdersController {
         @Query('search') search?: string,
         @Query('searchType') searchType?: string,
         @Query('skuType') skuType?: string,
+        @Query('trafficChannel') trafficChannel?: string,
     ) {
         return this.ordersService.findAll({
             orderStatus,
@@ -50,6 +51,7 @@ export class OrdersController {
             search,
             searchType,
             skuType,
+            trafficChannel,
             page: page ? parseInt(page) : undefined,
             limit: limit ? parseInt(limit) : undefined,
         });

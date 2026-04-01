@@ -222,6 +222,7 @@ export class OrdersService {
         searchType?: string;
         customerId?: string;
         skuType?: string;
+        trafficChannel?: string;
         startDate?: Date;
         endDate?: Date;
         page?: number;
@@ -235,6 +236,7 @@ export class OrdersService {
         if (where.orderStatus) whereClause.orderStatus = where.orderStatus;
         if (where.confirmationStatus) whereClause.confirmationStatus = where.confirmationStatus;
         if (where.customerId) whereClause.customerId = where.customerId;
+        if (where.trafficChannel) whereClause.trafficChannel = where.trafficChannel;
 
         // SKU type filter: 'sku' = at least one real SKU item, 'non-sku' = all items are NO-SKU
         if (where.skuType === 'sku') {

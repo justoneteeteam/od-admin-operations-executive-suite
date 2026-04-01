@@ -227,6 +227,8 @@ model Order {
   riskLevel            String?   @map("risk_level") @db.VarChar(20)
   riskAction           String?   @map("risk_action") @db.VarChar(50)
   riskAssessedAt       DateTime? @map("risk_assessed_at") @db.Timestamptz(6)
+  trafficChannel       String?   @map("traffic_channel") @db.VarChar(50)
+  browserIp            String?   @map("browser_ip") @db.VarChar(45)
   createdAt            DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

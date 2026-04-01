@@ -100,4 +100,12 @@ export class CreateOrderDto {
     @IsString()
     @IsOptional()
     notes?: string;
+
+    @IsString()
+    @IsOptional()
+    trafficChannel?: string;
+
+    @IsString()
+    @IsOptional()
+    browserIp?: string;
 }
