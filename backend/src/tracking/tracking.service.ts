@@ -43,10 +43,15 @@ export class TrackingService {
         this.logger.log(`Processing ${trackingNumber}, Status: ${subStatus}`);
         require('fs').appendFileSync('/tmp/webhook.log', `processTrackingItem started for ${trackingNumber}, subStatus: ${subStatus}\n`);
 
-        // 1. Find Order by Tracking Number
+        // 1. Find Order by Tracking Number — check BOTH outbound and return
         const order = await this.prisma.order.findFirst({
-            where: { trackingNumber: trackingNumber },
-            include: { customer: true },
+            where: {
+                OR: [
+                    { trackingNumber: trackingNumber },
+                    { returnTrackingNumber: trackingNumber } as any,
+                ]
+            },
+            include: { customer: true, items: true },
         });
 
         if (!order) {
@@ -54,7 +59,9 @@ export class TrackingService {
             require('fs').appendFileSync('/tmp/webhook.log', `Order NOT FOUND for ${trackingNumber}\n`);
             return;
         }
-        require('fs').appendFileSync('/tmp/webhook.log', `Order FOUND for ${trackingNumber}: ID ${order.id}\n`);
+
+        // Determine if this event is for the return leg
+        const isReturn = (order as any).returnTrackingNumber === trackingNumber;
 
         // Save Tracking History Log
         const carrierName = item.track_info?.latest_provider?.provider?.name || item.track_info?.provider?.provider?.name || item.track_info?.latest_provider?.provider?.alias || null;
@@ -239,26 +246,49 @@ export class TrackingService {
                 },
             });
             this.logger.log(`Updated Order ${order.orderNumber} to 'Returned'`);
-        } else if (mainStatus === 'Undelivered' || mainStatus === 'DeliveryFailure') {
+        } else if (mainStatus === 'Undelivered' || mainStatus === 'DeliveryFailure' || mainStatus === 'AvailableForPickup') {
             await this.prisma.order.update({
                 where: { id: order.id },
                 data: {
                     shippingStatus: 'Undelivered',
                     orderStatus: 'Undelivered',
-                    notes: order.notes ? `${order.notes}\n[Tracking] Undelivered: ${description}` : `[Tracking] Undelivered: ${description}`
-                },
+                    returnStockState: 'returning',
+                    notes: order.notes ? `${order.notes}\n[Tracking] ${mainStatus}: ${description}` : `[Tracking] ${mainStatus}: ${description}`
+                } as any,
             });
-            this.logger.log(`Updated Order ${order.orderNumber} to 'Undelivered'`);
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Undelivered', return_stock_state='returning'`);
+
+            // Update inventory float: outbound_qty -1, returning_qty +1
+            const orderItemsForFloat = await this.prisma.orderItem.findMany({ where: { orderId: order.id } });
+            for (const item of orderItemsForFloat) {
+                if (!item.productId) continue;
+                const level = await this.prisma.inventoryLevel.findFirst({
+                    where: { productId: item.productId, outboundQty: { gt: 0 } } as any,
+                    orderBy: { outboundQty: 'desc' } as any,
+                });
+                if (level) {
+                    await this.prisma.inventoryLevel.update({
+                        where: { id: level.id },
+                        data: {
+                            outboundQty: { decrement: item.quantity },
+                            returningQty: { increment: item.quantity },
+                        } as any,
+                    });
+                }
+            }
         } else if (mainStatus === 'Exception') {
-            await this.prisma.order.update({
-                where: { id: order.id },
-                data: {
-                    shippingStatus: 'Exception',
-                    orderStatus: 'Exception',
-                    notes: order.notes ? `${order.notes}\n[Tracking] Exception: ${description}` : `[Tracking] Exception: ${description}`
-                },
-            });
-            this.logger.log(`Updated Order ${order.orderNumber} to 'Exception'`);
+            const extraData: any = {
+                shippingStatus: 'Exception',
+                orderStatus: 'Exception',
+                notes: order.notes ? `${order.notes}\n[Tracking] Exception: ${description}` : `[Tracking] Exception: ${description}`
+            };
+            // Exception_Returned = arrived back at FC. Set restock banner, don't auto-restock.
+            if (subStatus === 'Exception_Returned') {
+                extraData.needsRestockConfirm = true;
+            }
+            await this.prisma.order.update({ where: { id: order.id }, data: extraData });
+            this.logger.log(`Updated Order ${order.orderNumber} to 'Exception' (sub: ${subStatus})`);
+
         } else if (mainStatus === 'Expired') {
             await this.prisma.order.update({
                 where: { id: order.id },

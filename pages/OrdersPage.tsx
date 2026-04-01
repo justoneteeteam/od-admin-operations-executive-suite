@@ -927,6 +927,55 @@ const OrdersPage: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-10 pb-24">
+                
+                {/* Needs Restock Confirm Banner */}
+                {editOrder.needsRestockConfirm && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-xl flex items-start gap-3">
+                    <span className="material-symbols-outlined text-orange-500">warning</span>
+                    <div>
+                      <h4 className="text-orange-500 font-bold text-sm">Action Required: Restock Confirmation</h4>
+                      <p className="text-orange-500/80 text-xs mt-1">This order's return has arrived at the warehouse but rests in returning float. Switch to Inventory &gt; Planning or click confirm here to evaluate condition and commit to available stock.</p>
+                      <button 
+                        className="mt-3 bg-orange-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-orange-600 transition-colors"
+                        onClick={async (e) => {
+                           e.preventDefault();
+                           try {
+                             const token = localStorage.getItem('authToken');
+                             // Find the first valid product item
+                             const item = editOrder.items?.find((i: any) => i.productId);
+                             if(!item) { alert("No product items found to restock."); return; }
+                             
+                             const warehouseId = editOrder.fulfillmentCenter?.warehouses?.[0]?.id || ''; 
+                             if (!warehouseId) { alert("Warehouse missing on this order. Cannot confirm restock."); return; }
+                             
+                             const payload = {
+                               productId: item.productId,
+                               warehouseId,
+                               quantity: item.quantity,
+                               orderId: editOrder.id
+                             };
+                             const res = await fetch(`http://localhost:3000/inventory/confirm-restock`, {
+                               method: 'POST',
+                               headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                               body: JSON.stringify(payload)
+                             });
+                             if(res.ok) {
+                               alert('Restock Confirmed!');
+                               setEditOrder(prev => prev ? {...prev, needsRestockConfirm: false} : null);
+                             } else {
+                               alert('Failed to confirm restock');
+                             }
+                           } catch(err) {
+                             console.error(err);
+                             alert('Failed to confirm restock');
+                           }
+                        }}
+                      >
+                        Confirm Restock
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Identity & Store Section */}
                 <section className="space-y-4">
@@ -1291,6 +1340,80 @@ const OrdersPage: React.FC = () => {
                         value={editOrder.notes || ''}
                         onChange={(e) => handleInputChange('notes', e.target.value)}
                       />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Return Tracking Section */}
+                <section className="space-y-4">
+                  <h3 className="text-xs font-black text-pink-500 uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">assignment_return</span>
+                    Return Tracking & Stock Recovery
+                  </h3>
+                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase ml-1">Return Tracking Number</label>
+                        <input
+                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all font-mono"
+                          placeholder="RET-XXXXX"
+                          value={editOrder.returnTrackingNumber || ''}
+                          onChange={(e) => handleInputChange('returnTrackingNumber', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase ml-1">Stock Return State</label>
+                        <select
+                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                          value={editOrder.returnStockState || 'pending'}
+                          onChange={(e) => handleInputChange('returnStockState', e.target.value)}
+                        >
+                          <option value="pending">Pending (Not returned yet)</option>
+                          <option value="returning">Returning (In returning float)</option>
+                          <option value="restocked">Restocked (Available)</option>
+                          <option value="written_off">Written Off (Lost/Damaged)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 pt-2">
+                      <button
+                        className="bg-primary/20 hover:bg-primary/30 text-primary hover:text-white border border-primary/30 px-5 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-50"
+                        disabled={!editOrder.returnTrackingNumber}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          const btn = e.currentTarget;
+                          const originalText = btn.textContent;
+                          btn.textContent = 'Registering...';
+                          btn.disabled = true;
+                          try {
+                            const token = localStorage.getItem('authToken');
+                            const res = await fetch(`http://localhost:3000/orders/${editOrder.id}/return-tracking`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ returnTrackingNumber: editOrder.returnTrackingNumber })
+                            });
+                            if(res.ok) {
+                              btn.textContent = 'Registered successfully!';
+                              // Wait 2 secs then reset
+                              setTimeout(() => {
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                              }, 2000);
+                            } else {
+                              btn.textContent = 'Failed';
+                              setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 2000);
+                            }
+                          } catch(err) {
+                            btn.textContent = 'Failed';
+                            setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 2000);
+                          }
+                        }}
+                      >
+                        Register Return
+                      </button>
+                      <p className="text-xs text-text-muted/70 flex-1">
+                        Registering the return tracking number with 17Track will automatically move outbound float into returning float upon initial scan, and stop commission calculations.
+                      </p>
                     </div>
                   </div>
                 </section>

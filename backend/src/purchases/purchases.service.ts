@@ -36,6 +36,8 @@ export class PurchasesService {
             const processedItems = items
                 ? items.map((item: any) => ({
                     productId: item.productId,
+                    warehouseId: item.warehouseId || null,
+                    partnerSku: item.partnerSku || null,
                     quantity: item.quantity,
                     unitCost: item.unitCost,
                     purchasePrice: item.purchasePrice || item.unitCost,
@@ -61,12 +63,22 @@ export class PurchasesService {
             const ship = Number(purchaseData.purchaseShippingCost) || 0;
             const total = Number(purchaseData.totalAmount) || (sub + tax + ship);
 
+            // Auto-infer fulfillmentCenterId from the first item's warehouse
+            let inferredFcId = purchaseData.fulfillmentCenterId || null;
+            if (!inferredFcId && processedItems.length > 0) {
+                const firstWhId = processedItems.find((i: any) => i.warehouseId)?.warehouseId;
+                if (firstWhId) {
+                    const wh = await this.prisma.warehouse.findUnique({ where: { id: firstWhId }, select: { fulfillmentCenterId: true } });
+                    inferredFcId = wh?.fulfillmentCenterId || null;
+                }
+            }
+
             // Explicitly pick only valid Purchase model fields (prevent extra fields from breaking Prisma)
             const newPurchase = await this.prisma.purchase.create({
                 data: {
                     purchaseOrderNumber,
                     supplierId: purchaseData.supplierId,
-                    fulfillmentCenterId: purchaseData.fulfillmentCenterId,
+                    fulfillmentCenterId: inferredFcId,
                     warehouseId: purchaseData.warehouseId || null,
                     orderDate: purchaseData.orderDate ? new Date(purchaseData.orderDate) : new Date(),
                     expectedDeliveryDate: purchaseData.expectedDeliveryDate ? new Date(purchaseData.expectedDeliveryDate) : null,
@@ -91,7 +103,7 @@ export class PurchasesService {
                     }),
                 },
                 include: {
-                    items: { include: { product: true } },
+                    items: { include: { product: true, warehouse: true } },
                     supplier: true,
                     fulfillmentCenter: true,
                     warehouse: true,
@@ -137,6 +149,7 @@ export class PurchasesService {
                     items: {
                         include: {
                             product: true,
+                            warehouse: true,
                         },
                     },
                     logisticCompanies: { include: { logisticCompany: true } },
@@ -169,6 +182,7 @@ export class PurchasesService {
                 items: {
                     include: {
                         product: true,
+                        warehouse: true,
                     },
                 },
                 logisticCompanies: { include: { logisticCompany: true } },
@@ -214,6 +228,8 @@ export class PurchasesService {
                 const processedItems = items.map((item: any) => ({
                     purchaseId: id,
                     productId: item.productId,
+                    warehouseId: item.warehouseId || null,
+                    partnerSku: item.partnerSku || null,
                     quantity: item.quantity,
                     unitCost: item.unitCost,
                     purchasePrice: item.purchasePrice || item.unitCost,
@@ -253,7 +269,7 @@ export class PurchasesService {
                 where: { id },
                 data: updateData,
                 include: {
-                    items: { include: { product: true } },
+                    items: { include: { product: true, warehouse: true } },
                     supplier: true,
                     fulfillmentCenter: true,
                     warehouse: true,
@@ -379,7 +395,7 @@ export class PurchasesService {
 
     async receiveGoods(
         purchaseId: string,
-        receivedItems: Array<{ productId: string; quantity: number; warehouseId: string }>
+        receivedItems: Array<{ purchaseItemId: string; productId: string; quantity: number; warehouseId: string; partnerSku?: string }>
     ) {
         const purchase = await this.findOne(purchaseId);
 
@@ -389,8 +405,18 @@ export class PurchasesService {
         const purchaseSubtotal = Number(p.subtotal || 1); // Avoid div by zero
 
         for (const receivedItem of receivedItems) {
-            const purchaseItem = purchase.items.find((item: any) => item.productId === receivedItem.productId);
+            // Find matching purchase item by ID or fallback to productId
+            const purchaseItem = purchase.items.find((item: any) =>
+                receivedItem.purchaseItemId ? item.id === receivedItem.purchaseItemId : item.productId === receivedItem.productId
+            );
             if (!purchaseItem) continue;
+
+            // Determine warehouse: receivedItem > purchaseItem > header
+            const warehouseId = receivedItem.warehouseId || (purchaseItem as any).warehouseId || purchase.warehouseId;
+            if (!warehouseId) continue; // Can't receive without a warehouse
+
+            // Determine partnerSku: receivedItem input > purchaseItem stored value
+            const partnerSku = receivedItem.partnerSku || (purchaseItem as any).partnerSku || undefined;
 
             // Allocation based on value
             const itemSubtotal = Number(purchaseItem.quantity) * Number(purchaseItem.unitCost);
@@ -400,23 +426,31 @@ export class PurchasesService {
 
             const landedUnitCost = Number(purchaseItem.unitCost) + unitAllocatedExtra;
 
-            // Update Inventory (Increment)
+            // Update Inventory (Increment) — pass partnerSku to set child SKU
             await this.inventoryService.adjustStock(
                 receivedItem.productId,
-                receivedItem.warehouseId,
+                warehouseId,
                 receivedItem.quantity,
                 `Received PO ${purchase.purchaseOrderNumber}`,
                 undefined, // userId
-                'purchase_in'
+                'purchase_in',
+                partnerSku  // 7th param: sets InventoryLevel.partnerSku
             );
 
-            // Update Purchase Item (Received Qty & Landed Cost)
+            // Update Purchase Item (Received Qty, Landed Cost, and partnerSku if provided)
+            const itemUpdateData: any = {
+                receivedQuantity: { increment: receivedItem.quantity },
+                landedCost: landedUnitCost
+            };
+            if (partnerSku) {
+                itemUpdateData.partnerSku = partnerSku;
+            }
+            if (!purchaseItem.warehouseId && warehouseId) {
+                itemUpdateData.warehouseId = warehouseId;
+            }
             await this.prisma.purchaseItem.update({
                 where: { id: purchaseItem.id },
-                data: {
-                    receivedQuantity: { increment: receivedItem.quantity },
-                    landedCost: landedUnitCost
-                }
+                data: itemUpdateData
             });
         }
 
@@ -427,5 +461,53 @@ export class PurchasesService {
         await this.updateStatus(purchaseId, allReceived ? 'Received' : 'Partially Received');
 
         return updatedPurchase;
+    }
+
+    /**
+     * Returns incoming stock from Ordered POs (not yet received).
+     * Groups by productId + warehouseId, summing remaining qty.
+     */
+    async getIncomingStock() {
+        const orderedItems = await this.prisma.purchaseItem.findMany({
+            where: {
+                purchase: {
+                    purchaseStatus: { in: ['Ordered', 'Partially Received'] }
+                },
+                warehouseId: { not: null },
+            },
+            include: {
+                product: { select: { id: true, name: true, sku: true } },
+                warehouse: { select: { id: true, name: true, fulfillmentCenterId: true } },
+                purchase: { select: { purchaseOrderNumber: true, purchaseStatus: true, expectedDeliveryDate: true } },
+            },
+        });
+
+        // Group by productId + warehouseId
+        const grouped: Record<string, any> = {};
+        for (const item of orderedItems) {
+            const remaining = item.quantity - (item.receivedQuantity || 0);
+            if (remaining <= 0) continue;
+            const key = `${item.productId}_${item.warehouseId}`;
+            if (!grouped[key]) {
+                grouped[key] = {
+                    productId: item.productId,
+                    productName: item.product.name,
+                    productSku: item.product.sku,
+                    warehouseId: item.warehouseId,
+                    warehouseName: item.warehouse?.name || 'Unknown',
+                    incomingQty: 0,
+                    purchaseOrders: [],
+                };
+            }
+            grouped[key].incomingQty += remaining;
+            grouped[key].purchaseOrders.push({
+                poNumber: item.purchase.purchaseOrderNumber,
+                status: item.purchase.purchaseStatus,
+                expectedDate: item.purchase.expectedDeliveryDate,
+                remainingQty: remaining,
+            });
+        }
+
+        return Object.values(grouped);
     }
 }

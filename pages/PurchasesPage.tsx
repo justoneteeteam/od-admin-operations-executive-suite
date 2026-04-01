@@ -28,8 +28,6 @@ const PurchasesPage: React.FC = () => {
   // Form State
   const [formData, setFormData] = useState({
     supplierId: '',
-    fulfillmentCenterId: '',
-    warehouseId: '',
     orderDate: new Date().toISOString().split('T')[0],
     fulfillmentRef: '',
     trackingNumber: '',
@@ -78,12 +76,33 @@ const PurchasesPage: React.FC = () => {
     }
   };
 
-  // Derived state for warehouses based on selected FC
-  const availableWarehouses = useMemo(() => {
-    if (!formData.fulfillmentCenterId) return [];
-    const fc = fulfillmentCenters.find(c => c.id === formData.fulfillmentCenterId);
-    return fc?.warehouses || [];
-  }, [formData.fulfillmentCenterId, fulfillmentCenters]);
+  // Flat list of all warehouses (with their FC info)
+  const allWarehouses = useMemo(() => {
+    const whs: Array<{ id: string; name: string; fcId: string; fcName: string }> = [];
+    for (const fc of fulfillmentCenters) {
+      for (const wh of (fc.warehouses || [])) {
+        whs.push({ id: wh.id, name: wh.name, fcId: fc.id, fcName: fc.name });
+      }
+    }
+    return whs;
+  }, [fulfillmentCenters]);
+
+  // Receive modal state
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [receivePurchase, setReceivePurchase] = useState<Purchase | null>(null);
+  const [receiveItems, setReceiveItems] = useState<Array<{
+    purchaseItemId: string;
+    productId: string;
+    productName: string;
+    sku: string;
+    orderedQty: number;
+    alreadyReceived: number;
+    receiveQty: number;
+    warehouseId: string;
+    warehouseName: string;
+    partnerSku: string;
+  }>>([]);
+  const [isReceiving, setIsReceiving] = useState(false);
 
 
   useEffect(() => {
@@ -119,8 +138,6 @@ const PurchasesPage: React.FC = () => {
   const handleAddPurchase = () => {
     setFormData({
       supplierId: '',
-      fulfillmentCenterId: '',
-      warehouseId: '',
       orderDate: new Date().toISOString().split('T')[0],
       fulfillmentRef: '',
       trackingNumber: '',
@@ -138,8 +155,6 @@ const PurchasesPage: React.FC = () => {
     setEditingId(purchase.id);
     setFormData({
       supplierId: purchase.supplierId || '',
-      fulfillmentCenterId: purchase.fulfillmentCenterId || '',
-      warehouseId: purchase.warehouseId || '',
       orderDate: new Date(purchase.orderDate).toISOString().split('T')[0],
       fulfillmentRef: purchase.fulfillmentRef || '',
       trackingNumber: purchase.trackingNumber || '',
@@ -160,6 +175,9 @@ const PurchasesPage: React.FC = () => {
           productId: item.productId,
           productName: item.product?.name || item.productName || 'Unknown',
           sku: item.product?.sku || item.sku || 'N/A',
+          warehouseId: item.warehouseId || '',
+          warehouseName: item.warehouse?.name || '',
+          partnerSku: item.partnerSku || '',
           qty,
           purchasePrice,
           discount,
@@ -167,6 +185,7 @@ const PurchasesPage: React.FC = () => {
           taxAmount: 0,
           unitCost: costPerSkuEur,
           totalCost: totalEur,
+          receivedQuantity: Number(item.receivedQuantity) || 0,
           domesticShippingFeeCny: domShip,
           vndCurrencyRate: Number(item.vndCurrencyRate) || 0,
           parcelKg: Number(item.parcelKg) || 0,
@@ -191,6 +210,9 @@ const PurchasesPage: React.FC = () => {
       productId: product.id,
       productName: product.name,
       sku: product.sku,
+      warehouseId: '',
+      warehouseName: '',
+      partnerSku: '',
       qty: 1,
       purchasePrice: Number(product.unitCost) || 0,
       discount: 0,
@@ -211,6 +233,9 @@ const PurchasesPage: React.FC = () => {
       productId: product.id,
       productName: product.name,
       sku: product.sku,
+      warehouseId: '',
+      warehouseName: '',
+      partnerSku: '',
       qty: 1,
       purchasePrice: Number(product.unitCost) || 0,
       discount: 0,
@@ -287,7 +312,6 @@ const PurchasesPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!formData.supplierId) { alert("Select Supplier"); return; }
-    if (!formData.fulfillmentCenterId) { alert("Select Fulfillment Center"); return; }
     if (formData.items.length === 0) { alert("Add at least one product"); return; }
 
     setIsLoading(true);
@@ -295,8 +319,8 @@ const PurchasesPage: React.FC = () => {
     try {
       const payload = {
         supplierId: formData.supplierId,
-        fulfillmentCenterId: formData.fulfillmentCenterId,
-        warehouseId: formData.warehouseId || null,
+        fulfillmentCenterId: null, // auto-inferred by backend
+        warehouseId: null,
         orderDate: formData.orderDate,
         fulfillmentRef: formData.fulfillmentRef || null,
         trackingNumber: formData.trackingNumber || null,
@@ -310,6 +334,8 @@ const PurchasesPage: React.FC = () => {
         purchaseStatus: formData.purchaseStatus,
         items: formData.items.map(item => ({
           productId: (item as any).productId,
+          warehouseId: item.warehouseId || null,
+          partnerSku: item.partnerSku || null,
           quantity: item.qty,
           unitCost: item.unitCost,
           purchasePrice: item.purchasePrice,
@@ -340,6 +366,65 @@ const PurchasesPage: React.FC = () => {
     } finally {
       setIsSaving(false);
       setIsLoading(false);
+    }
+  };
+
+  // ─── Receive Goods ─────────────────────────────────────────────────────
+  const handleOpenReceive = (purchase: Purchase) => {
+    setReceivePurchase(purchase);
+    const items = (purchase.items as any[]).map(item => {
+      const wh = allWarehouses.find(w => w.id === item.warehouseId);
+      return {
+        purchaseItemId: item.id,
+        productId: item.productId,
+        productName: item.product?.name || 'Unknown',
+        sku: item.product?.sku || 'N/A',
+        orderedQty: Number(item.quantity) || 0,
+        alreadyReceived: Number(item.receivedQuantity) || 0,
+        receiveQty: Math.max(0, (Number(item.quantity) || 0) - (Number(item.receivedQuantity) || 0)),
+        warehouseId: item.warehouseId || '',
+        warehouseName: wh?.name || item.warehouse?.name || '',
+        partnerSku: item.partnerSku || '',
+      };
+    });
+    setReceiveItems(items);
+    setShowReceiveModal(true);
+  };
+
+  const handleReceiveGoods = async () => {
+    if (!receivePurchase) return;
+    // Validate all items have warehouse + partnerSku
+    for (const item of receiveItems) {
+      if (item.receiveQty > 0 && !item.warehouseId) {
+        alert(`Select a warehouse for ${item.productName}`);
+        return;
+      }
+      if (item.receiveQty > 0 && !item.partnerSku) {
+        alert(`Enter a Partner SKU (Child SKU) for ${item.productName}`);
+        return;
+      }
+    }
+    setIsReceiving(true);
+    try {
+      const receivedItems = receiveItems
+        .filter(i => i.receiveQty > 0)
+        .map(i => ({
+          purchaseItemId: i.purchaseItemId,
+          productId: i.productId,
+          quantity: i.receiveQty,
+          warehouseId: i.warehouseId,
+          partnerSku: i.partnerSku,
+        }));
+      await purchasesService.receiveGoods(receivePurchase.id, receivedItems);
+      setShowReceiveModal(false);
+      setReceivePurchase(null);
+      fetchData();
+    } catch (error: any) {
+      console.error('Receive goods failed:', error);
+      const errMsg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Unknown error';
+      alert(`Failed to receive goods: ${errMsg}`);
+    } finally {
+      setIsReceiving(false);
     }
   };
 
@@ -604,6 +689,15 @@ ${items.map((item: any) => {
                       >
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
+                      {(purchase.purchaseStatus === 'Ordered' || purchase.purchaseStatus === 'Partially Received') && (
+                        <button
+                          onClick={() => handleOpenReceive(purchase)}
+                          className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                          title="Receive Goods"
+                        >
+                          <span className="material-symbols-outlined text-sm">inventory_2</span>
+                        </button>
+                      )}
                       <div className="relative">
                         <button
                           onClick={() => setExportOpenId(exportOpenId === purchase.id ? null : purchase.id)}
@@ -674,29 +768,6 @@ ${items.map((item: any) => {
                   >
                     <option value="">Select Supplier</option>
                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Fulfillment Center <span className="text-red-500">*</span></label>
-                  <select
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
-                    value={formData.fulfillmentCenterId}
-                    onChange={e => setFormData({ ...formData, fulfillmentCenterId: e.target.value })}
-                  >
-                    <option value="">Select Fulfillment Center</option>
-                    {fulfillmentCenters.map(fc => <option key={fc.id} value={fc.id}>{fc.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Warehouse</label>
-                  <select
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 disabled:opacity-50"
-                    value={formData.warehouseId}
-                    onChange={e => setFormData({ ...formData, warehouseId: e.target.value })}
-                    disabled={!formData.fulfillmentCenterId}
-                  >
-                    <option value="">Select Warehouse</option>
-                    {availableWarehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -800,10 +871,12 @@ ${items.map((item: any) => {
 
                 <div className="bg-[#111a22] rounded-2xl border border-border-dark overflow-hidden mt-6">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[1000px]">
+                    <table className="w-full text-left border-collapse min-w-[1200px]">
                       <thead>
                         <tr className="bg-[#17232f]/80 border-b border-border-dark">
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Product</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-40">Warehouse</th>
+                          <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-28">Partner SKU</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-16">Qty</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24">Buy Price/Unit(₫)</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24">Discount(₫)</th>
@@ -821,6 +894,38 @@ ${items.map((item: any) => {
                             <td className="px-3 py-3">
                               <p className="text-sm font-bold text-white">{item.productName}</p>
                               <p className="text-xs text-text-muted">{item.sku}</p>
+                            </td>
+                            <td className="px-3 py-2">
+                              <select
+                                className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                                value={item.warehouseId || ''}
+                                onChange={e => {
+                                  const whId = e.target.value;
+                                  const wh = allWarehouses.find(w => w.id === whId);
+                                  setFormData(prev => {
+                                    const newItems = [...prev.items];
+                                    newItems[index] = { ...newItems[index], warehouseId: whId, warehouseName: wh?.name || '' };
+                                    return { ...prev, items: newItems };
+                                  });
+                                }}
+                              >
+                                <option value="">Select WH</option>
+                                {allWarehouses.map(wh => (
+                                  <option key={wh.id} value={wh.id}>{wh.name} ({wh.fcName})</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-3 py-2">
+                              <input type="text" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                                placeholder="Child SKU"
+                                value={item.partnerSku || ''}
+                                onChange={e => {
+                                  setFormData(prev => {
+                                    const newItems = [...prev.items];
+                                    newItems[index] = { ...newItems[index], partnerSku: e.target.value };
+                                    return { ...prev, items: newItems };
+                                  });
+                                }} />
                             </td>
                             <td className="px-3 py-2">
                               <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
@@ -859,7 +964,7 @@ ${items.map((item: any) => {
                           </tr>
                         ))}
                         {formData.items.length === 0 && (
-                          <tr><td colSpan={10} className="text-center py-8 text-text-muted italic">No items added</td></tr>
+                          <tr><td colSpan={12} className="text-center py-8 text-text-muted italic">No items added</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -933,9 +1038,125 @@ ${items.map((item: any) => {
         onSuccess={handleProductCreated}
         initialValues={{
           supplierId: formData.supplierId,
-          fulfillmentCenterId: formData.fulfillmentCenterId
         }}
       />
+
+      {/* Receive Goods Modal */}
+      {showReceiveModal && receivePurchase && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowReceiveModal(false)}></div>
+          <div className="relative bg-card-dark border border-border-dark rounded-2xl shadow-2xl w-[900px] max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-8 py-5 border-b border-border-dark flex items-center justify-between bg-[#14202c] rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-black text-white flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-400">inventory_2</span>
+                  Receive Goods
+                </h2>
+                <p className="text-xs text-text-muted mt-1 font-mono">{receivePurchase.purchaseOrderNumber}</p>
+              </div>
+              <button onClick={() => setShowReceiveModal(false)} className="size-8 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+              <p className="text-xs text-text-muted mb-4">Confirm received quantities and enter the <strong className="text-amber-400">Partner SKU (Child SKU)</strong> for each item. This will update inventory levels.</p>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#17232f]/80 border-b border-border-dark">
+                    <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Product</th>
+                    <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-40">Warehouse</th>
+                    <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-32">Partner SKU</th>
+                    <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20 text-center">Ordered</th>
+                    <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-20 text-center">Received</th>
+                    <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-24 text-center">Receive Now</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-dark/40">
+                  {receiveItems.map((item, idx) => (
+                    <tr key={item.purchaseItemId} className="hover:bg-[#1c2d3d]/30">
+                      <td className="px-3 py-3">
+                        <p className="text-sm font-bold text-white">{item.productName}</p>
+                        <p className="text-xs text-text-muted">{item.sku}</p>
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1.5 text-white text-xs"
+                          value={item.warehouseId}
+                          onChange={e => {
+                            const newItems = [...receiveItems];
+                            const wh = allWarehouses.find(w => w.id === e.target.value);
+                            newItems[idx] = { ...newItems[idx], warehouseId: e.target.value, warehouseName: wh?.name || '' };
+                            setReceiveItems(newItems);
+                          }}
+                        >
+                          <option value="">Select WH</option>
+                          {allWarehouses.map(wh => (
+                            <option key={wh.id} value={wh.id}>{wh.name} ({wh.fcName})</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          className="w-full bg-[#1c2d3d] border border-amber-500/40 rounded px-2 py-1.5 text-amber-400 text-xs font-mono"
+                          placeholder="WH-SKU-001"
+                          value={item.partnerSku}
+                          onChange={e => {
+                            const newItems = [...receiveItems];
+                            newItems[idx] = { ...newItems[idx], partnerSku: e.target.value };
+                            setReceiveItems(newItems);
+                          }}
+                        />
+                      </td>
+                      <td className="px-3 py-3 text-sm text-center text-white font-bold">{item.orderedQty}</td>
+                      <td className="px-3 py-3 text-sm text-center">
+                        <span className={item.alreadyReceived > 0 ? 'text-emerald-400 font-bold' : 'text-text-muted'}>{item.alreadyReceived}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={item.orderedQty - item.alreadyReceived}
+                          className="w-full bg-[#1c2d3d] border border-emerald-500/40 rounded px-2 py-1.5 text-emerald-400 text-xs font-bold text-center"
+                          value={item.receiveQty}
+                          onChange={e => {
+                            const newItems = [...receiveItems];
+                            newItems[idx] = { ...newItems[idx], receiveQty: Math.max(0, parseInt(e.target.value) || 0) };
+                            setReceiveItems(newItems);
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-6 bg-[#17232f] border-t border-border-dark flex items-center justify-between rounded-b-2xl">
+              <p className="text-xs text-text-muted">
+                Total receiving: <strong className="text-emerald-400">{receiveItems.reduce((s, i) => s + i.receiveQty, 0)}</strong> units
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowReceiveModal(false)}
+                  className="px-6 py-3 bg-[#111a22] hover:bg-[#1c2d3d] text-white text-sm font-bold rounded-xl transition-all border border-border-dark"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReceiveGoods}
+                  disabled={isReceiving || receiveItems.every(i => i.receiveQty === 0)}
+                  className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-sm">check_circle</span>
+                  {isReceiving ? 'Processing...' : 'Confirm Receipt'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Floating bulk-delete bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#14202c] border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4">

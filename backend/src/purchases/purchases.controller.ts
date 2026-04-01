@@ -25,6 +25,11 @@ export class PurchasesController {
         });
     }
 
+    @Get('incoming-stock')
+    getIncomingStock() {
+        return this.purchasesService.getIncomingStock();
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.purchasesService.findOne(id);
@@ -55,9 +60,11 @@ export class PurchasesController {
         @Param('id') id: string,
         @Body() data: {
             receivedItems: Array<{
+                purchaseItemId: string;
                 productId: string;
                 quantity: number;
                 warehouseId: string;
+                partnerSku?: string;
             }>
         }
     ) {

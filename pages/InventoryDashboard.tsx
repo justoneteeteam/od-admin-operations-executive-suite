@@ -2,12 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardMetrics, Product, Warehouse } from '../types';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { inventoryService } from '../src/services/inventory.service';
+import { productsService } from '../src/services/products.service';
 import StockLevelsTable from '../components/inventory/StockLevelsTable';
 import InventoryLedger from '../components/inventory/InventoryLedger';
-import InventoryOperations from '../components/inventory/InventoryOperations';
+import PlanningTab from '../components/inventory/PlanningTab';
+import ReportsTab from '../components/inventory/ReportsTab';
 
 const InventoryDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'stock' | 'ledger' | 'operations'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'stock' | 'ledger' | 'planning' | 'reports'>('overview');
     const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
     const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -17,14 +20,8 @@ const InventoryDashboard: React.FC = () => {
     useEffect(() => {
         const fetchWarehouses = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                const res = await fetch('http://localhost:3000/inventory/warehouses', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setWarehouses(data);
-                }
+                const data = await inventoryService.getWarehouses();
+                setWarehouses(data);
             } catch (err) {
                 console.error("Failed to fetch warehouses", err);
             }
@@ -37,18 +34,8 @@ const InventoryDashboard: React.FC = () => {
 
         const fetchMetrics = async () => {
             try {
-                const url = selectedWarehouse === 'all'
-                    ? 'http://localhost:3000/inventory/dashboard'
-                    : `http://localhost:3000/inventory/dashboard?warehouseId=${selectedWarehouse}`;
-
-                const token = localStorage.getItem('authToken');
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setMetrics(data);
-                }
+                const data = await inventoryService.getDashboard(selectedWarehouse);
+                setMetrics(data);
             } catch (err) {
                 console.error("Failed to fetch metrics", err);
             }
@@ -56,15 +43,10 @@ const InventoryDashboard: React.FC = () => {
 
         const fetchProducts = async () => {
             try {
-                const token = localStorage.getItem('authToken');
-                const res = await fetch('http://localhost:3000/products', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    const low = data.filter((p: Product) => (p.stockLevel || 0) <= (p.reorderPoint || 10));
-                    setLowStockProducts(low);
-                }
+                const data = await productsService.getAll();
+                const products = Array.isArray(data) ? data : (data.data || []);
+                const low = products.filter((p: Product) => (p.stockLevel || 0) <= (p.reorderPoint || 10));
+                setLowStockProducts(low);
             } catch (err) {
                 console.error("Failed to fetch products", err);
             }
@@ -135,13 +117,22 @@ const InventoryDashboard: React.FC = () => {
                     Ledger
                 </button>
                 <button
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'operations'
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'planning'
                         ? 'border-primary text-primary'
                         : 'border-transparent text-gray-400 hover:text-white'
                         }`}
-                    onClick={() => setActiveTab('operations')}
+                    onClick={() => setActiveTab('planning')}
                 >
-                    Operations
+                    Planning
+                </button>
+                <button
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reports'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                    onClick={() => setActiveTab('reports')}
+                >
+                    Reports
                 </button>
             </div>
 
@@ -156,7 +147,7 @@ const InventoryDashboard: React.FC = () => {
                                 <div className="bg-card-dark p-6 rounded-lg shadow-sm border border-border-dark">
                                     <p className="text-gray-400 text-sm">Total Inventory Value</p>
                                     <p className="text-2xl font-bold text-white">
-                                        ${metrics?.totalInventoryValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                        €{metrics?.totalInventoryValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                                     </p>
                                 </div>
                                 <div className="bg-card-dark p-6 rounded-lg shadow-sm border border-border-dark">
@@ -249,8 +240,12 @@ const InventoryDashboard: React.FC = () => {
                 <InventoryLedger selectedWarehouse={selectedWarehouse} />
             )}
 
-            {activeTab === 'operations' && (
-                <InventoryOperations warehouses={warehouses} />
+            {activeTab === 'planning' && (
+                <PlanningTab selectedWarehouse={selectedWarehouse} />
+            )}
+
+            {activeTab === 'reports' && (
+                <ReportsTab selectedWarehouse={selectedWarehouse} />
             )}
         </div>
     );

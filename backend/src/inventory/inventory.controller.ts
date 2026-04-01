@@ -1,4 +1,3 @@
-
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 
@@ -36,6 +35,40 @@ export class InventoryController {
         return this.inventoryService.getInventoryLevels(productId);
     }
 
+    // ─── NEW: Product stock summary ───────────────────────────────────
+    @Get('summary/:productId')
+    getProductStockSummary(@Param('productId') productId: string) {
+        return this.inventoryService.getProductStockSummary(productId);
+    }
+
+    // ─── NEW: Planning (D+7 projections) ─────────────────────────────
+    @Get('planning')
+    getPlanningData(@Query('warehouseId') warehouseId?: string) {
+        return this.inventoryService.getPlanningData(warehouseId);
+    }
+
+    // ─── NEW: Inventory reports ───────────────────────────────────────
+    @Get('reports')
+    getInventoryReports() {
+        return this.inventoryService.getInventoryReports();
+    }
+
+    // ─── NEW: Write off returning stock ──────────────────────────────
+    @Post('write-off')
+    writeOffStock(
+        @Body() body: { orderId: string; reason: string; notes?: string; userId?: string }
+    ) {
+        return this.inventoryService.writeOffStock(body.orderId, body.reason, body.notes, body.userId);
+    }
+
+    // ─── NEW: Confirm restock after inspection ────────────────────────
+    @Post('confirm-restock')
+    confirmRestock(
+        @Body() body: { orderId: string; condition: 'ok' | 'damaged'; userId?: string }
+    ) {
+        return this.inventoryService.confirmRestock(body.orderId, body.condition, body.userId);
+    }
+
     @Post('adjust')
     adjustStock(
         @Body() body: {
@@ -45,6 +78,7 @@ export class InventoryController {
             reason: string;
             userId?: string;
             type?: string;
+            partnerSku?: string;
         }
     ) {
         return this.inventoryService.adjustStock(
@@ -53,7 +87,8 @@ export class InventoryController {
             body.quantity,
             body.reason,
             body.userId,
-            body.type as any
+            body.type as any,
+            body.partnerSku
         );
     }
 

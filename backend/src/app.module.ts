@@ -19,6 +19,7 @@ import { StoreSettingsModule } from './store-settings/store-settings.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 
 import { InventoryModule } from './inventory/inventory.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { ShopifyModule } from './webhooks/shopify/shopify.module';
@@ -31,7 +32,7 @@ import { LogisticCompaniesModule } from './logistic-companies/logistic-companies
 import { CommunicationModule } from './communication/communication.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule, AdsCampaignsModule, ExchangeRatesModule, TicketsModule, LogisticCompaniesModule, CommunicationModule],
+  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, PurchaseOrdersModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule, AdsCampaignsModule, ExchangeRatesModule, TicketsModule, LogisticCompaniesModule, CommunicationModule],
   controllers: [AppController],
   providers: [
     AppService,

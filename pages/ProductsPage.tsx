@@ -3,7 +3,9 @@ import React from 'react';
 import { Product } from '../types';
 import { productsService } from '../src/services/products.service';
 import { fulfillmentService } from '../src/services/fulfillment.service';
+import { inventoryService } from '../src/services/inventory.service';
 import { ProductModal } from '../src/components/ProductModal';
+import ProductDetailDashboard from '../components/inventory/ProductDetailDashboard';
 
 interface FulfillmentCenter {
   id: string;
@@ -12,18 +14,35 @@ interface FulfillmentCenter {
   status?: string;
 }
 
+interface ProductStock {
+  id: string;
+  currentStock: number;
+  reservedStock: number;
+  outboundQty: number;
+  returningQty: number;
+  warehouseBreakdown: any[];
+}
+
 const ProductsPage: React.FC = () => {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [fulfillmentCenters, setFulfillmentCenters] = React.useState<FulfillmentCenter[]>([]);
+  const [stockMap, setStockMap] = React.useState<Map<string, ProductStock>>(new Map());
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [productToEdit, setProductToEdit] = React.useState<Product | null>(null);
 
+  // Detail Drawer state
+  const [isDetailOpen, setIsDetailOpen] = React.useState(false);
+  const [productForDetail, setProductForDetail] = React.useState<Product | null>(null);
+
   // Multi-select state
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+
+  // Search
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -34,10 +53,10 @@ const ProductsPage: React.FC = () => {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === products.length) {
+    if (selectedIds.size === filteredProducts.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(products.map(p => p.id)));
+      setSelectedIds(new Set(filteredProducts.map(p => p.id)));
     }
   };
 
@@ -57,6 +76,7 @@ const ProductsPage: React.FC = () => {
   React.useEffect(() => {
     fetchProducts();
     fetchFulfillmentCenters();
+    fetchStockLevels();
   }, []);
 
   const fetchProducts = async () => {
@@ -84,10 +104,35 @@ const ProductsPage: React.FC = () => {
     }
   };
 
+  const fetchStockLevels = async () => {
+    try {
+      const data = await inventoryService.getStock();
+      const map = new Map<string, ProductStock>();
+      for (const item of data) {
+        map.set(item.id, {
+          id: item.id,
+          currentStock: item.currentStock || 0,
+          reservedStock: item.reservedStock || 0,
+          outboundQty: item.outboundQty || 0,
+          returningQty: item.returningQty || 0,
+          warehouseBreakdown: item.warehouseBreakdown || [],
+        });
+      }
+      setStockMap(map);
+    } catch (err) {
+      console.error('Failed to fetch stock levels:', err);
+    }
+  };
+
   // Open create modal
   const openCreateModal = () => {
     setProductToEdit(null);
     setIsModalOpen(true);
+  };
+
+  const openDetailDrawer = (product: Product) => {
+    setProductForDetail(product);
+    setIsDetailOpen(true);
   };
 
   // Open edit modal
@@ -103,6 +148,7 @@ const ProductsPage: React.FC = () => {
 
   const handleModalSuccess = (product: Product) => {
     fetchProducts();
+    fetchStockLevels();
   };
 
   // Delete product
@@ -117,20 +163,10 @@ const ProductsPage: React.FC = () => {
     }
   };
 
-  const calculateStockStatus = (stockLevel: number, reorderPoint: number = 10) => {
-    if (stockLevel <= 0) return 'Out of Stock';
-    if (stockLevel <= reorderPoint) return 'Low Stock';
-    return 'Healthy';
-  };
-
-  const getStockStatusColor = (status: string) => {
-    switch (status) {
-      case 'Healthy': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'Low Stock': return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
-      case 'Out of Stock':
-      case 'Critical': return 'bg-red-500/10 text-red-400 border-red-500/20';
-      default: return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
-    }
+  const getStockStatus = (onHand: number, reorderPoint: number = 10) => {
+    if (onHand <= 0) return { label: 'Out of Stock', color: 'bg-red-500/10 text-red-400 border-red-500/20' };
+    if (onHand <= reorderPoint) return { label: 'Low Stock', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20' };
+    return { label: 'Healthy', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' };
   };
 
   const getFCName = (product: Product) => {
@@ -143,6 +179,12 @@ const ProductsPage: React.FC = () => {
     }
     return 'Unassigned';
   };
+
+  // Filter products by search
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading && !isModalOpen) {
     return (
@@ -169,6 +211,13 @@ const ProductsPage: React.FC = () => {
         productToEdit={productToEdit}
       />
 
+      <ProductDetailDashboard
+        isOpen={isDetailOpen}
+        product={productForDetail}
+        onClose={() => { setIsDetailOpen(false); fetchStockLevels(); }}
+        onEdit={(p) => { setIsDetailOpen(false); openEditModal(p); }}
+      />
+
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
@@ -181,7 +230,18 @@ const ProductsPage: React.FC = () => {
             <h1 className="text-white text-3xl font-black tracking-tight">Product Inventory & Cost</h1>
             <p className="text-text-muted text-sm">Review stock levels, unit costs, and SKU performance metrics.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            {/* Search */}
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-2.5 text-text-muted text-sm">search</span>
+              <input
+                type="text"
+                placeholder="Search by name or SKU..."
+                className="bg-[#111a22] border border-border-dark text-white text-sm rounded-lg pl-9 pr-4 py-2 w-64 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
             <button
               onClick={openCreateModal}
               className="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90"
@@ -196,34 +256,48 @@ const ProductsPage: React.FC = () => {
       {/* Table */}
       <div className="bg-[#111a22] rounded-xl border border-border-dark overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[1200px]">
+          <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
               <tr className="bg-[#17232f] border-b border-[#233648]">
-                <th className="px-6 py-4 w-10">
+                <th className="px-4 py-3 w-10">
                   <input
                     type="checkbox"
-                    checked={products.length > 0 && selectedIds.size === products.length}
+                    checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
                     onChange={toggleSelectAll}
                     className="accent-primary w-4 h-4 cursor-pointer"
                   />
                 </th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider w-20">Image</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider">Product & SKU</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider">Fulfillment</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider text-center">Unit Cost</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider text-center">Stock Level</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider text-center">Stock Status</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider text-center">Return Rate</th>
-                <th className="px-6 py-4 text-text-muted font-bold text-xs uppercase tracking-wider text-right">Actions</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider w-12">Img</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider">Product & SKU</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Unit Cost</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">On Hand</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Committed</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Available</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">In Transit</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Returning</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Status</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Return %</th>
+                <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#233648]">
-              {products.map((product) => {
-                const stockStatus = calculateStockStatus(product.stockLevel, product.reorderPoint);
+              {filteredProducts.map((product) => {
+                const stock = stockMap.get(product.id);
+                const onHand = stock ? stock.currentStock : (product.stockLevel || 0);
+                const committed = stock ? stock.reservedStock : 0;
+                const available = onHand - committed;
+                const inTransit = stock ? stock.outboundQty : 0;
+                const returning = stock ? stock.returningQty : 0;
+                const stockStatus = getStockStatus(onHand, product.reorderPoint);
                 const imgUrl = (product as any).primaryImageUrl || ((product as any).imagesUrls ? (() => { try { return JSON.parse((product as any).imagesUrls)[0]; } catch { return null; } })() : null);
+
                 return (
-                  <tr key={product.id} className={`hover:bg-[#1c2d3d] transition-colors group ${selectedIds.has(product.id) ? 'bg-primary/5' : ''}`}>
-                    <td className="px-6 py-4">
+                  <tr 
+                    key={product.id} 
+                    className={`hover:bg-[#1c2d3d] transition-colors group cursor-pointer ${selectedIds.has(product.id) ? 'bg-primary/5' : ''}`}
+                    onClick={() => openDetailDrawer(product)}
+                  >
+                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(product.id)}
@@ -231,50 +305,73 @@ const ProductsPage: React.FC = () => {
                         className="accent-primary w-4 h-4 cursor-pointer"
                       />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="size-12 rounded border border-border-dark bg-center bg-cover overflow-hidden bg-gray-800 flex items-center justify-center">
+                    <td className="px-3 py-2.5">
+                      <div className="size-10 rounded border border-border-dark bg-center bg-cover overflow-hidden bg-gray-800 flex items-center justify-center">
                         {imgUrl ? (
                           <img src={imgUrl} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="material-symbols-outlined text-text-muted">image</span>
+                          <span className="material-symbols-outlined text-text-muted text-[16px]">image</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2.5">
                       <p className="text-sm font-bold text-white leading-tight">{product.name}</p>
-                      <p className="text-[11px] font-mono text-text-muted mt-1 uppercase">{product.sku}</p>
+                      <p className="text-[10px] font-mono text-text-muted mt-0.5 uppercase">{product.sku}</p>
                     </td>
-                    <td className="px-6 py-4"><span className="text-sm text-white">{getFCName(product)}</span></td>
-                    <td className="px-6 py-4 text-center"><span className="text-sm font-bold text-white">${Number(product.unitCost || 0).toFixed(2)}</span></td>
-                    <td className="px-6 py-4 text-center"><span className="text-sm font-bold text-white">{(product.stockLevel || 0).toLocaleString()}</span></td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest border ${getStockStatusColor(stockStatus)}`}>
-                        {stockStatus}
+                    <td className="px-3 py-2.5 text-center">
+                      <span className="text-sm font-bold text-white">€{Number(product.unitCost || 0).toFixed(2)}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className="text-sm font-bold text-white">{onHand.toLocaleString()}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`text-sm font-bold ${committed > 0 ? 'text-orange-400' : 'text-text-muted'}`}>
+                        {committed}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`text-sm font-bold ${available > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {available}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`text-sm font-bold ${inTransit > 0 ? 'text-blue-400' : 'text-text-muted'}`}>
+                        {inTransit}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`text-sm font-bold ${returning > 0 ? 'text-purple-400' : 'text-text-muted'}`}>
+                        {returning}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${stockStatus.color}`}>
+                        {stockStatus.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
                       <div className="flex flex-col items-center">
-                        <span className={`px-3 py-1 rounded text-sm font-bold ${Number(product.returnRate || 0) > 10 ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${Number(product.returnRate || 0) > 10 ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                           {Number(product.returnRate || 0)}%
                         </span>
-                        <span className="text-[10px] text-text-muted mt-1">Global: {Number(product.globalRate || 0)}%</span>
+                        <span className="text-[9px] text-text-muted mt-0.5">Global: {Number(product.globalRate || 0)}%</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-0.5">
                         <button
                           onClick={() => openEditModal(product)}
-                          className="p-2 hover:bg-[#233648] rounded text-text-muted hover:text-blue-400 transition-colors"
+                          className="p-1.5 hover:bg-[#233648] rounded text-text-muted hover:text-blue-400 transition-colors"
                           title="Edit product"
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>edit</span>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(product.id)}
-                          className="p-2 hover:bg-[#233648] rounded text-text-muted hover:text-red-400 transition-colors"
+                          className="p-1.5 hover:bg-[#233648] rounded text-text-muted hover:text-red-400 transition-colors"
                           title="Delete product"
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>delete</span>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                         </button>
                       </div>
                     </td>
@@ -283,12 +380,17 @@ const ProductsPage: React.FC = () => {
               })}
             </tbody>
           </table>
-          {products.length === 0 && (
-            <div className="p-8 text-center text-text-muted">No products found. Add your first product to get started.</div>
+          {filteredProducts.length === 0 && (
+            <div className="p-8 text-center text-text-muted">
+              {searchTerm ? 'No products match your search.' : 'No products found. Add your first product to get started.'}
+            </div>
           )}
         </div>
-        <div className="bg-[#17232f] px-6 py-4 border-t border-border-dark flex items-center justify-between">
-          <p className="text-xs text-[#92adc9]">Showing <span className="text-white font-bold">{products.length}</span> products</p>
+        <div className="bg-[#17232f] px-6 py-3 border-t border-border-dark flex items-center justify-between">
+          <p className="text-xs text-[#92adc9]">
+            Showing <span className="text-white font-bold">{filteredProducts.length}</span>
+            {searchTerm && ` of ${products.length}`} products
+          </p>
         </div>
       </div>
 

@@ -33,6 +33,12 @@ export interface Order {
   returnDate?: string;
   trackingNumber?: string;
   trackingHistory?: any[];
+  items?: any[];
+  returnTrackingNumber?: string;
+  returnStockState?: string;
+  needsRestockConfirm?: boolean;
+  fulfillmentCenterId?: string;
+  fulfillmentCenter?: any;
 }
 
 export interface Product {
@@ -66,6 +72,9 @@ export interface PurchaseItem {
   productId: string;
   productName: string;
   sku: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  partnerSku?: string;
   qty: number;
   purchasePrice: number;
   discount: number;
@@ -73,6 +82,7 @@ export interface PurchaseItem {
   taxAmount: number;
   unitCost: number;
   totalCost: number;
+  receivedQuantity?: number;
   // New shipping/parcel fields
   domesticShippingFeeCny?: number;
   vndCurrencyRate?: number;
@@ -143,6 +153,7 @@ export interface FulfillmentCenter {
   pic: string;
   note: string;
   status: 'Active' | 'Inactive';
+  warehouses?: Warehouse[];
 }
 
 export interface Supplier {
@@ -181,7 +192,7 @@ export interface InventoryLevel {
 
 export interface InventoryTransaction {
   id: string;
-  type: 'purchase_in' | 'order_out' | 'adjustment' | 'transfer_in' | 'transfer_out' | 'return_restock';
+  type: 'purchase_in' | 'order_out' | 'adjustment' | 'transfer_in' | 'transfer_out' | 'return_restock' | 'write_off';
   quantity: number;
   productId: string;
   warehouseId: string;

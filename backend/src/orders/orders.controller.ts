@@ -65,6 +65,14 @@ export class OrdersController {
         return this.ordersService.update(id, updateOrderDto);
     }
 
+    @Post(':id/return-tracking')
+    registerReturnTracking(
+        @Param('id') id: string,
+        @Body('returnTrackingNumber') returnTrackingNumber: string
+    ) {
+        return this.ordersService.registerReturnTracking(id, returnTrackingNumber);
+    }
+
     @Patch(':id/status')
     updateStatus(@Param('id') id: string, @Body('orderStatus') orderStatus: string) {
         return this.ordersService.updateStatus(id, orderStatus);

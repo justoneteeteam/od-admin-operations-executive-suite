@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { InventoryTransaction } from '../../types';
+import { inventoryService } from '../../src/services/inventory.service';
 
 interface InventoryLedgerProps {
     selectedWarehouse: string;
@@ -14,18 +15,8 @@ const InventoryLedger: React.FC<InventoryLedgerProps> = ({ selectedWarehouse }) 
         const fetchTransactions = async () => {
             setLoading(true);
             try {
-                const url = selectedWarehouse === 'all'
-                    ? 'http://localhost:3000/inventory/transactions'
-                    : `http://localhost:3000/inventory/transactions?warehouseId=${selectedWarehouse}`;
-
-                const token = localStorage.getItem('authToken');
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setTransactions(data);
-                }
+                const data = await inventoryService.getTransactions(selectedWarehouse);
+                setTransactions(data);
             } catch (err) {
                 console.error("Failed to fetch transactions", err);
             } finally {
@@ -64,7 +55,8 @@ const InventoryLedger: React.FC<InventoryLedgerProps> = ({ selectedWarehouse }) 
                                 <td className="px-6 py-4">{new Date(tx.createdAt).toLocaleString()}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${tx.type === 'purchase_in' || tx.type === 'return_restock' ? 'bg-green-900/50 text-green-200' :
-                                        tx.type === 'order_out' ? 'bg-blue-900/50 text-blue-200' :
+                                        tx.type === 'order_out' || tx.type.endsWith('_out') ? 'bg-blue-900/50 text-blue-200' :
+                                        tx.type === 'write_off' ? 'bg-red-900/50 text-red-200' :
                                             'bg-gray-700 text-gray-300'
                                         }`}>
                                         {tx.type.replace('_', ' ').toUpperCase()}

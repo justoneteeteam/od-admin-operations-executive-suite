@@ -39,4 +39,20 @@ export const purchasesService = {
         const response = await apiClient.post('/purchases/bulk-delete', { ids });
         return response.data;
     },
+
+    async receiveGoods(purchaseId: string, receivedItems: Array<{
+        purchaseItemId: string;
+        productId: string;
+        quantity: number;
+        warehouseId: string;
+        partnerSku?: string;
+    }>) {
+        const response = await apiClient.post(`/purchases/${purchaseId}/receive`, { receivedItems });
+        return response.data;
+    },
+
+    async getIncomingStock() {
+        const response = await apiClient.get('/purchases/incoming-stock');
+        return response.data;
+    },
 };

@@ -116,6 +116,7 @@ model Supplier {
   updatedAt          DateTime?  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   products           Product[]
   purchases          Purchase[]
+  purchaseOrders     PurchaseOrder[]
 
   @@map("suppliers")
 }
@@ -160,6 +161,7 @@ model Product {
   fulfillmentCenter FulfillmentCenter? @relation(fields: [fulfillmentCenterId], references: [id])
   supplier          Supplier?          @relation(fields: [supplierId], references: [id])
   purchaseItems     PurchaseItem[]
+  purchaseOrderItems PurchaseOrderItem[]
   orderItems        OrderItem[]
 
   @@map("products")
@@ -212,6 +214,10 @@ model Order {
   closedDate           DateTime? @map("closed_date") @db.Timestamptz(6)
   returnInitiatedDate  DateTime? @map("return_initiated_date") @db.Timestamptz(6)
   returnReason         String?   @map("return_reason")
+  returnTrackingNumber String?   @map("return_tracking_number") @db.VarChar(100)
+  returnStockState     String?   @map("return_stock_state") @db.VarChar(30)
+  returnWriteOffReason String?   @map("return_write_off_reason") @db.VarChar(100)
+  needsRestockConfirm  Boolean   @default(false) @map("needs_restock_confirm")
   googleSheetRow       Int?      @map("google_sheet_row")
   lastSyncedAt         DateTime? @map("last_synced_at") @db.Timestamptz(6)
   syncStatus           String?   @default("synced") @map("sync_status") @db.VarChar(20)
@@ -432,7 +438,7 @@ model Purchase {
   id                  String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   purchaseOrderNumber String  @unique @map("purchase_order_number") @db.VarChar(50)
   supplierId          String  @map("supplier_id") @db.Uuid
-  fulfillmentCenterId String  @map("fulfillment_center_id") @db.Uuid
+  fulfillmentCenterId String?  @map("fulfillment_center_id") @db.Uuid
   warehouseId         String? @map("warehouse_id") @db.Uuid
 
   purchaseStatus String  @default("Draft") @map("purchase_status") @db.VarChar(50)
@@ -462,7 +468,7 @@ model Purchase {
 
   warehouse           Warehouse?               @relation(fields: [warehouseId], references: [id])
   supplier            Supplier                 @relation(fields: [supplierId], references: [id])
-  fulfillmentCenter   FulfillmentCenter        @relation(fields: [fulfillmentCenterId], references: [id])
+  fulfillmentCenter   FulfillmentCenter?       @relation(fields: [fulfillmentCenterId], references: [id])
   items               PurchaseItem[]
   logisticCompanies   PurchaseLogisticCompany[]
 
@@ -473,6 +479,8 @@ model PurchaseItem {
   id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   purchaseId             String    @map("purchase_id") @db.Uuid
   productId              String    @map("product_id") @db.Uuid
+  warehouseId            String?   @map("warehouse_id") @db.Uuid
+  partnerSku             String?   @map("partner_sku") @db.VarChar(100)
   quantity               Int
   receivedQuantity       Int       @default(0) @map("received_quantity")
   unitCost               Decimal   @map("unit_cost") @db.Decimal(10, 2)
@@ -489,8 +497,9 @@ model PurchaseItem {
   internationalShippingFeeCny   Decimal?  @default(0) @map("international_shipping_fee_cny") @db.Decimal(10, 2)
   internationalShippingFeeVnd   Decimal?  @default(0) @map("international_shipping_fee_vnd") @db.Decimal(12, 2)
 
-  purchase Purchase @relation(fields: [purchaseId], references: [id])
-  product  Product  @relation(fields: [productId], references: [id])
+  purchase  Purchase   @relation(fields: [purchaseId], references: [id])
+  product   Product    @relation(fields: [productId], references: [id])
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
 
   @@map("purchase_items")
 }
@@ -736,6 +745,8 @@ model Warehouse {
   transactions        InventoryTransaction[]
   fulfillmentCenter   FulfillmentCenter      @relation(fields: [fulfillmentCenterId], references: [id])
   purchases           Purchase[]
+  purchaseItems       PurchaseItem[]
+  purchaseOrders      PurchaseOrder[]
 
   @@map("warehouses")
 }
@@ -747,6 +758,9 @@ model InventoryLevel {
   currentQuantity  Int       @default(0) @map("current_quantity")
   reservedQuantity Int       @default(0) @map("reserved_quantity")
   reorderLevel     Int       @default(10) @map("reorder_level")
+  outboundQty      Int       @default(0) @map("outbound_qty")
+  returningQty     Int       @default(0) @map("returning_qty")
+  partnerSku       String?   @map("partner_sku") @db.VarChar(100)
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   product          Product   @relation(fields: [productId], references: [id])
   warehouse        Warehouse @relation(fields: [warehouseId], references: [id])
@@ -1109,4 +1123,39 @@ model WebhookLog {
   @@index([orderNumber])
   @@index([externalId])
   @@map("webhook_logs")
+}
+
+model PurchaseOrder {
+  id               String              @id @default(dbgenerated("gen_random_uuid()::text"))
+  reference        String              @unique @db.VarChar(50)
+  supplierId       String?             @map("supplier_id") @db.Uuid
+  warehouseId      String?             @map("warehouse_id") @db.Uuid
+  status           String              @default("draft") @db.VarChar(20)
+  orderDate        DateTime            @map("order_date") @db.Date
+  expectedDelivery DateTime?           @map("expected_delivery") @db.Date
+  paymentTerms     String?             @map("payment_terms") @db.VarChar(50)
+  notes            String?
+  totalAmount      Decimal?            @map("total_amount") @db.Decimal(12, 2)
+  createdBy        String?             @map("created_by")
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  supplier         Supplier?           @relation(fields: [supplierId], references: [id])
+  warehouse        Warehouse?          @relation(fields: [warehouseId], references: [id])
+  items            PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(dbgenerated("gen_random_uuid()::text"))
+  purchaseOrderId String        @map("purchase_order_id")
+  productId       String        @map("product_id") @db.Uuid
+  quantity        Int
+  unitCost        Decimal       @map("unit_cost") @db.Decimal(10, 2)
+  receivedQty     Int           @default(0) @map("received_qty")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id])
+
+  @@map("purchase_order_items")
 }

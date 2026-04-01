@@ -447,6 +447,10 @@ export class OrdersService {
         }
     }
 
+    async registerReturnTracking(id: string, returnTrackingNumber: string) {
+        return this.inventoryService.registerReturnTracking(id, returnTrackingNumber);
+    }
+
     async importOrders(data: any[], skipRiskAssessment: boolean, skipInventory: boolean) {
         const results = {
             created: 0,
