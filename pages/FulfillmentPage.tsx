@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { fulfillmentService, FulfillmentCenter } from '../src/services/fulfillment.service';
+import apiClient from '../src/services/apiClient';
 
 const FulfillmentPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'detail'>('overview');
@@ -140,32 +141,19 @@ const FulfillmentPage: React.FC = () => {
     if (!warehouseForm.name || !selectedCenter) return;
     setIsCreatingWarehouse(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('http://localhost:3000/inventory/warehouses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: warehouseForm.name,
-          location: warehouseForm.location,
-          fulfillmentCenterId: selectedCenter.id
-        })
+      await apiClient.post('/inventory/warehouses', {
+        name: warehouseForm.name,
+        location: warehouseForm.location,
+        fulfillmentCenterId: selectedCenter.id
       });
-
-      if (res.ok) {
-        const newWarehouse = await res.json();
-        // Refresh detail view
-        const updatedCenter = await fulfillmentService.getById(selectedCenter.id);
-        setSelectedCenter(updatedCenter);
-        setWarehouseForm({ name: '', location: '' });
-      } else {
-        alert("Failed to create warehouse");
-      }
-    } catch (err) {
+      // Refresh detail view
+      const updatedCenter = await fulfillmentService.getById(selectedCenter.id);
+      setSelectedCenter(updatedCenter);
+      setWarehouseForm({ name: '', location: '' });
+    } catch (err: any) {
       console.error(err);
-      alert("Error creating warehouse");
+      const msg = err?.response?.data?.message || err?.message || 'Error creating warehouse';
+      alert(`Failed to create warehouse: ${msg}`);
     } finally {
       setIsCreatingWarehouse(false);
     }
