@@ -82,4 +82,21 @@ export class FinancialController {
     ) {
         return this.financialService.getRecordsSummary({ month, market });
     }
+
+    @Post('records/bulk')
+    async bulkCreateRecords(@Body('records') records: CreateFinancialRecordDto[]) {
+        return this.financialService.bulkCreateRecords(records);
+    }
+
+    // ─── Utility ──────────────────────────────────────────────
+
+    @Get('exchange-rate')
+    async getLatestExchangeRate() {
+        return this.financialService.getLatestExchangeRate();
+    }
+
+    @Get('sources')
+    async getUniqueSources() {
+        return this.financialService.getUniqueSources();
+    }
 }

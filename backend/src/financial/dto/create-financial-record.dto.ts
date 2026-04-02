@@ -16,8 +16,9 @@ export class CreateFinancialRecordDto {
     @IsIn(['ES', 'IT', 'DE', 'PL'])
     market?: string;
 
+    @IsOptional()
     @IsNumber()
-    amountEur: number;
+    amountEur?: number;
 
     @IsOptional()
     @IsNumber()

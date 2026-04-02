@@ -389,15 +389,23 @@ const rawRows = this._parseInvoice(fileBuffer);
     }
 
     async createRecord(dto: CreateFinancialRecordDto) {
-        // If no VND provided, try to compute from exchange rate
         let amountVnd = dto.amountVnd ?? null;
+        let amountEur = dto.amountEur ?? null;
         let exchangeRate = dto.exchangeRate ?? null;
 
-        if (!amountVnd && dto.amountEur) {
+        if (!amountEur && amountVnd) {
             const rate = await this.getLatestExchangeRate();
             if (rate) {
                 exchangeRate = Number(rate.vndToEur);
-                amountVnd = dto.amountEur / exchangeRate;
+                amountEur = amountVnd / exchangeRate;
+            } else {
+                amountEur = 0; // fallback if no exchange rate
+            }
+        } else if (!amountVnd && amountEur) {
+            const rate = await this.getLatestExchangeRate();
+            if (rate) {
+                exchangeRate = Number(rate.vndToEur);
+                amountVnd = amountEur * exchangeRate;
             }
         }
 
@@ -407,7 +415,7 @@ const rawRows = this._parseInvoice(fileBuffer);
                 description: dto.description,
                 category: dto.category,
                 market: dto.market || null,
-                amountEur: dto.amountEur,
+                amountEur: amountEur as number,
                 amountVnd,
                 exchangeRate,
                 source: dto.source || 'manual',
@@ -469,6 +477,48 @@ const rawRows = this._parseInvoice(fileBuffer);
     // ═══════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════
+
+    async getUniqueSources(): Promise<string[]> {
+        const records = await this.prisma.financialRecord.findMany({
+            select: { source: true },
+            distinct: ['source'],
+        });
+        return records.map(r => r.source).filter(Boolean) as string[];
+    }
+
+    async bulkCreateRecords(records: CreateFinancialRecordDto[]) {
+        const currentRate = await this.getLatestExchangeRate();
+        const rateValue = currentRate ? Number(currentRate.vndToEur) : null;
+
+        const operations = records.map((r) => {
+            let amountVnd = r.amountVnd ?? null;
+            let amountEur = r.amountEur ?? null;
+            let exchangeRate = r.exchangeRate ?? rateValue;
+
+            if (!amountEur && amountVnd && exchangeRate) {
+                amountEur = amountVnd / exchangeRate;
+            } else if (!amountVnd && amountEur && exchangeRate) {
+                amountVnd = amountEur * exchangeRate;
+            }
+
+            return this.prisma.financialRecord.create({
+                data: {
+                    date: new Date(r.date),
+                    description: r.description,
+                    category: r.category,
+                    market: r.market || null,
+                    amountEur: amountEur || 0,
+                    amountVnd,
+                    exchangeRate,
+                    source: r.source || 'manual',
+                    notes: r.notes || null,
+                },
+            });
+        });
+
+        await this.prisma.$transaction(operations);
+        return { importedCount: operations.length };
+    }
 
     private parseMoneyValue(val: any): number {
         if (val === null || val === undefined) return 0;

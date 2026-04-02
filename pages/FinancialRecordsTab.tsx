@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { financialService, FinancialRecord, RecordsSummary } from '../src/services/financial.service';
+import * as XLSX from 'xlsx';
 
 const CATEGORY_BADGES: Record<string, string> = {
     Fulfillment: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
@@ -18,6 +19,16 @@ const FinancialRecordsTab: React.FC = () => {
     const [records, setRecords] = useState<FinancialRecord[]>([]);
     const [summary, setSummary] = useState<RecordsSummary | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+    const [uniqueSources, setUniqueSources] = useState<string[]>([]);
+    
+    // Import Modal State
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importStep, setImportStep] = useState(1);
+    const [importData, setImportData] = useState<any[]>([]);
+    const [isImporting, setIsImporting] = useState(false);
+    const [importResults, setImportResults] = useState<{ importedCount: number } | null>(null);
 
     // Filters
     const [month, setMonth] = useState('');
@@ -59,7 +70,31 @@ const FinancialRecordsTab: React.FC = () => {
         }
     }, [month, category, market, source]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { 
+        fetchData(); 
+        financialService.getLatestExchangeRate().then(rate => {
+            if (rate) setExchangeRate(rate.vndToEur);
+        }).catch(console.error);
+        financialService.getUniqueSources().then(setUniqueSources).catch(console.error);
+    }, [fetchData]);
+
+    const handleAmountVndChange = (val: string) => {
+        setFormAmountVnd(val);
+        if (val && exchangeRate) {
+            setFormAmountEur((parseFloat(val) / exchangeRate).toFixed(2));
+        } else if (!val) {
+            setFormAmountEur('');
+        }
+    };
+
+    const handleAmountEurChange = (val: string) => {
+        setFormAmountEur(val);
+        if (val && exchangeRate) {
+            setFormAmountVnd(Math.round(parseFloat(val) * exchangeRate).toString());
+        } else if (!val) {
+            setFormAmountVnd('');
+        }
+    };
 
     const handleAddExpense = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,7 +106,7 @@ const FinancialRecordsTab: React.FC = () => {
                 description: formDesc,
                 category: formCategory,
                 market: formMarket || undefined,
-                amountEur: parseFloat(formAmountEur),
+                amountEur: formAmountEur ? parseFloat(formAmountEur) : undefined,
                 amountVnd: formAmountVnd ? parseFloat(formAmountVnd) : undefined,
                 source: formSource,
                 notes: formNotes || undefined,
@@ -83,6 +118,8 @@ const FinancialRecordsTab: React.FC = () => {
             setFormNotes('');
             setShowAddForm(false);
             fetchData();
+            // Refresh sources in case a new one was added
+            financialService.getUniqueSources().then(setUniqueSources).catch(console.error);
         } catch (err) {
             console.error('Failed to create record:', err);
             alert('Failed to create expense record');
@@ -93,6 +130,83 @@ const FinancialRecordsTab: React.FC = () => {
 
     const formatEur = (val: number) => `€${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const formatVnd = (val: number | null) => val ? `₫${Math.round(val).toLocaleString()}` : '—';
+
+    // ========== IMPORT LOGIC ========== //
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+
+                // Map Excel columns to payload format
+                const mappedData = jsonData.map((row: any) => ({
+                    date: row['Date'] || new Date().toISOString(),
+                    description: row['Description'] || 'Imported Expense',
+                    category: row['Category'] || 'Others',
+                    market: row['Market'] || null,
+                    amountEur: row['Amount EUR'] ? parseFloat(row['Amount EUR']) : undefined,
+                    amountVnd: row['Amount VND'] ? parseFloat(row['Amount VND']) : undefined,
+                    source: row['Source'] || 'manual',
+                    notes: row['Notes'] || '',
+                }));
+
+                setImportData(mappedData);
+                setImportStep(2);
+            } catch (err) {
+                console.error("Failed to parse file", err);
+                alert("Failed to parse file. Please ensure it's a valid CSV/XLSX.");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = ''; // reset input
+    };
+
+    const downloadTemplate = () => {
+        const headers = ["Date", "Description", "Category", "Market", "Amount EUR", "Amount VND", "Source", "Notes"];
+        const exampleRow1 = ["2026-04-01", "Facebook Campaign", "Ads", "IT", "150.00", "", "Meta Ads", "Monthly spend"];
+        const exampleRow2 = ["2026-04-02", "Office Supplies", "Others", "", "", "500000", "VCB Card", "Bought paper"];
+
+        const ws = XLSX.utils.aoa_to_sheet([headers, exampleRow1, exampleRow2]);
+        ws['!cols'] = headers.map(() => ({ wch: 18 }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+        XLSX.writeFile(wb, "import_expenses_template.xlsx");
+    };
+
+    const executeImport = async () => {
+        setIsImporting(true);
+        setImportStep(3);
+        try {
+            const results = await financialService.bulkCreate(importData);
+            setImportResults(results);
+            if (results.importedCount > 0) {
+                fetchData();
+                financialService.getUniqueSources().then(setUniqueSources).catch(console.error);
+            }
+        } catch (err) {
+            console.error("Import failed:", err);
+            alert("Failed to import records.");
+            setImportResults({ importedCount: 0 });
+        } finally {
+            setIsImporting(false);
+        }
+    };
+
+    const closeImportModal = () => {
+        setShowImportModal(false);
+        setTimeout(() => {
+            setImportStep(1);
+            setImportData([]);
+            setImportResults(null);
+        }, 300);
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -137,17 +251,24 @@ const FinancialRecordsTab: React.FC = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Source</label>
-                    <select
-                        value={source}
-                        onChange={(e) => setSource(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]"
-                    >
-                        <option value="">All</option>
-                        <option value="manual">Manual</option>
-                        <option value="beeping">Beeping</option>
-                        <option value="meta_ads">Meta Ads</option>
-                    </select>
+                    <div className="relative">
+                        <input
+                            list="source-list"
+                            value={source}
+                            onChange={(e) => setSource(e.target.value)}
+                            placeholder="All"
+                            className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm min-w-[140px] w-full focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">arrow_drop_down</span>
+                    </div>
                 </div>
+                <button
+                    onClick={() => setShowImportModal(true)}
+                    className="flex justify-center items-center gap-1.5 px-4 py-2 bg-[#1c2d3d] hover:bg-[#233648] text-emerald-400 border border-[#2d445a] rounded-lg text-sm font-bold transition-all"
+                >
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>upload_file</span>
+                    Import Expenses
+                </button>
                 <button
                     onClick={() => setShowAddForm(!showAddForm)}
                     className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
@@ -155,6 +276,17 @@ const FinancialRecordsTab: React.FC = () => {
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
                     Add Expense
                 </button>
+
+                <datalist id="source-list">
+                    <option value="Manual" />
+                    <option value="Beeping" />
+                    <option value="Meta Ads" />
+                    <option value="MB Bank" />
+                    <option value="VCB Bank" />
+                    <option value="MB Card" />
+                    <option value="VCB Card" />
+                    {uniqueSources.map(src => <option key={src} value={src} />)}
+                </datalist>
             </div>
 
             {/* ─── Inline Add Form ────────────────────────────── */}
@@ -194,23 +326,24 @@ const FinancialRecordsTab: React.FC = () => {
                             </select>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Amount EUR *</label>
-                            <input type="number" step="0.01" value={formAmountEur} onChange={(e) => setFormAmountEur(e.target.value)} required placeholder="0.00"
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Amount EUR {exchangeRate ? '' : '*'}</label>
+                            <input type="number" step="0.01" value={formAmountEur} onChange={(e) => handleAmountEurChange(e.target.value)} required={!formAmountVnd} placeholder="0.00"
                                 className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm placeholder:text-text-muted/40" />
                         </div>
                         <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Amount VND</label>
-                            <input type="number" step="1" value={formAmountVnd} onChange={(e) => setFormAmountVnd(e.target.value)} placeholder="Auto-calculated"
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Amount VND {exchangeRate ? '' : '(Read Only)'}</label>
+                            <input type="number" step="1" value={formAmountVnd} onChange={(e) => handleAmountVndChange(e.target.value)} placeholder="0" readOnly={!exchangeRate && !!formAmountEur}
                                 className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm placeholder:text-text-muted/40" />
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Source</label>
-                            <select value={formSource} onChange={(e) => setFormSource(e.target.value)}
-                                className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer">
-                                <option value="manual">Manual</option>
-                                <option value="beeping">Beeping</option>
-                                <option value="meta_ads">Meta Ads</option>
-                            </select>
+                            <input
+                                list="source-list"
+                                value={formSource}
+                                onChange={(e) => setFormSource(e.target.value)}
+                                placeholder="Type or select source"
+                                className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm placeholder:text-text-muted/40 w-full focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            />
                         </div>
                         <div className="flex flex-col gap-1 col-span-2 md:col-span-4">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Notes</label>
@@ -320,6 +453,124 @@ const FinancialRecordsTab: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* ─── IMPORT EXPENSES MODAL ──────────────────────────────── */}
+            {showImportModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#111a22] border border-border-dark rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border-dark bg-[#17232f]">
+                            <div>
+                                <h2 className="text-lg font-black text-white tracking-tight">Import Expenses</h2>
+                                <p className="text-xs text-text-muted mt-0.5">Upload a spreadsheet of financial records</p>
+                            </div>
+                            <button
+                                onClick={closeImportModal}
+                                disabled={isImporting}
+                                className="text-text-muted hover:text-white transition-colors disabled:opacity-50"
+                            >
+                                <span className="material-symbols-outlined text-xl">close</span>
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            {importStep === 1 && (
+                                <div className="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-border-dark rounded-xl bg-card-dark relative group overflow-hidden">
+                                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <span className="material-symbols-outlined text-5xl text-text-muted mb-4 group-hover:text-primary transition-colors">cloud_upload</span>
+                                    <h3 className="text-white font-bold mb-2">Upload Excel or CSV File</h3>
+                                    <p className="text-text-muted text-sm text-center max-w-sm mb-6">
+                                        Drop your file here or click to browse. Make sure it matches our template format.
+                                    </p>
+                                    <input
+                                        type="file"
+                                        accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        onChange={handleFileUpload}
+                                    />
+                                    <div className="flex gap-3 relative z-20">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); downloadTemplate(); }}
+                                            className="px-4 py-2 bg-[#1c2d3d] hover:bg-[#233648] text-white rounded-lg text-sm font-bold border border-border-dark transition-all flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">download</span>
+                                            Download Template
+                                        </button>
+                                        <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 pointer-events-none">
+                                            Select File
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {importStep === 2 && (
+                                <div className="flex flex-col gap-6">
+                                    <div className="flex items-start gap-4 p-4 bg-primary/10 border border-primary/20 rounded-xl">
+                                        <span className="material-symbols-outlined text-primary mt-0.5">info</span>
+                                        <div>
+                                            <h4 className="text-white font-bold text-sm">File Ready for Import</h4>
+                                            <p className="text-text-muted text-sm mt-1">
+                                                We found <strong className="text-white">{importData.length}</strong> record{importData.length !== 1 && 's'} in your file.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex justify-end gap-3 mt-2">
+                                        <button
+                                            onClick={() => setImportStep(1)}
+                                            className="px-4 py-2 text-text-muted hover:text-white border border-border-dark rounded-lg text-sm font-bold transition-all"
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={executeImport}
+                                            className="flex items-center gap-2 px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20 transition-all"
+                                        >
+                                            Start Import
+                                            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {importStep === 3 && (
+                                <div className="flex flex-col items-center justify-center py-10">
+                                    {isImporting ? (
+                                        <>
+                                            <div className="relative size-16 mb-6">
+                                                <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                                                <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                            </div>
+                                            <h3 className="text-lg font-bold text-white mb-2">Importing Records...</h3>
+                                            <p className="text-text-muted text-sm">Please do not close this window.</p>
+                                        </>
+                                    ) : importResults ? (
+                                        <>
+                                            <div className="size-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mb-6">
+                                                <span className="material-symbols-outlined text-3xl text-emerald-500">check_circle</span>
+                                            </div>
+                                            <h3 className="text-lg font-bold text-white mb-2">Import Complete!</h3>
+                                            
+                                            <div className="flex gap-4 mb-6">
+                                                <div className="flex flex-col items-center p-3 bg-card-dark border border-border-dark rounded-xl min-w-[120px]">
+                                                    <span className="text-2xl font-black text-emerald-400">{importResults.importedCount}</span>
+                                                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">Imported</span>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={closeImportModal}
+                                                className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-lg shadow-primary/20"
+                                            >
+                                                Done
+                                            </button>
+                                        </>
+                                    ) : null}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

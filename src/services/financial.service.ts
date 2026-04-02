@@ -65,7 +65,7 @@ export const financialService = {
         description: string;
         category: string;
         market?: string;
-        amountEur: number;
+        amountEur?: number;
         amountVnd?: number;
         exchangeRate?: number;
         source?: string;
@@ -77,6 +77,11 @@ export const financialService = {
         return response.data;
     },
 
+    async bulkCreate(records: any[]): Promise<{ importedCount: number }> {
+        const response = await apiClient.post('/financial/records/bulk', { records });
+        return response.data;
+    },
+
     async getRecordsSummary(filters?: {
         month?: string;
         market?: string;
@@ -85,6 +90,17 @@ export const financialService = {
         if (filters?.month) params.set('month', filters.month);
         if (filters?.market) params.set('market', filters.market);
         const response = await apiClient.get(`/financial/records/summary?${params.toString()}`);
+        return response.data;
+    },
+
+    // ─── Utility ─────────────────────────────────────────────────
+    async getLatestExchangeRate(): Promise<{ vndToEur: number } | null> {
+        const response = await apiClient.get('/financial/exchange-rate');
+        return response.data;
+    },
+
+    async getUniqueSources(): Promise<string[]> {
+        const response = await apiClient.get('/financial/sources');
         return response.data;
     },
 
