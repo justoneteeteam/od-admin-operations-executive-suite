@@ -851,7 +851,11 @@ const OrdersPage: React.FC = () => {
                               s === 'Cancelled' ? 'Cancel' : s;
                             return (
                               <>
-                                <span className={`size-1.5 rounded-full ${dotColor}`}></span>
+                                {isReturning ? (
+                                  <span className="material-symbols-outlined text-pink-400" style={{ fontSize: '14px' }}>warning</span>
+                                ) : (
+                                  <span className={`size-1.5 rounded-full ${dotColor}`}></span>
+                                )}
                                 <span className={`text-xs uppercase tracking-wider ${textColor}`}>{label}</span>
                               </>
                             );
