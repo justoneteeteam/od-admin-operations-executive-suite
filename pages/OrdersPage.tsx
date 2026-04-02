@@ -830,27 +830,32 @@ const OrdersPage: React.FC = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-3">
                         <div className="flex items-center gap-2">
-                          <span className={`size-1.5 rounded-full ${order.orderStatus === 'Delivered' ? 'bg-emerald-500' :
-                            (order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered') ? 'bg-red-500' :
-                              order.orderStatus === 'OutForDelivery' ? 'bg-orange-500' :
-                                (order.orderStatus === 'InTransit' || order.orderStatus === 'Shipped' || order.orderStatus === 'Processing' || order.orderStatus === 'InfoReceived') ? 'bg-blue-400' :
-                                  order.orderStatus === 'NotFound' ? 'bg-gray-500' :
-                                    'bg-primary/60'
-                            }`}></span>
-                          <span className={`text-xs uppercase tracking-wider ${(order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered' || order.orderStatus === 'OutForDelivery') ? 'font-black' : 'font-bold text-text-muted'
-                            } ${(order.orderStatus === 'Exception' || order.orderStatus === 'Expired' || order.orderStatus === 'Cancelled' || order.orderStatus === 'Undelivered') ? 'text-red-500' :
-                              order.orderStatus === 'OutForDelivery' ? 'text-orange-500' : ''
-                            }`}>
-                            {
-                              order.orderStatus === 'InTransit' ? 'In transit' :
-                                order.orderStatus === 'Shipped' ? 'Shipped' :
-                                  order.orderStatus === 'InfoReceived' ? 'Info Received' :
-                                    order.orderStatus === 'OutForDelivery' ? 'Pickup (Out of delivery)' :
-                                      order.orderStatus === 'NotFound' ? 'Not Found' :
-                                        order.orderStatus === 'Cancelled' ? 'Cancel' :
-                                          order.orderStatus
-                            }
-                          </span>
+                          {(() => {
+                            const isReturning = !!order.returnTrackingNumber;
+                            const s = order.orderStatus;
+                            const dotColor = isReturning ? 'bg-pink-500' :
+                              s === 'Delivered' ? 'bg-emerald-500' :
+                              (s === 'Exception' || s === 'Expired' || s === 'Cancelled' || s === 'Undelivered') ? 'bg-red-500' :
+                              s === 'OutForDelivery' ? 'bg-orange-500' :
+                              (s === 'InTransit' || s === 'Shipped' || s === 'Processing' || s === 'InfoReceived') ? 'bg-blue-400' :
+                              s === 'NotFound' ? 'bg-gray-500' : 'bg-primary/60';
+                            const textColor = isReturning ? 'text-pink-400 font-black' :
+                              (s === 'Exception' || s === 'Expired' || s === 'Cancelled' || s === 'Undelivered') ? 'text-red-500 font-black' :
+                              s === 'OutForDelivery' ? 'text-orange-500 font-black' : 'font-bold text-text-muted';
+                            const label = isReturning ? 'Returning' :
+                              s === 'InTransit' ? 'In transit' :
+                              s === 'Shipped' ? 'Shipped' :
+                              s === 'InfoReceived' ? 'Info Received' :
+                              s === 'OutForDelivery' ? 'Pickup (Out of delivery)' :
+                              s === 'NotFound' ? 'Not Found' :
+                              s === 'Cancelled' ? 'Cancel' : s;
+                            return (
+                              <>
+                                <span className={`size-1.5 rounded-full ${dotColor}`}></span>
+                                <span className={`text-xs uppercase tracking-wider ${textColor}`}>{label}</span>
+                              </>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td className="px-4 sm:px-6 py-3 text-sm font-black text-white text-right whitespace-nowrap">
