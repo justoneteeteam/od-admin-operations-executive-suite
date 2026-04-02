@@ -36,6 +36,7 @@ export interface FulfillmentCenter {
         purchases: number;
     };
     warehouses?: Warehouse[];
+    location?: string;
 }
 
 export const fulfillmentService = {

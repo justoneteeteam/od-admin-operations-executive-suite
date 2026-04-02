@@ -319,6 +319,8 @@ const OrdersPage: React.FC = () => {
           paymentStatus: editOrder.paymentStatus,
           orderDate: editOrder.orderDate ? new Date(editOrder.orderDate).toISOString() : undefined,
           trafficChannel: editOrder.trafficChannel || null,
+          returnTrackingNumber: editOrder.returnTrackingNumber || null,
+          returnStockState: editOrder.returnStockState || null,
           items: cleanItems
         };
 

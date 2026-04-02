@@ -55,6 +55,10 @@ export interface Order {
     riskAction?: string;
     trafficChannel?: string;
     browserIp?: string;
+    // Return tracking fields
+    returnTrackingNumber?: string;
+    returnStockState?: string;
+    needsRestockConfirm?: boolean;
 }
 
 export const ordersService = {
