@@ -49,6 +49,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/incidents': 'Incident Management',
   '/logistics': 'Logistic Companies',
   '/communication': 'Communication Hub',
+  '/financial': 'Financial Management',
 };
 
 const DashboardLayout: React.FC = () => {

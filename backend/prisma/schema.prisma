@@ -22,6 +22,7 @@ model User {
   ticketTimelineActor   TicketTimeline[]        @relation("TimelineActor")
   ticketMessagesSent    TicketMessage[]         @relation("MessageSender")
   workflowUpdates       IncidentWorkflow[]      @relation("WorkflowUpdater")
+  invoiceUploads        FulfillmentInvoiceUpload[]
 
   @@map("users")
 }
@@ -84,6 +85,8 @@ model FulfillmentCenter {
   orders                  Order[]
   products                Product[]
   purchases               Purchase[]
+  financialRecords        FinancialRecord[]
+  invoiceUploads          FulfillmentInvoiceUpload[]
 
   @@map("fulfillment_centers")
 }
@@ -239,6 +242,7 @@ model Order {
   trackingHistory    TrackingHistory[]
   customerResponses  CustomerResponse[]
   riskAssessments    RiskAssessment[]
+  financialRecords   FinancialRecord[]
   callLogs           CallLog[]
   tickets            Ticket[]
 
@@ -1160,4 +1164,56 @@ model PurchaseOrderItem {
   product         Product       @relation(fields: [productId], references: [id])
 
   @@map("purchase_order_items")
+}
+
+// ─── FINANCIAL MANAGEMENT ──────────────────────────────────────────────
+
+model FulfillmentInvoiceUpload {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fulfillmentCenterId String?            @map("fulfillment_center_id") @db.Uuid
+  invoiceType         String             @map("invoice_type") @db.VarChar(20)
+  periodMonth         String?            @map("period_month") @db.VarChar(10)
+  filename            String             @db.VarChar(500)
+  totalLines          Int?               @map("total_lines")
+  matchedLines        Int?               @map("matched_lines")
+  unmatchedLines      Int?               @map("unmatched_lines")
+  totalAmountEur      Decimal?           @map("total_amount_eur") @db.Decimal(15, 2)
+  status              String?            @default("pending") @db.VarChar(20)
+  rawData             Json?              @map("raw_data") @db.JsonB
+  uploadedBy          String?            @map("uploaded_by") @db.Uuid
+  importedAt          DateTime?          @map("imported_at") @db.Timestamptz(6)
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  fulfillmentCenter   FulfillmentCenter? @relation(fields: [fulfillmentCenterId], references: [id])
+  uploader            User?              @relation(fields: [uploadedBy], references: [id])
+  financialRecords    FinancialRecord[]
+
+  @@map("fulfillment_invoice_uploads")
+}
+
+model FinancialRecord {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date                DateTime                @db.Date
+  description         String
+  category            String                  @db.VarChar(50)
+  market              String?                 @db.VarChar(10)
+  amountEur           Decimal                 @default(0) @map("amount_eur") @db.Decimal(15, 2)
+  amountVnd           Decimal?                @map("amount_vnd") @db.Decimal(15, 2)
+  exchangeRate        Decimal?                @map("exchange_rate") @db.Decimal(15, 10)
+  source              String                  @default("manual") @db.VarChar(20)
+  orderId             String?                 @map("order_id") @db.Uuid
+  fulfillmentCenterId String?                 @map("fulfillment_center_id") @db.Uuid
+  invoiceUploadId     String?                 @map("invoice_upload_id") @db.Uuid
+  notes               String?
+  createdAt           DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order               Order?                  @relation(fields: [orderId], references: [id])
+  fulfillmentCenter   FulfillmentCenter?      @relation(fields: [fulfillmentCenterId], references: [id])
+  invoiceUpload       FulfillmentInvoiceUpload? @relation(fields: [invoiceUploadId], references: [id])
+
+  @@index([date])
+  @@index([category])
+  @@index([source])
+  @@map("financial_records")
 }

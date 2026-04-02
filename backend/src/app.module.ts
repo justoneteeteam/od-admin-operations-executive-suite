@@ -30,9 +30,10 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { LogisticCompaniesModule } from './logistic-companies/logistic-companies.module';
 import { CommunicationModule } from './communication/communication.module';
+import { FinancialModule } from './financial/financial.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, PurchaseOrdersModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule, AdsCampaignsModule, ExchangeRatesModule, TicketsModule, LogisticCompaniesModule, CommunicationModule],
+  imports: [PrismaModule, UsersModule, AuthModule, OrdersModule, CustomersModule, ProductsModule, FulfillmentCentersModule, SuppliersModule, PurchasesModule, ProfitsModule, StoreSettingsModule, AnalyticsModule, InventoryModule, PurchaseOrdersModule, NotificationsModule, TrackingModule, ScheduleModule.forRoot(), ShopifyModule, RiskScoringModule, TwilioVoiceModule, AdsCampaignsModule, ExchangeRatesModule, TicketsModule, LogisticCompaniesModule, CommunicationModule, FinancialModule],
   controllers: [AppController],
   providers: [
     AppService,
