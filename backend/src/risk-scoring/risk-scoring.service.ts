@@ -278,10 +278,10 @@ export class RiskScoringService {
             return { riskLevel: 'BLOCKED', action: 'auto_reject' };
         }
         if (score >= 4) {
-            return { riskLevel: 'HIGH', action: 'call_center' };
+            return { riskLevel: 'HIGH', action: 'twilio_short' };
         }
         if (score >= 2) {
-            return { riskLevel: 'MEDIUM', action: 'twilio_long' };
+            return { riskLevel: 'MEDIUM', action: 'twilio_short' };
         }
         return { riskLevel: 'LOW', action: 'twilio_short' };
     }
@@ -332,12 +332,11 @@ export class RiskScoringService {
                 where: { storeName: order.storeName },
             });
 
-            const isItaly =
-                (order.shippingCountry || '').toLowerCase() === 'italy' ||
-                (order.shippingCountry || '').toLowerCase() === 'it' ||
-                (order.shippingCountry || '').toLowerCase() === 'italia';
+            const country = (order.shippingCountry || '').toLowerCase().trim();
+            const isItaly = country === 'italy' || country === 'it' || country === 'italia';
+            const isSpain = country === 'spain' || country === 'es' || country === 'españa' || country === 'espana';
 
-            const isTwilioEnabled = isItaly || storeSettings?.enableTwilioCalls === true;
+            const isTwilioEnabled = isItaly || isSpain || storeSettings?.enableTwilioCalls === true;
 
             if (riskLevel === 'LOW') {
                 if (isTwilioEnabled) {
@@ -353,8 +352,8 @@ export class RiskScoringService {
 
             if (riskLevel === 'MEDIUM') {
                 if (isTwilioEnabled) {
-                    this.logger.log(`Order ${order.id}: MEDIUM risk — initiating long Twilio call.`);
-                    await this.twilioVoiceService.initiateConfirmationCall(order.id, 'long');
+                    this.logger.log(`Order ${order.id}: MEDIUM risk — initiating short Twilio call.`);
+                    await this.twilioVoiceService.initiateConfirmationCall(order.id, 'short');
                 } else {
                     this.logger.log(
                         `Order ${order.id}: MEDIUM risk — Twilio calls disabled for store ${order.storeName}. Skipping call.`,
@@ -364,31 +363,14 @@ export class RiskScoringService {
             }
 
             if (riskLevel === 'HIGH') {
-                this.logger.log(`Order ${order.id}: HIGH risk — forwarding to call center.`);
-                const totalItems =
-                    order.items?.reduce((sum: number, i: any) => sum + i.quantity, 0) || 0;
-                const address = [
-                    order.shippingAddressLine1,
-                    order.shippingCity,
-                    order.shippingProvince,
-                    order.shippingPostalCode,
-                ]
-                    .filter(Boolean)
-                    .join(', ');
-
-                await this.googleSheetsService.addToCallCenterQueue({
-                    orderId: order.id,
-                    orderNumber: order.orderNumber,
-                    customerName: order.customer?.name || 'Unknown',
-                    customerPhone: order.customer?.phone || '',
-                    address,
-                    totalAmount: Number(order.totalAmount || 0),
-                    itemCount: totalItems,
-                    riskLevel,
-                    riskScore: order.riskScore || 0,
-                    reason: 'High risk order',
-                    priority: 'URGENT',
-                });
+                if (isTwilioEnabled) {
+                    this.logger.log(`Order ${order.id}: HIGH risk — initiating short Twilio call.`);
+                    await this.twilioVoiceService.initiateConfirmationCall(order.id, 'short');
+                } else {
+                    this.logger.log(
+                        `Order ${order.id}: HIGH risk — Twilio calls disabled for store ${order.storeName}. Skipping call.`,
+                    );
+                }
                 return;
             }
         } catch (error) {

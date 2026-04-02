@@ -283,19 +283,19 @@ describe('RiskScoringService', () => {
     });
 
     it('D-03: score=2, isBlocked=false → MEDIUM', () => {
-      expect(service.computeRiskLevel(2, false)).toEqual({ riskLevel: 'MEDIUM', action: 'twilio_long' });
+      expect(service.computeRiskLevel(2, false)).toEqual({ riskLevel: 'MEDIUM', action: 'twilio_short' });
     });
 
     it('D-04: score=3, isBlocked=false → MEDIUM', () => {
-      expect(service.computeRiskLevel(3, false)).toEqual({ riskLevel: 'MEDIUM', action: 'twilio_long' });
+      expect(service.computeRiskLevel(3, false)).toEqual({ riskLevel: 'MEDIUM', action: 'twilio_short' });
     });
 
     it('D-05: score=4, isBlocked=false → HIGH', () => {
-      expect(service.computeRiskLevel(4, false)).toEqual({ riskLevel: 'HIGH', action: 'call_center' });
+      expect(service.computeRiskLevel(4, false)).toEqual({ riskLevel: 'HIGH', action: 'twilio_short' });
     });
 
     it('D-06: score=9, isBlocked=false → HIGH', () => {
-      expect(service.computeRiskLevel(9, false)).toEqual({ riskLevel: 'HIGH', action: 'call_center' });
+      expect(service.computeRiskLevel(9, false)).toEqual({ riskLevel: 'HIGH', action: 'twilio_short' });
     });
 
     it('D-07: score=10, isBlocked=false → BLOCKED', () => {
