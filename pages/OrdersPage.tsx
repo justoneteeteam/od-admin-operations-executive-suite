@@ -831,28 +831,39 @@ const OrdersPage: React.FC = () => {
                       <td className="px-4 sm:px-6 py-3">
                         <div className="flex items-center gap-2">
                           {(() => {
-                            const isReturning = !!order.returnTrackingNumber;
+                            const rss = order.returnStockState;
+                            const isRestocked = rss === 'restocked';
+                            const isWrittenOff = rss === 'written_off';
+                            const isReturning = !!order.returnTrackingNumber && !isRestocked && !isWrittenOff;
                             const s = order.orderStatus;
-                            const dotColor = isReturning ? 'bg-pink-500' :
+                            const dotColor = isRestocked ? 'bg-emerald-500' :
+                              isWrittenOff ? 'bg-gray-500' :
+                              isReturning ? 'bg-pink-500' :
                               s === 'Delivered' ? 'bg-emerald-500' :
                               (s === 'Exception' || s === 'Expired' || s === 'Cancelled' || s === 'Undelivered') ? 'bg-red-500' :
                               s === 'OutForDelivery' ? 'bg-orange-500' :
                               (s === 'InTransit' || s === 'Shipped' || s === 'Processing' || s === 'InfoReceived') ? 'bg-blue-400' :
                               s === 'NotFound' ? 'bg-gray-500' : 'bg-primary/60';
-                            const textColor = isReturning ? 'text-pink-400 font-black' :
+                            const textColor = isRestocked ? 'text-emerald-400 font-black' :
+                              isWrittenOff ? 'text-gray-400 font-black' :
+                              isReturning ? 'text-pink-400 font-black' :
                               (s === 'Exception' || s === 'Expired' || s === 'Cancelled' || s === 'Undelivered') ? 'text-red-500 font-black' :
                               s === 'OutForDelivery' ? 'text-orange-500 font-black' : 'font-bold text-text-muted';
-                            const label = isReturning ? 'Returning' :
+                            const label = isRestocked ? 'Restocked' :
+                              isWrittenOff ? 'Written Off' :
+                              isReturning ? 'Returning' :
                               s === 'InTransit' ? 'In transit' :
                               s === 'Shipped' ? 'Shipped' :
                               s === 'InfoReceived' ? 'Info Received' :
                               s === 'OutForDelivery' ? 'Pickup (Out of delivery)' :
                               s === 'NotFound' ? 'Not Found' :
                               s === 'Cancelled' ? 'Cancel' : s;
+                            const icon = isRestocked ? 'inventory_2' : isWrittenOff ? 'remove_circle' : isReturning ? 'warning' : null;
+                            const iconColor = isRestocked ? 'text-emerald-400' : isWrittenOff ? 'text-gray-400' : 'text-pink-400';
                             return (
                               <>
-                                {isReturning ? (
-                                  <span className="material-symbols-outlined text-pink-400" style={{ fontSize: '14px' }}>warning</span>
+                                {icon ? (
+                                  <span className={`material-symbols-outlined ${iconColor}`} style={{ fontSize: '14px' }}>{icon}</span>
                                 ) : (
                                   <span className={`size-1.5 rounded-full ${dotColor}`}></span>
                                 )}
