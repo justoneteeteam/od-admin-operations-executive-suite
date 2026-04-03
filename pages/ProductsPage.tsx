@@ -317,6 +317,21 @@ const ProductsPage: React.FC = () => {
                     <td className="px-3 py-2.5">
                       <p className="text-sm font-bold text-white leading-tight">{product.name}</p>
                       <p className="text-[10px] font-mono text-text-muted mt-0.5 uppercase">{product.sku}</p>
+                      {stock?.warehouseBreakdown?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {stock.warehouseBreakdown
+                            .filter((wh: any) => wh.partnerSku || wh.partnerSkuName)
+                            .map((wh: any, i: number) => (
+                              <span
+                                key={i}
+                                className="px-1 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[8px] font-mono"
+                                title={`${wh.warehouseName}: ${wh.partnerSkuName || ''} (${wh.partnerSku || 'no code'})`}
+                              >
+                                {wh.partnerSkuName || wh.partnerSku}
+                              </span>
+                            ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       <span className="text-sm font-bold text-white">€{Number(product.unitCost || 0).toFixed(2)}</span>

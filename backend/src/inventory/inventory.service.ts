@@ -75,6 +75,7 @@ export class InventoryService {
                 outbound: (level as any).outboundQty || 0,
                 returning: (level as any).returningQty || 0,
                 partnerSku: (level as any).partnerSku || null,
+                partnerSkuName: (level as any).partnerSkuName || null,
             });
         }
 
@@ -156,6 +157,7 @@ export class InventoryService {
         userId?: string,
         type: 'adjustment' | 'purchase_in' | 'order_out' | 'transfer_in' | 'transfer_out' | 'return_restock' | 'write_off' | 'manual_return' = 'adjustment',
         partnerSku?: string,
+        partnerSkuName?: string,
     ) {
         const createData: any = {
             productId, warehouseId,
@@ -167,6 +169,11 @@ export class InventoryService {
         if (partnerSku !== undefined) {
             createData.partnerSku = partnerSku;
             updateData.partnerSku = partnerSku;
+        }
+
+        if (partnerSkuName !== undefined) {
+            createData.partnerSkuName = partnerSkuName;
+            updateData.partnerSkuName = partnerSkuName;
         }
 
         const level = await this.prisma.inventoryLevel.upsert({
@@ -224,6 +231,8 @@ export class InventoryService {
                 reserved: l.reservedQuantity,
                 outbound: (l as any).outboundQty || 0,
                 returning: (l as any).returningQty || 0,
+                partnerSku: (l as any).partnerSku || null,
+                partnerSkuName: (l as any).partnerSkuName || null,
             })),
         };
     }

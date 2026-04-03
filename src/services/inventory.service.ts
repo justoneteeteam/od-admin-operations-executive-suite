@@ -36,6 +36,7 @@ export const inventoryService = {
         userId?: string;
         type?: string;
         partnerSku?: string;
+        partnerSkuName?: string;
     }) {
         const response = await apiClient.post('/inventory/adjust', data);
         return response.data;

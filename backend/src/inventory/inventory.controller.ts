@@ -79,6 +79,7 @@ export class InventoryController {
             userId?: string;
             type?: string;
             partnerSku?: string;
+            partnerSkuName?: string;
         }
     ) {
         return this.inventoryService.adjustStock(
@@ -88,7 +89,8 @@ export class InventoryController {
             body.reason,
             body.userId,
             body.type as any,
-            body.partnerSku
+            body.partnerSku,
+            body.partnerSkuName
         );
     }
 

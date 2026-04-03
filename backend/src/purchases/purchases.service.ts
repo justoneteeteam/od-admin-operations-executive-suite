@@ -38,6 +38,7 @@ export class PurchasesService {
                     productId: item.productId,
                     warehouseId: item.warehouseId || null,
                     partnerSku: item.partnerSku || null,
+                    partnerSkuName: item.partnerSkuName || null,
                     quantity: item.quantity,
                     unitCost: item.unitCost,
                     purchasePrice: item.purchasePrice || item.unitCost,
@@ -230,6 +231,7 @@ export class PurchasesService {
                     productId: item.productId,
                     warehouseId: item.warehouseId || null,
                     partnerSku: item.partnerSku || null,
+                    partnerSkuName: item.partnerSkuName || null,
                     quantity: item.quantity,
                     unitCost: item.unitCost,
                     purchasePrice: item.purchasePrice || item.unitCost,
@@ -417,6 +419,7 @@ export class PurchasesService {
 
             // Determine partnerSku: receivedItem input > purchaseItem stored value
             const partnerSku = receivedItem.partnerSku || (purchaseItem as any).partnerSku || undefined;
+            const partnerSkuName = (receivedItem as any).partnerSkuName || (purchaseItem as any).partnerSkuName || undefined;
 
             // Allocation based on value
             const itemSubtotal = Number(purchaseItem.quantity) * Number(purchaseItem.unitCost);
@@ -426,7 +429,7 @@ export class PurchasesService {
 
             const landedUnitCost = Number(purchaseItem.unitCost) + unitAllocatedExtra;
 
-            // Update Inventory (Increment) — pass partnerSku to set child SKU
+            // Update Inventory (Increment) — pass partnerSku + partnerSkuName to set child SKU
             await this.inventoryService.adjustStock(
                 receivedItem.productId,
                 warehouseId,
@@ -434,16 +437,20 @@ export class PurchasesService {
                 `Received PO ${purchase.purchaseOrderNumber}`,
                 undefined, // userId
                 'purchase_in',
-                partnerSku  // 7th param: sets InventoryLevel.partnerSku
+                partnerSku,  // 7th param: sets InventoryLevel.partnerSku
+                partnerSkuName  // 8th param: sets InventoryLevel.partnerSkuName
             );
 
-            // Update Purchase Item (Received Qty, Landed Cost, and partnerSku if provided)
+            // Update Purchase Item (Received Qty, Landed Cost, and partnerSku/Name if provided)
             const itemUpdateData: any = {
                 receivedQuantity: { increment: receivedItem.quantity },
                 landedCost: landedUnitCost
             };
             if (partnerSku) {
                 itemUpdateData.partnerSku = partnerSku;
+            }
+            if (partnerSkuName) {
+                itemUpdateData.partnerSkuName = partnerSkuName;
             }
             if (!purchaseItem.warehouseId && warehouseId) {
                 itemUpdateData.warehouseId = warehouseId;

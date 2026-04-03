@@ -82,11 +82,17 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
     const [adjustMode, setAdjustMode] = useState<'set' | 'add' | 'subtract'>('set');
     const [adjustQty, setAdjustQty] = useState('');
     const [adjustPartnerSku, setAdjustPartnerSku] = useState('');
+    const [adjustPartnerSkuName, setAdjustPartnerSkuName] = useState('');
     const [adjustReason, setAdjustReason] = useState('Manual stock update');
     const [adjustError, setAdjustError] = useState<string | null>(null);
     const [adjustSaving, setAdjustSaving] = useState(false);
     const [selectedFCId, setSelectedFCId] = useState('');
     const [selectedWHId, setSelectedWHId] = useState('');
+
+    // Bulk child SKU modal
+    const [bulkChildSkuOpen, setBulkChildSkuOpen] = useState(false);
+    const [bulkChildSkus, setBulkChildSkus] = useState<{warehouseId: string; warehouseName: string; partnerSku: string; partnerSkuName: string}[]>([]);
+    const [bulkSaving, setBulkSaving] = useState(false);
 
     useEffect(() => {
         if (isOpen && product) {
@@ -204,13 +210,14 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
     };
 
     // Open adjust modal for a specific warehouse
-    const openAdjust = (warehouseId: string, warehouseName: string, partnerSku?: string) => {
+    const openAdjust = (warehouseId: string, warehouseName: string, partnerSku?: string, partnerSkuName?: string) => {
         setAdjustOpen(true);
         setAdjustWhId(warehouseId);
         setAdjustWhName(warehouseName);
         setAdjustMode('set');
         setAdjustQty('');
         setAdjustPartnerSku(partnerSku || '');
+        setAdjustPartnerSkuName(partnerSkuName || '');
         setAdjustReason('Manual stock update');
         setAdjustError(null);
         setSelectedFCId('');
@@ -225,10 +232,53 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
         setAdjustMode('set');
         setAdjustQty('');
         setAdjustPartnerSku('');
+        setAdjustPartnerSkuName('');
         setAdjustReason('Initial stock assignment');
         setAdjustError(null);
         setSelectedFCId('');
         setSelectedWHId('');
+    };
+
+    // Open bulk child SKU management modal
+    const openBulkChildSkus = () => {
+        if (!stockSummary) return;
+        setBulkChildSkus(stockSummary.warehouses.map(wh => ({
+            warehouseId: wh.warehouseId,
+            warehouseName: wh.warehouseName,
+            partnerSku: (wh as any).partnerSku || '',
+            partnerSkuName: (wh as any).partnerSkuName || '',
+        })));
+        setBulkChildSkuOpen(true);
+    };
+
+    // Save all bulk child SKU changes
+    const handleBulkChildSkuSave = async () => {
+        if (!product) return;
+        setBulkSaving(true);
+        try {
+            for (const row of bulkChildSkus) {
+                const original = stockSummary?.warehouses.find(w => w.warehouseId === row.warehouseId);
+                const origSku = (original as any)?.partnerSku || '';
+                const origName = (original as any)?.partnerSkuName || '';
+                if (row.partnerSku !== origSku || row.partnerSkuName !== origName) {
+                    await inventoryService.adjustStock({
+                        productId: product.id,
+                        warehouseId: row.warehouseId,
+                        quantity: 0,
+                        reason: 'Child SKU update',
+                        type: 'adjustment',
+                        partnerSku: row.partnerSku || undefined,
+                        partnerSkuName: row.partnerSkuName || undefined,
+                    });
+                }
+            }
+            setBulkChildSkuOpen(false);
+            fetchStock();
+        } catch (err: any) {
+            console.error('Bulk child SKU save failed:', err);
+        } finally {
+            setBulkSaving(false);
+        }
     };
 
     const handleAdjustSubmit = async () => {
@@ -253,7 +303,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
             else if (adjustMode === 'add') delta = qty;
             else delta = -qty;
 
-            if (delta === 0 && !adjustPartnerSku) {
+            if (delta === 0 && !adjustPartnerSku && !adjustPartnerSkuName) {
                 setAdjustOpen(false);
                 return;
             }
@@ -265,6 +315,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                 reason: adjustReason,
                 type: 'adjustment',
                 partnerSku: adjustPartnerSku || undefined,
+                partnerSkuName: adjustPartnerSkuName || undefined,
             });
 
             setAdjustOpen(false);
@@ -360,6 +411,15 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                 <span className="px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 font-mono">
                                     PARENT: {product.sku}
                                 </span>
+                                {onEdit && (
+                                    <button
+                                        onClick={() => onEdit(product)}
+                                        className="size-5 flex items-center justify-center rounded hover:bg-primary/20 text-primary/60 hover:text-primary transition-all -ml-1"
+                                        title="Edit parent SKU"
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>edit</span>
+                                    </button>
+                                )}
                                 <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider border ${statusColor}`}>
                                     {(product as any).status || 'Active'}
                                 </span>
@@ -503,11 +563,18 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                                     {wh.current}
                                                                 </span>
                                                             </div>
-                                                            {(wh as any).partnerSku && (
-                                                                <div className="mt-1 pl-6">
-                                                                    <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[9px] font-bold font-mono">
-                                                                        CHILD: {(wh as any).partnerSku}
-                                                                    </span>
+                                                            {((wh as any).partnerSku || (wh as any).partnerSkuName) && (
+                                                                <div className="mt-1 pl-6 flex flex-col gap-0.5">
+                                                                    {(wh as any).partnerSkuName && (
+                                                                        <span className="text-[10px] text-amber-300 font-medium">
+                                                                            {(wh as any).partnerSkuName}
+                                                                        </span>
+                                                                    )}
+                                                                    {(wh as any).partnerSku && (
+                                                                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[9px] font-bold font-mono w-fit">
+                                                                            CHILD: {(wh as any).partnerSku}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -610,6 +677,14 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                     Warehouse Breakdown (Child SKUs)
                                 </h3>
                                 <button
+                                    onClick={openBulkChildSkus}
+                                    className="bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                    title="Manage child SKUs for all warehouses"
+                                >
+                                    <span className="material-symbols-outlined text-[14px]">tune</span>
+                                    Manage All Child SKUs
+                                </button>
+                                <button
                                     onClick={() => openAssignStock()}
                                     className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
                                 >
@@ -659,7 +734,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <button
-                                                            onClick={() => openAdjust(wh.warehouseId, wh.warehouseName, (wh as any).partnerSku)}
+                                                            onClick={() => openAdjust(wh.warehouseId, wh.warehouseName, (wh as any).partnerSku, (wh as any).partnerSkuName)}
                                                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 text-[10px] font-bold uppercase tracking-wider transition-colors"
                                                         >
                                                             <span className="material-symbols-outlined text-[12px]">edit</span>
@@ -675,11 +750,37 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                     </div>
                                                 </div>
                                                 {/* Child SKU row */}
-                                                {(wh as any).partnerSku && (
+                                                {((wh as any).partnerSku || (wh as any).partnerSkuName) ? (
+                                                    <div className="px-4 pb-2 -mt-1 flex items-center gap-2">
+                                                        <div className="flex items-center gap-2 flex-1">
+                                                            {(wh as any).partnerSkuName && (
+                                                                <span className="text-[10px] text-amber-300 font-semibold">
+                                                                    {(wh as any).partnerSkuName}
+                                                                </span>
+                                                            )}
+                                                            {(wh as any).partnerSku && (
+                                                                <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[9px] font-bold font-mono">
+                                                                    CHILD: {(wh as any).partnerSku}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => openAdjust(wh.warehouseId, wh.warehouseName, (wh as any).partnerSku, (wh as any).partnerSkuName)}
+                                                            className="size-5 flex items-center justify-center rounded hover:bg-amber-500/20 text-amber-500/50 hover:text-amber-400 transition-all"
+                                                            title="Edit child SKU"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>edit</span>
+                                                        </button>
+                                                    </div>
+                                                ) : (
                                                     <div className="px-4 pb-2 -mt-1">
-                                                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[9px] font-bold font-mono">
-                                                            CHILD SKU: {(wh as any).partnerSku}
-                                                        </span>
+                                                        <button
+                                                            onClick={() => openAdjust(wh.warehouseId, wh.warehouseName)}
+                                                            className="text-amber-500/40 hover:text-amber-400 text-[9px] font-bold flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>add</span>
+                                                            Assign Child SKU
+                                                        </button>
                                                     </div>
                                                 )}
                                                 <div className="grid grid-cols-5 gap-0 border-t border-border-dark">
@@ -920,7 +1021,18 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                             </div>
                             <div>
                                 <label className="block text-text-muted text-xs font-medium mb-1">
-                                    Warehouse Child SKU <span className="text-text-muted/50">(partner SKU for this warehouse)</span>
+                                    Child SKU Name <span className="text-text-muted/50">(product name at this warehouse)</span>
+                                </label>
+                                <input
+                                    type="text" placeholder="e.g. Cintura Supporto Lombare"
+                                    className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-2.5 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                    value={adjustPartnerSkuName}
+                                    onChange={e => setAdjustPartnerSkuName(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-text-muted text-xs font-medium mb-1">
+                                    Child SKU Code <span className="text-text-muted/50">(partner SKU for this warehouse)</span>
                                 </label>
                                 <input
                                     type="text" placeholder="e.g. WH-IT-SKU-001"
@@ -996,6 +1108,94 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                     productId={product.id}
                     warehouseId={stockSummary?.warehouses[0]?.warehouseId}
                 />
+            )}
+            {/* ─── Bulk Child SKU Modal ─── */}
+            {bulkChildSkuOpen && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setBulkChildSkuOpen(false)} />
+                    <div className="relative bg-[#0f1922] rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden border border-border-dark shadow-2xl">
+                        <div className="px-6 py-4 border-b border-border-dark bg-[#111a22] flex items-center justify-between">
+                            <div>
+                                <h3 className="text-white font-bold text-lg">Manage All Child SKUs</h3>
+                                <p className="text-text-muted text-xs mt-0.5">
+                                    <span className="text-primary font-mono font-bold">{product.sku}</span>
+                                    <span className="mx-1">·</span>
+                                    {product.name}
+                                </p>
+                            </div>
+                            <button onClick={() => setBulkChildSkuOpen(false)} className="text-text-muted hover:text-white transition-colors">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="overflow-auto max-h-[60vh] p-6">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                                        <th className="text-left pb-3 pr-3">Warehouse</th>
+                                        <th className="text-left pb-3 pr-3">Child SKU Name</th>
+                                        <th className="text-left pb-3">Child SKU Code</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bulkChildSkus.map((row, idx) => (
+                                        <tr key={row.warehouseId} className="border-t border-border-dark/50">
+                                            <td className="py-2.5 pr-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-amber-400 text-[14px]">warehouse</span>
+                                                    <span className="text-white text-sm font-medium">{row.warehouseName}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-2.5 pr-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Product name at warehouse"
+                                                    className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg px-2.5 py-1.5 text-white text-xs focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-colors"
+                                                    value={row.partnerSkuName}
+                                                    onChange={e => {
+                                                        const updated = [...bulkChildSkus];
+                                                        updated[idx].partnerSkuName = e.target.value;
+                                                        setBulkChildSkus(updated);
+                                                    }}
+                                                />
+                                            </td>
+                                            <td className="py-2.5">
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. IT-BELT-001"
+                                                    className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg px-2.5 py-1.5 text-white text-xs font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-colors"
+                                                    value={row.partnerSku}
+                                                    onChange={e => {
+                                                        const updated = [...bulkChildSkus];
+                                                        updated[idx].partnerSku = e.target.value;
+                                                        setBulkChildSkus(updated);
+                                                    }}
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {bulkChildSkus.length === 0 && (
+                                <p className="text-text-muted text-sm text-center py-6">No warehouses found. Assign stock first.</p>
+                            )}
+                        </div>
+                        <div className="px-6 py-4 border-t border-border-dark bg-[#111a22] flex justify-end gap-3">
+                            <button
+                                onClick={() => setBulkChildSkuOpen(false)}
+                                className="px-4 py-2 rounded-lg bg-gray-600 text-white hover:bg-gray-500 font-medium text-sm transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleBulkChildSkuSave}
+                                disabled={bulkSaving}
+                                className="px-5 py-2 rounded-lg bg-amber-500 text-black hover:bg-amber-400 font-bold text-sm transition-colors disabled:opacity-50"
+                            >
+                                {bulkSaving ? 'Saving...' : 'Save All Child SKUs'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
