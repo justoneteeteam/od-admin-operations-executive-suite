@@ -213,10 +213,51 @@ const OrdersPage: React.FC = () => {
       } else if (field === 'customerPhone') {
         const updatedCustomer = { ...editOrder.customer, phone: value };
         setEditOrder({ ...editOrder, customer: updatedCustomer });
+      } else if (field === 'trackingNumber') {
+        // Auto-detect courier from tracking number pattern
+        const detected = detectCourierFromTracking(value);
+        const updates: any = { ...editOrder, trackingNumber: value };
+        // Only auto-fill courier if it's currently empty
+        if (detected && (!editOrder.courier || editOrder.courier === '')) {
+          updates.courier = detected;
+        }
+        setEditOrder(updates);
       } else {
         setEditOrder({ ...editOrder, [field]: value });
       }
     }
+  };
+
+  // ─── Auto-detect courier from tracking number pattern ───────
+  const detectCourierFromTracking = (trackingNumber: string): string | null => {
+    const tn = (trackingNumber || '').trim();
+    if (!tn) return null;
+
+    // Ordered from most-specific to least-specific
+    const patterns: Array<{ regex: RegExp; courier: string }> = [
+      // Spain
+      { regex: /^\d{16}$/, courier: 'Correos Express' },           // 16-digit numeric → Correos Express
+      { regex: /^\d{5}\/\d{7}$/, courier: 'MRW' },                 // 5/7 slash format → MRW
+      { regex: /^[A-Z]{2}\d{9}ES$/i, courier: 'Correos' },         // UPU format ending in ES → Correos Spain
+
+      // Italy
+      { regex: /^\d{12}$/, courier: 'BRT' },                        // 12-digit numeric → BRT
+      { regex: /^\d{14}$/, courier: 'BRT' },                        // 14-digit numeric → BRT
+      { regex: /^[A-Z]\d{1,10}$/i, courier: 'GLS' },               // Letter + digits → GLS Italy
+      { regex: /^\d{11}$/, courier: 'GLS' },                        // 11-digit numeric → GLS Italy
+
+      // International
+      { regex: /^1Z[A-Z0-9]{16}$/i, courier: 'UPS' },              // 1Z prefix → UPS
+      { regex: /^(96|61)\d{18,20}$/, courier: 'FedEx' },            // 96/61 prefix → FedEx
+      { regex: /^\d{15}$/, courier: 'FedEx' },                      // 15-digit → FedEx
+      { regex: /^\d{10}$/, courier: 'DHL' },                        // 10-digit → DHL Express
+      { regex: /^JJD\d{16,20}$/i, courier: 'DHL' },                 // JJD prefix → DHL Paket
+    ];
+
+    for (const { regex, courier } of patterns) {
+      if (regex.test(tn)) return courier;
+    }
+    return null;
   };
 
   // Helper for items inputs
@@ -1374,13 +1415,27 @@ const OrdersPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-text-muted uppercase ml-1">Courier (Warehouse)</label>
+                      <label className="text-[10px] font-black text-text-muted uppercase ml-1">
+                        Courier (Warehouse)
+                        {editOrder.courier && detectCourierFromTracking(editOrder.trackingNumber || '') === editOrder.courier && (
+                          <span className="ml-2 text-emerald-400 normal-case font-semibold">✦ Auto-detected</span>
+                        )}
+                      </label>
                       <select
                         className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                         value={editOrder.courier || ''}
                         onChange={(e) => handleInputChange('courier', e.target.value)}
                       >
                         <option value="">Select Warehouse...</option>
+                        {/* Auto-detected carrier option (if not already in warehouse list) */}
+                        {(() => {
+                          const detected = detectCourierFromTracking(editOrder.trackingNumber || '');
+                          const warehouseNames = fulfillmentCenters.find(fc => fc.id === editOrder.fulfillmentCenterId)?.warehouses?.map(w => w.name) || [];
+                          if (detected && !warehouseNames.includes(detected)) {
+                            return <option key={`auto-${detected}`} value={detected}>✦ {detected} (auto-detected)</option>;
+                          }
+                          return null;
+                        })()}
                         {fulfillmentCenters.find(fc => fc.id === editOrder.fulfillmentCenterId)?.warehouses?.map(w => (
                           <option key={w.id} value={w.name}>{w.name}</option>
                         ))}

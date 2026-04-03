@@ -362,9 +362,100 @@ export class TrackingService {
         return 'wa_arrival_en'; // Default to English
     }
 
+    // ─── CARRIER NAME → 17TRACK NUMERIC CODE MAP ──────────────────
+    private static readonly CARRIER_CODE_MAP: Record<string, number> = {
+        // Italy
+        'brt': 100026, 'bartolini': 100026, 'brt bartolini': 100026, 'brt bartolini(dpd)': 100026,
+        'gls italy': 100024, 'gls (it)': 100024, 'gls it': 100024,
+        'sda': 100019, 'poste italiane': 9071, 'nexive': 100087,
+        'tnt italy': 100065, 'tnt (it)': 100065,
+        'sailpost': 100051, 'fercam': 100458,
+        'hr parcel': 100243, 'hrp': 100243,
+        // Spain
+        'correos': 19181, 'correos spain': 19181,
+        'correos express': 100048, 'correosexpress': 100048,
+        'seur': 100438, 'mrw': 100175,
+        'gls spain': 100189, 'gls (es)': 100189, 'nacex': 100436,
+        'tipsa': 100185, 'celeritas': 100219, 'sending': 100248,
+        // International
+        'dhl': 100001, 'dhl express': 100001, 'dhl paket': 7041,
+        'ups': 100002, 'fedex': 100003, 'tnt': 100004,
+        'gls': 100005, 'dpd': 100007, 'aramex': 100006,
+        // Portugal
+        'ctt': 16101, 'ctt express': 100114,
+        // France
+        'colissimo': 6051, 'chronopost': 100273, 'mondial relay': 100304,
+        // Germany
+        'hermes': 100018,
+    };
+
+    // ─── TRACKING NUMBER PATTERN → CARRIER AUTO-DETECTION ─────────
+    // Patterns ordered from most specific to least specific
+    private static readonly CARRIER_PATTERNS: Array<{ pattern: RegExp; carrier: number; name: string }> = [
+        // ── Spain ──────────────────────────────────────────────
+        // Correos Express: 16-digit all-numeric (often starts with 3, 5, 0)
+        { pattern: /^\d{16}$/, carrier: 100048, name: 'Correos Express' },
+        // MRW: 5-digit/7-digit separated by slash, or 12-digit numeric
+        { pattern: /^\d{5}\/\d{7}$/, carrier: 100175, name: 'MRW' },
+        // Correos Spain (national postal): UPU format EE123456789ES
+        { pattern: /^[A-Z]{2}\d{9}ES$/i, carrier: 19181, name: 'Correos Spain' },
+
+        // ── Italy ──────────────────────────────────────────────
+        // BRT/Bartolini: 12 or 14-digit pure numeric
+        { pattern: /^\d{12}$/, carrier: 100026, name: 'BRT Bartolini' },
+        { pattern: /^\d{14}$/, carrier: 100026, name: 'BRT Bartolini' },
+        // GLS Italy: national format "Y" + digit + up to 9 digits, or 11-digit numeric
+        { pattern: /^[A-Z]\d{1,10}$/i, carrier: 100024, name: 'GLS Italy' },
+        { pattern: /^\d{11}$/, carrier: 100024, name: 'GLS Italy' },
+        // SDA: often 14-15 alphanumeric starting with letters
+        { pattern: /^[A-Z]{2}\d{12,14}$/i, carrier: 100019, name: 'SDA' },
+
+        // ── International ──────────────────────────────────────
+        // UPS: always starts with "1Z" + 16 alphanumeric
+        { pattern: /^1Z[A-Z0-9]{16}$/i, carrier: 100002, name: 'UPS' },
+        // FedEx: 12, 15, or 20-digit numeric; or starts with 96/61
+        { pattern: /^(96|61)\d{18,20}$/, carrier: 100003, name: 'FedEx' },
+        { pattern: /^\d{15}$/, carrier: 100003, name: 'FedEx' },
+        // DHL Express: 10-digit numeric
+        { pattern: /^\d{10}$/, carrier: 100001, name: 'DHL Express' },
+        // DHL eCommerce / DHL Paket: often starts with JJD or GM
+        { pattern: /^JJD\d{16,20}$/i, carrier: 7041, name: 'DHL Paket' },
+        { pattern: /^GM\d{16,20}$/i, carrier: 7041, name: 'DHL Paket' },
+        // TNT: alphanumeric, 9-digit numeric or GE/GD prefix
+        { pattern: /^GE\d{9}[A-Z]{2}$/i, carrier: 100004, name: 'TNT' },
+        // GLS generic: starts with specific prefixes
+        { pattern: /^[A-Z]{2}\d{9}[A-Z]{2}$/i, carrier: 100005, name: 'GLS' },
+    ];
+
+    /**
+     * Detect carrier from tracking number format/pattern.
+     * Returns the 17Track numeric carrier code, or undefined if no pattern matches.
+     */
+    private detectCarrierFromNumber(trackingNumber: string): { carrier: number; name: string } | undefined {
+        const trimmed = trackingNumber.trim();
+        for (const rule of TrackingService.CARRIER_PATTERNS) {
+            if (rule.pattern.test(trimmed)) {
+                return { carrier: rule.carrier, name: rule.name };
+            }
+        }
+        return undefined;
+    }
+
+    private resolveCarrierCode(carrierInput?: string): number | undefined {
+        if (!carrierInput) return undefined;
+
+        // If already a number, use it directly
+        const asNum = Number(carrierInput);
+        if (!isNaN(asNum) && asNum > 0) return asNum;
+
+        // Normalize and look up
+        const normalized = carrierInput.toLowerCase().trim();
+        return TrackingService.CARRIER_CODE_MAP[normalized];
+    }
+
     // Register tracking number with 17Track (Phase 2)
     async registerTracking(trackingNumber: string, carrierCode?: string): Promise<{ status: 'registered' | 'already_registered' | 'rejected' | 'error'; detail?: string }> {
-        this.logger.log(`Registering tracking: ${trackingNumber} (${carrierCode || 'auto-detect'})`);
+        this.logger.log(`Registering tracking: ${trackingNumber} (carrier input: ${carrierCode || 'auto-detect'})`);
 
         try {
             const apiKey = process.env.TRACK17_API_KEY;
@@ -376,47 +467,85 @@ export class TrackingService {
 
             const axios = require('axios');
 
-            const payload: any = { number: trackingNumber };
-            if (carrierCode) {
-                payload.carrier = carrierCode;
+            // Step 1: Resolve explicit carrier name to 17Track numeric code
+            let numericCarrier = this.resolveCarrierCode(carrierCode);
+            if (carrierCode && numericCarrier) {
+                this.logger.log(`Resolved carrier "${carrierCode}" → 17Track code ${numericCarrier}`);
+            } else if (carrierCode && !numericCarrier) {
+                this.logger.warn(`Could not resolve carrier "${carrierCode}" to a 17Track code.`);
             }
 
-            const response = await axios.post(
-                'https://api.17track.net/track/v2.2/register',
-                [payload], // 17track expects an array of objects
-                {
-                    headers: {
-                        '17token': apiKey,
-                        'Content-Type': 'application/json'
-                    }
+            // Step 2: If no carrier resolved, try pattern-based detection from tracking number
+            if (!numericCarrier) {
+                const detected = this.detectCarrierFromNumber(trackingNumber);
+                if (detected) {
+                    numericCarrier = detected.carrier;
+                    this.logger.log(`Pattern-detected carrier: "${detected.name}" (code ${detected.carrier}) from tracking number format`);
                 }
-            );
-
-            const data = response.data;
-            if (data.code === 0 && data.data?.accepted?.length > 0) {
-                this.logger.log(`Successfully registered tracking number ${trackingNumber} with 17Track.`);
-                // Immediate backfill current state to sync any missed history before registration
-                await this.pullAndProcessCurrentStatus(trackingNumber);
-                return { status: 'registered' };
-            } else if (data.data?.rejected?.length > 0) {
-                const rejection = data.data.rejected[0];
-                const errCode = rejection?.error?.code;
-                // 17Track error code -18019901 = "already tracking"
-                if (errCode === -18019901) {
-                    this.logger.log(`Tracking number ${trackingNumber} is already registered with 17Track.`);
-                    return { status: 'already_registered' };
-                }
-                this.logger.warn(`17Track rejected tracking number ${trackingNumber}: ${JSON.stringify(data.data.rejected)}`);
-                return { status: 'rejected', detail: JSON.stringify(rejection?.error || rejection) };
-            } else {
-                this.logger.warn(`Unexpected response from 17Track register API: ${JSON.stringify(data)}`);
-                return { status: 'error', detail: 'Unexpected API response' };
             }
+
+            const result = await this.attemptRegister(axios, apiKey, trackingNumber, numericCarrier);
+
+            // Step 3: If still rejected with carrier-not-detected, try DB order courier lookup as last resort
+            if (result.status === 'rejected' && result._errCode === -18019903 && !numericCarrier) {
+                this.logger.log(`All detection failed for ${trackingNumber}. Attempting to resolve carrier from order DB...`);
+                const order = await this.prisma.order.findFirst({
+                    where: { trackingNumber },
+                    select: { courier: true }
+                });
+                const fallbackCarrier = this.resolveCarrierCode(order?.courier ?? undefined);
+                if (fallbackCarrier) {
+                    this.logger.log(`Found order courier "${order?.courier}" → 17Track code ${fallbackCarrier}. Retrying...`);
+                    const retryResult = await this.attemptRegister(axios, apiKey, trackingNumber, fallbackCarrier);
+                    return { status: retryResult.status, detail: retryResult.detail };
+                } else {
+                    this.logger.warn(`No resolvable carrier found for ${trackingNumber}. Order courier: "${order?.courier || 'none'}"`);
+                }
+            }
+
+            return { status: result.status, detail: result.detail };
         } catch (error) {
             const respData = error?.response?.data ? JSON.stringify(error.response.data) : 'no response body';
             const respStatus = error?.response?.status || 'no status';
             this.logger.error(`Failed to register ${trackingNumber} with 17Track: ${error.message} | status=${respStatus} | body=${respData}`, error.stack);
             return { status: 'error', detail: `${error.message} | body: ${respData}` };
+        }
+    }
+
+    private async attemptRegister(axios: any, apiKey: string, trackingNumber: string, numericCarrier?: number): Promise<{ status: 'registered' | 'already_registered' | 'rejected' | 'error'; detail?: string; _errCode?: number }> {
+        const payload: any = { number: trackingNumber };
+        if (numericCarrier) {
+            payload.carrier = numericCarrier;
+        }
+
+        const response = await axios.post(
+            'https://api.17track.net/track/v2.2/register',
+            [payload],
+            {
+                headers: {
+                    '17token': apiKey,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        const data = response.data;
+        if (data.code === 0 && data.data?.accepted?.length > 0) {
+            this.logger.log(`Successfully registered tracking number ${trackingNumber} with 17Track.`);
+            await this.pullAndProcessCurrentStatus(trackingNumber);
+            return { status: 'registered' };
+        } else if (data.data?.rejected?.length > 0) {
+            const rejection = data.data.rejected[0];
+            const errCode = rejection?.error?.code;
+            if (errCode === -18019901) {
+                this.logger.log(`Tracking number ${trackingNumber} is already registered with 17Track.`);
+                return { status: 'already_registered' };
+            }
+            this.logger.warn(`17Track rejected tracking number ${trackingNumber}: ${JSON.stringify(data.data.rejected)}`);
+            return { status: 'rejected', detail: JSON.stringify(rejection?.error || rejection), _errCode: errCode };
+        } else {
+            this.logger.warn(`Unexpected response from 17Track register API: ${JSON.stringify(data)}`);
+            return { status: 'error', detail: 'Unexpected API response' };
         }
     }
 
