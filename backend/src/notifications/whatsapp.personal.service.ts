@@ -56,7 +56,11 @@ export class WhatsappPersonalService implements OnModuleInit, OnModuleDestroy {
             authStrategy: new LocalAuth({
                 clientId: 'admin-erp-whatsapp'
             }),
-            puppeteer: puppeteerConfig
+            puppeteer: puppeteerConfig,
+            webVersionCache: {
+                type: 'remote',
+                remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1033962578-alpha.html'
+            }
         });
 
         // 1. QR Code generated
