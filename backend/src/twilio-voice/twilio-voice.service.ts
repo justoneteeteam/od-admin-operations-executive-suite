@@ -100,6 +100,14 @@ export class TwilioVoiceService {
         // The previous guard that skipped a call when a successful (answered) call existed has been removed.
         // This ensures we always attempt a new call regardless of prior answers, matching the new business rule.
         // (The UI will still show the history of calls for operators.)
+// Rule 2: Prevent multiple calls after any prior attempt
+        const priorCall = await this.prisma.callLog.findFirst({
+            where: { orderId },
+        });
+        if (priorCall) {
+            await this.logSkip(orderId, scriptType, language, 'already_called');
+            return;
+        }
 
         // Rule 3: Check max attempts (only count real attempts, not skipped entries)
         const existingAttempts = await this.prisma.callLog.count({
