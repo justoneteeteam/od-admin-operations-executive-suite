@@ -350,8 +350,22 @@ export class TwilioVoiceController {
 
         // Handle failures → retry or escalate
         if (['no-answer', 'busy', 'failed', 'canceled'].includes(CallStatus)) {
-            const scriptType = callLog?.scriptType as 'short' | 'long' || 'short';
-            await this.twilioVoiceService.scheduleRetryCall(orderId, scriptType);
+            // Check if there has been any prior successful call (human answered) for this order
+            const priorSuccess = await this.prisma.callLog.findFirst({
+                where: {
+                    orderId,
+                    callStatus: {
+                        notIn: ['no-answer', 'busy', 'failed', 'canceled', 'machine_detected'],
+                    },
+                },
+                orderBy: { createdAt: 'desc' },
+            });
+            if (priorSuccess) {
+                this.logger.log(`Order ${orderId}: Prior successful call detected (ID: ${priorSuccess.id}). Skipping retry.`);
+            } else {
+                const scriptType = callLog?.scriptType as 'short' | 'long' || 'short';
+                await this.twilioVoiceService.scheduleRetryCall(orderId, scriptType);
+            }
         }
 
         return { received: true };

@@ -100,12 +100,16 @@ export class TwilioVoiceService {
         // The previous guard that skipped a call when a successful (answered) call existed has been removed.
         // This ensures we always attempt a new call regardless of prior answers, matching the new business rule.
         // (The UI will still show the history of calls for operators.)
-// Rule 2: Prevent multiple calls after any prior attempt
-        const priorCall = await this.prisma.callLog.findFirst({
-            where: { orderId },
+// Rule 2: Prevent multiple calls after any prior successful call
+        const priorSuccessfulCall = await this.prisma.callLog.findFirst({
+            where: {
+                orderId,
+                callStatus: { in: ['completed', 'answered'] },
+                callSid: { not: { startsWith: 'SKIPPED-' } },
+            },
         });
-        if (priorCall) {
-            await this.logSkip(orderId, scriptType, language, 'already_called');
+        if (priorSuccessfulCall) {
+            await this.logSkip(orderId, scriptType, language, 'already_called_successful');
             return;
         }
 
@@ -332,16 +336,16 @@ export class TwilioVoiceService {
             return;
         }
 
-        // Rule 2: PICKED-UP GUARD — if customer answered ANY previous call, STOP
-        const successfulCall = await this.prisma.callLog.findFirst({
+        // Rule 2: Prevent multiple calls after any prior successful call
+        const priorSuccessfulCall = await this.prisma.callLog.findFirst({
             where: {
                 orderId,
                 callStatus: { in: ['completed', 'answered'] },
                 callSid: { not: { startsWith: 'SKIPPED-' } },
             },
         });
-        if (successfulCall) {
-            await this.logSkip(orderId, scriptType, language, 'sku_already_picked_up');
+        if (priorSuccessfulCall) {
+            await this.logSkip(orderId, scriptType, language, 'already_called_successful');
             return;
         }
 
