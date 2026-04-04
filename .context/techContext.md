@@ -83,22 +83,23 @@ To enable these features, the following credentials are required in the `.env` f
 | `analytics/` | Analytics and reporting endpoints |
 | `auth/` | JWT authentication, Passport strategies |
 | `customers/` | Customer CRUD and profile management |
-| `exchange-rates/` | Currency conversion service |
-| `fulfillment-centers/` | Fulfillment center management |
+| `exchange-rates/` | Currency conversion service for multi-currency transactions |
+| `financial-records/` | Bulk Excel import parsing, transaction logging, P&L module, and payment source tracking |
+| `fulfillment-centers/` | Fulfillment center management, tied deeply to SKUs |
 | `google-sheets/` | Two-way Google Sheets sync for orders + call center queue |
 | `inventory/` | Inventory tracking and stock levels via an 8-state machine, purchase PO float syncing |
 | `notifications/` | SMS/WhatsApp delivery service, WhatsApp Personal (wwebjs), Twilio callbacks |
-| `orders/` | Order CRUD, status management, CSV import |
+| `orders/` | Order CRUD, status management, CSV import, UTM and tracking auto-detection workflows |
 | `prisma/` | Prisma client service |
-| `products/` | Product catalog management |
+| `products/` | Product catalog management, handling Parent-Child SKU hierarchy resolution |
 | `profits/` | Financial calculations and profit tracking |
 | `purchases/` | Purchase order management |
-| `risk-scoring/` | Two-layer risk assessment + Loqate retry cron |
+| `risk-scoring/` | Two-layer risk assessment + Loqate retry cron + tiered call script resolutions |
 | `scripts/` | Utility and migration scripts |
-| `store-settings/` | Multi-store configuration and credentials |
+| `store-settings/` | Multi-store configuration, webhooks, and credentials |
 | `suppliers/` | Supplier management |
 | `tickets/` | Incident tickets, auto-create from 17Track, SLA, workflows, sheets sync |
-| `tracking/` | 17Track webhook handler, tracking history CRUD |
-| `twilio-voice/` | Voice call service, call scheduler cron, pre-call SMS |
+| `tracking/` | 17Track webhook handler, carrier regex classification, tracking history CRUD |
+| `twilio-voice/` | Voice call service, call scheduler cron, pre-call SMS, AMD handling |
 | `users/` | User management |
-| `webhooks/shopify/` | Shopify inbound order webhooks |
+| `webhooks/shopify/` | Shopify inbound order payload processing (extrapolating IP + UTM parameters) |

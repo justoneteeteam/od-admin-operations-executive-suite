@@ -95,18 +95,11 @@ export class TwilioVoiceService {
             return;
         }
 
-        // Rule 2: Check if successful call exists
-        const successfulCall = await this.prisma.callLog.findFirst({
-            where: {
-                orderId,
-                callStatus: { in: ['completed', 'answered'] },
-                callSid: { not: { startsWith: 'SKIPPED-' } },
-            },
-        });
-        if (successfulCall) {
-            await this.logSkip(orderId, scriptType, language, 'already_answered');
-            return;
-        }
+        // NOTE: The UI component CallRecordsTab (frontend) displays call records, including whether a call was answered.
+        // However, the decision to place a new call is made on the backend by checking the persisted call logs in the database.
+        // The previous guard that skipped a call when a successful (answered) call existed has been removed.
+        // This ensures we always attempt a new call regardless of prior answers, matching the new business rule.
+        // (The UI will still show the history of calls for operators.)
 
         // Rule 3: Check max attempts (only count real attempts, not skipped entries)
         const existingAttempts = await this.prisma.callLog.count({

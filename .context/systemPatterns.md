@@ -32,6 +32,7 @@ Current structure places source files directly in the root or specifically:
   - **Frontend**: API Services define nested Typescript interfaces (e.g., `Order` has `fulfillmentCenter` object) to consume this data directly without extra round-trips.
   - **Validation**: Frontend selects send IDs (`supplierId`), Backend validates existence via Foreign Key constraints.
   - **Inventory**: Orders link to a robust 8-state Stock Machine (e.g., Warehouse → Pending → Shipped → Delivered → Return Transfer) to accurately reflect product availability.
+  - **Parent-Child SKU Architecture**: Master product definitions decouple from warehouse-specific variants, allowing synchronized but distinct SKU mappings inside fulfillment flows.
 
 ### 2. Shipment Tracking Sync (17Track v2.2)
 - **Pattern**: Hybrid Push-Pull Architecture (Webhook & PollingBackup)
@@ -86,6 +87,7 @@ Current structure places source files directly in the root or specifically:
 - **Pattern**: Inbound Webhook Consumer
 - **Flow**: Shopify sends order events → `ShopifyController` processes payload → maps to internal Order entity → upserts in database.
 - **Store Mapping**: Shopify domain auto-mapped to `storeId`.
+- **Enriched Metrics**: The parser digs into `note_attributes` and deeper layers of the payload to derive parameters like `Traffic Channel` (mapped via UTM tracking) and raw `browser_ip`, making these metrics available to the Ads & Financial dashboards.
 
 ### 7. Notification Service (SMS/WhatsApp)
 - **Pattern**: Template-Based Messaging with Status Tracking
@@ -144,8 +146,9 @@ Current structure places source files directly in the root or specifically:
 - **NotificationTemplate**: Pre-built message templates by channel/category with variable placeholders.
 - **IncidentWorkflow**: Configurable multi-step auto-sequence definitions per case type.
 
-### 13. Profit & Revenue Calculation (Event-Driven)
-- **Pattern**: Observer / Event Subscriber
+### 13. Financial Suite & P&L Calculation
+- **Pattern**: External Integrations coupled with Event-Driven Snapshots
+- **Data Extrapolation**: Financial modules merge external Bulk Excel tracking records (mapped dynamically) alongside system revenue to craft an entire snapshot of cash flow. Cross-pollination includes currency adjustments mapping variables constantly across conversion ratios like VND → EUR.
 - **Trigger**: Order Status Changes (`Confirmed`, `Delivered`)
 - **Action**: Calculate and persist financial metrics via `ProfitsService`.
 - **Logic**:

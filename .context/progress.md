@@ -54,6 +54,10 @@
 - [x] **Performance Page**: Operator/team performance analytics UI.
 - [x] **Bulk Customer Blocking**: Automated bulk blocking with intelligent country detection and phone normalization.
 - [x] **Twilio AMD Optimization**: Synchronous AMD filtering to prevent voicemails from receiving Voice templates.
+- [x] **Twilio Call Scripting**: Conditional, tiered call scripts verifying identity via sequential HIGH/MEDIUM risk workflows.
+- [x] **17Track Automation**: Courier format auto-detection identifying carriers automatically upon dispatch.
+- [x] **Orders UI Hardening**: Increased table density and default timestamp sorting (`createdAt` descending).
+- [x] **WhatsApp/Communication**: Fixes to QR connection instability.
 - [ ] **Workflow Engine**: Configurable multi-step auto-sequences per case type.
 - [ ] **Status Sync**: Sync Call Center updates (Unconfirmed, Call Later) back to App.
 - [ ] **WhatsApp RemoteAuth**: Migrate to DB-backed sessions for multi-instance.
@@ -67,10 +71,16 @@
 ### Version 3.5: Advanced Fulfillment
 - [x] **Inventory Module**: 8-state stock machine, PO tables, stock float updates.
 - [x] **Tracking Sync**: 17Track v2.2 hybrid push-pull architecture.
+- [x] **Parent-Child SKU Management**: Deeply integrated SKU hierarchy handling child codes, display names, and inventory operations.
+- [x] **Return Tracking**: Return tracking and stock state persistence linked with order DTO updates.
+- [x] **Warehouse Logistics**: Internal warehouse creation validations inside fulfillment modules.
 - [ ] **FC Connection**: Direct integration with Fulfillment Centers.
 
 ### Version 4: Advanced Analytics
 - [x] **POC Product Dashboard**: Report dashboard for non-SKU product performance (KPIs, conversion funnel, metrics).
+- [x] **Financial Suite**: Financial Records module with bulk Excel import, VND/EUR conversions, and flexible payment source tracking.
+- [x] **P&L Reporting**: Core implementations extracting profit logic across revenue, fulfillment, and product costs.
+- [x] **Traffic Attribution**: Store analytics mapped to Traffic Channels (UTM source) and Browser IP extracted from Shopify payloads.
 - [ ] **Analytics Tab**: Profitability, RTO Rates, Operator Performance.
 - [ ] WhatsApp real number connection → test for in transit mode.
 - [ ] 17Track sync sample data → test for real tracking number.

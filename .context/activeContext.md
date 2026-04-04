@@ -25,7 +25,13 @@
 - **SMS/WhatsApp Delivery Notifications**: `SmsWhatsappDeliveryService` sends template-based messages via Twilio with GSM-7 encoding, status callbacks, and `CustomerResponse` logging.
 - **Performance Page**: New `PerformancePage.tsx` for operator/team performance analytics.
 - **CSV Import Hardening**: European decimal parsing, CRLF handling, phone normalization, zipcode support.
-
+- **WhatsApp/Communication**: Fixed WhatsApp QR scanning sequence and `WhatsappPersonalService` session management for connection stability.
+- **Parent-Child SKU Management**: Implemented comprehensive SKU hierarchy with warehouse-specific child codes, display names, and deep integrations across inventory, purchases, and the frontend product dashboard.
+- **Financial Suite & P&L**: Completed Financial Records module with full P&L calculation (revenue vs fulfillment vs product costs), bulk Excel import, VND to EUR currency conversion, and flexible payment source tracking.
+- **Tracking Automation**: Automated 17Track courier selection by matching tracking number formats to carrier codes, and fixed return tracking data persistence (`UpdateOrderDto`).
+- **Twilio Call Scripting**: Enforced conditional, tiered Twilio call scripts to verify customer identity through sequential HIGH/MEDIUM risk (short vs long script) workflows.
+- **Shopify & Traffic Tracking**: Added Shopify webhook processing to capture traffic channels (UTM source) and browser IP via `note_attributes`, with UI badges and a traffic filter tree.
+- **UI Hardening**: Optimized Orders Console sorting by prioritizing system `createdAt` descending and increased table information density.
 ## Immediate Goals
 1.  **V1 Wrap-up**:
     -   Implement **Bulk Select** for Orders.

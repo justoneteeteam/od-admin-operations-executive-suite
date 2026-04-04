@@ -28,9 +28,11 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 - **Incident Management**: Auto-created tickets from 17Track delivery failures, SLA tracking (72 business-hours), resolution workflows, canned response templates.
 - **Ads Performance Dashboard**: High-level tracking of Spend, Leads (Confirmed), Orders (Delivered), Revenue, CPL, CPO, CVR, and ROAS. Includes hierarchical view (Campaign → Ad Set → Ad).
 - **POC Product Dashboard**: Specific reporting for non-SKU product performance (KPIs, conversion funnel).
-- **Performance Analytics**: Operator and team performance tracking.
-- **Shopify Integration**: Automatic order ingestion via Shopify webhooks.
+- **Financial Records Module**: A complete utility for importing bulk financial datasets (Excel), live VND/EUR conversions, and analyzing payment sources. Includes embedded P&L calculation bridging gross revenue and detailed expenditures.
+- **Shopify & E-Commerce Integrations**: Automatic order ingestion via webhooks, now retaining traffic sources (UTM) and customer browser IP metrics.
+- **Parent-Child SKU Organization**: Warehouse-specialized SKU structures dictating localized product coding without breaking master inventory numbers.
 - **Bulk Customer Blocking**: Automated bulk blocking for customers based on unmatched phone numbers with intelligent country detection.
+- **Tracking Automations**: Advanced courier detections based upon raw tracking string formats.
 
 ## Order Lifecycle & Workflows
 ### 1. Standard Order Flow
@@ -60,19 +62,25 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 - **Communication**: Canned response templates with token replacement ({{name}}, {{order}}, {{phone}}) sent via SMS, WhatsApp, Email, or Voice.
 - **Fallback Sync**: Hourly cron picks up undelivered orders without tickets.
 
+### 4. Financial & Reporting Workflow
+- **Data Entry**: P&L variables imported through `Financial Records` Excel tools or compiled dynamically as orders mark elements shipped/delivered.
+- **Currency Adaptation**: Background processing swaps VND → EUR at real-time conversion rates across backend ledgers.
+- **Attribution & Source**: Webhook ingestion pairs each user session IP and referential UTM to the backend to generate true ROI analyses within the P&L output.
+
 ## Product Feature Refinement (Recent)
-- **Risk Scoring**: Two-layer assessment with Base scoring (7 factors) + Loqate refinement. Retry cron for failed API calls.
+- **Risk Scoring**: Two-layer assessment with Base scoring (7 factors) + Loqate refinement. Retry cron for failed API calls. Hierarchical interaction flow where `HIGH` gets one Twilio call script template while `MEDIUM` executes an alternate shorter script template.
 - **Incident System**: Full lifecycle management — auto-create, SLA deadlines, breach escalation, resolution outcomes, PIC assignment, timeline logging.
 - **Canned Responses**: Pre-built templates for common scenarios per channel (SMS, WhatsApp, Email, Voice) with dynamic token support.
-- **Shopify Webhooks**: Automatic order creation from Shopify store events.
-- **SMS Delivery Service**: Template-based SMS via Twilio with GSM-7 encoding to maximize character limits, status callback tracking.
+- **Shopify Webhooks**: Automatic order creation from Shopify store events, retaining full metrics out of `note_attributes` (UTM mapping & IPs).
+- **SMS & Comms Engine**: Template-based SMS via Twilio with GSM-7 encoding to maximize character limits, plus robust `WhatsappPersonalService` scanning sequence fixes.
 - **Twilio Call Scheduler**: Cron-based batch processing of confirmation calls for eligible orders.
 - **Data Linking**:
   - **Orders ↔ Fulfillment**: Every order can be assigned to a specific Fulfillment Center.
+  - **SKU Taxonomy**: Implemented Parent and Child SKU relationships modifying warehouse product logic throughout application workflows.
   - **Purchases ↔ Suppliers**: Purchase orders linked to Suppliers with auto-populated contact info. Receiving a PO auto-recalculates the product's weighted average unit cost.
-  - **Orders ↔ Tickets**: Incident tickets auto-linked to originating orders.
+  - **Orders ↔ Tickets**: Incident tickets auto-linked to originating orders. Tracking number formats intelligently snap to matching carrier configurations (17Track).
   - **Prisma Relations**: Changes ripple through the system.
-- **Quality of Life Fixes**: Robust CSV processing, Purchase Order data visibility, European decimal handling, pagination for call records.
+- **Quality of Life Fixes**: UI order table density/sorting, robust CSV processing, Purchase Order data visibility, European decimal handling, pagination for call records.
 
 ## Financial Logic & Formulas
 ### 1. Revenue (Booked)
