@@ -813,7 +813,8 @@ const OrdersPage: React.FC = () => {
                   return (
                     <tr
                       key={order.id}
-                      className={`hover:bg-[#1c2d3d] transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-[#1c2d3d]/50' : ''}`}
+                      className={`hover:bg-[#1c2d3d] transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-[#1c2d3d]/50' : ''} ${order.trackingNumber ? 'opacity-[0.4]' : ''}`}
+                      style={order.trackingNumber ? { borderLeft: '3px solid rgba(16, 185, 129, 0.4)' } : undefined}
                       onClick={() => { setSelectedOrder(order); setShowDrawer(true); }}
                     >
                       <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>

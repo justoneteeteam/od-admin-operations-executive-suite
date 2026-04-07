@@ -595,4 +595,83 @@ export class InventoryService {
             }
         }
     }
+
+    /**
+     * Deduct stock from currentQuantity when order reaches "Out for Delivery" (OutForDelivery).
+     * This is the sales deduction point — the order is physically out for delivery,
+     * so inventory should reflect the real warehouse count.
+     *
+     * Differs from fulfillOrder:
+     *  - Does NOT require reserved stock (may have already been released or never reserved)
+     *  - Finds warehouse with highest currentQuantity for the product
+     *  - Idempotent: checks if a 'sale_out' transaction already exists for this orderId
+     */
+    async deductSalesStock(orderId: string) {
+        // Idempotency guard — skip if already deducted for this order
+        const existingDeduction = await this.prisma.inventoryTransaction.findFirst({
+            where: { referenceId: orderId, type: 'sale_out' },
+        });
+        if (existingDeduction) {
+            console.log(`[Inventory] Sales stock already deducted for order ${orderId}, skipping.`);
+            return;
+        }
+
+        const orderItems = await this.prisma.orderItem.findMany({ where: { orderId } });
+
+        for (const item of orderItems) {
+            if (!item.productId) continue;
+
+            // Find the warehouse with the highest current stock for this product
+            const levels = await this.prisma.inventoryLevel.findMany({
+                where: { productId: item.productId, currentQuantity: { gte: 1 } },
+                orderBy: { currentQuantity: 'desc' },
+            });
+
+            if (levels.length > 0) {
+                const level = levels[0];
+                const warehouseId = level.warehouseId;
+
+                // Release any remaining reserved qty for this product (min of reserved vs item qty)
+                const reservedToRelease = Math.min(level.reservedQuantity, item.quantity);
+
+                await this.prisma.inventoryLevel.update({
+                    where: { productId_warehouseId: { productId: item.productId, warehouseId } },
+                    data: {
+                        currentQuantity: { decrement: item.quantity },
+                        ...(reservedToRelease > 0 ? { reservedQuantity: { decrement: reservedToRelease } } : {}),
+                    },
+                });
+
+                await this.prisma.inventoryTransaction.create({
+                    data: {
+                        type: 'sale_out',
+                        productId: item.productId,
+                        warehouseId,
+                        quantity: -item.quantity,
+                        referenceId: orderId,
+                        reason: 'Sales deduction — Out for Delivery',
+                    }
+                });
+            } else {
+                console.warn(`[Inventory] No stock found for product ${item.productId} (order ${orderId}). Logging zero-stock sale.`);
+                // Still record the transaction for audit trail even if stock is already at 0
+                const anyLevel = await this.prisma.inventoryLevel.findFirst({
+                    where: { productId: item.productId },
+                });
+                if (anyLevel) {
+                    await this.prisma.inventoryTransaction.create({
+                        data: {
+                            type: 'sale_out',
+                            productId: item.productId,
+                            warehouseId: anyLevel.warehouseId,
+                            quantity: -item.quantity,
+                            referenceId: orderId,
+                            reason: 'Sales deduction — Out for Delivery (zero stock)',
+                        }
+                    });
+                }
+            }
+        }
+    }
 }
+

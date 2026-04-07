@@ -411,6 +411,11 @@ export class OrdersService {
                 await this.inventoryService.fulfillOrder(id);
             }
 
+            // Trigger Sales Stock Deduction when Out for Delivery
+            if (updatedOrder.orderStatus === 'OutForDelivery') {
+                await this.inventoryService.deductSalesStock(id);
+            }
+
             // Trigger Profit Calculation if confirmed
             if (updatedOrder.confirmationStatus === 'Confirmed') {
                 await this.profitsService.calculateOrderProfit(id);
@@ -437,6 +442,11 @@ export class OrdersService {
 
             if (orderStatus === 'Shipped') {
                 await this.inventoryService.fulfillOrder(id);
+            }
+
+            // Trigger Sales Stock Deduction when Out for Delivery
+            if (orderStatus === 'OutForDelivery') {
+                await this.inventoryService.deductSalesStock(id);
             }
 
             if (orderStatus === 'Delivered') {
