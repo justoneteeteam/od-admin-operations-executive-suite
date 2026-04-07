@@ -324,10 +324,13 @@ const FinancialRecordsTab: React.FC = () => {
                         className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[140px]"
                     >
                         <option value="">All</option>
-                        <option value="Fulfillment">Fulfillment</option>
                         <option value="Ads">Ads</option>
-                        <option value="Personnel">Personnel</option>
-                        <option value="Others">Others</option>
+                        <option value="Software">Software</option>
+                        <option value="COGS">COGS</option>
+                        <option value="Office">Office</option>
+                        <option value="Rate Exchange">Rate Exchange</option>
+                        <option value="Shipping Fee">Shipping Fee</option>
+                        <option value="Other">Other</option>
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
