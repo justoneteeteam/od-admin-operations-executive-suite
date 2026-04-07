@@ -1203,6 +1203,7 @@ model FinancialRecord {
   amountVnd           Decimal?                @map("amount_vnd") @db.Decimal(15, 2)
   exchangeRate        Decimal?                @map("exchange_rate") @db.Decimal(15, 10)
   source              String                  @default("manual") @db.VarChar(20)
+  spendType           String?                 @map("spend_type") @db.VarChar(20)
   orderId             String?                 @map("order_id") @db.Uuid
   fulfillmentCenterId String?                 @map("fulfillment_center_id") @db.Uuid
   invoiceUploadId     String?                 @map("invoice_upload_id") @db.Uuid

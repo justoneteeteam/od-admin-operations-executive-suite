@@ -2,6 +2,8 @@ import {
     Controller,
     Get,
     Post,
+    Put,
+    Delete,
     Body,
     Param,
     Query,
@@ -11,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FinancialService } from './financial.service';
-import { CreateFinancialRecordDto } from './dto/create-financial-record.dto';
+import { CreateFinancialRecordDto, UpdateFinancialRecordDto } from './dto/create-financial-record.dto';
 
 @Controller('financial')
 export class FinancialController {
@@ -73,6 +75,27 @@ export class FinancialController {
     @Post('records')
     async createRecord(@Body() dto: CreateFinancialRecordDto) {
         return this.financialService.createRecord(dto);
+    }
+
+    @Put('records/:id')
+    async updateRecord(
+        @Param('id') id: string,
+        @Body() dto: UpdateFinancialRecordDto,
+    ) {
+        return this.financialService.updateRecord(id, dto);
+    }
+
+    @Delete('records/:id')
+    async deleteRecord(@Param('id') id: string) {
+        return this.financialService.deleteRecord(id);
+    }
+
+    @Post('records/bulk-delete')
+    async bulkDeleteRecords(@Body('ids') ids: string[]) {
+        if (!ids || !ids.length) {
+            throw new BadRequestException('ids array is required');
+        }
+        return this.financialService.bulkDeleteRecords(ids);
     }
 
     @Get('records/summary')

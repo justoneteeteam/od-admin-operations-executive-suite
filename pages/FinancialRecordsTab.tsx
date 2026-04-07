@@ -3,10 +3,15 @@ import { financialService, FinancialRecord, RecordsSummary } from '../src/servic
 import * as XLSX from 'xlsx';
 
 const CATEGORY_BADGES: Record<string, string> = {
-    Fulfillment: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     Ads: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    Personnel: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    Software: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    COGS: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    Office: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    'Rate Exchange': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    'Shipping Fee': 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    Other: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
     Others: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+    Fulfillment: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
 };
 
 const SOURCE_BADGES: Record<string, string> = {
@@ -40,13 +45,19 @@ const FinancialRecordsTab: React.FC = () => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
     const [formDesc, setFormDesc] = useState('');
-    const [formCategory, setFormCategory] = useState('Fulfillment');
+    const [formCategory, setFormCategory] = useState('Ads');
     const [formMarket, setFormMarket] = useState('');
     const [formAmountEur, setFormAmountEur] = useState('');
     const [formAmountVnd, setFormAmountVnd] = useState('');
     const [formSource, setFormSource] = useState('manual');
+    const [formSpendType, setFormSpendType] = useState('Fixed Cost');
     const [formNotes, setFormNotes] = useState('');
     const [saving, setSaving] = useState(false);
+
+    // Selection and Edit State
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -109,6 +120,7 @@ const FinancialRecordsTab: React.FC = () => {
                 amountEur: formAmountEur ? parseFloat(formAmountEur) : undefined,
                 amountVnd: formAmountVnd ? parseFloat(formAmountVnd) : undefined,
                 source: formSource,
+                spendType: formSpendType,
                 notes: formNotes || undefined,
             });
             // Reset form
@@ -126,6 +138,89 @@ const FinancialRecordsTab: React.FC = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleEditExpense = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRecord || !formDesc || !formAmountEur) return;
+        setSaving(true);
+        try {
+            await financialService.updateRecord(editingRecord.id, {
+                date: formDate,
+                description: formDesc,
+                category: formCategory,
+                market: formMarket || undefined,
+                amountEur: formAmountEur ? parseFloat(formAmountEur) : undefined,
+                amountVnd: formAmountVnd ? parseFloat(formAmountVnd) : undefined,
+                source: formSource,
+                spendType: formSpendType,
+                notes: formNotes || undefined,
+            });
+            setShowAddForm(false);
+            setEditingRecord(null);
+            fetchData();
+        } catch (err) {
+            console.error('Failed to update record:', err);
+            alert('Failed to update expense record');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteRecord = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this record?')) return;
+        try {
+            await financialService.deleteRecord(id);
+            fetchData();
+        } catch (err) {
+            console.error('Failed to delete record:', err);
+            alert('Failed to delete expense record');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} records?`)) return;
+        setIsDeleting(true);
+        try {
+            await financialService.bulkDeleteRecords(Array.from(selectedIds));
+            setSelectedIds(new Set());
+            fetchData();
+        } catch (err) {
+            console.error('Failed to bulk delete records:', err);
+            alert('Failed to delete records');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const toggleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(new Set(records.map(r => r.id)));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const openEditForm = (record: FinancialRecord) => {
+        setEditingRecord(record);
+        setFormDate(new Date(record.date).toISOString().split('T')[0]);
+        setFormDesc(record.description);
+        setFormCategory(record.category);
+        setFormMarket(record.market || '');
+        setFormAmountEur(record.amountEur.toString());
+        setFormAmountVnd(record.amountVnd?.toString() || '');
+        setFormSource(record.source);
+        setFormSpendType(record.spendType || 'Fixed Cost');
+        setFormNotes(record.notes || '');
+        setShowAddForm(true);
     };
 
     const formatEur = (val: number) => `€${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -270,11 +365,20 @@ const FinancialRecordsTab: React.FC = () => {
                     Import Expenses
                 </button>
                 <button
-                    onClick={() => setShowAddForm(!showAddForm)}
+                    onClick={() => {
+                        setEditingRecord(null);
+                        setFormDesc('');
+                        setFormAmountEur('');
+                        setFormAmountVnd('');
+                        setFormNotes('');
+                        setFormCategory('Ads');
+                        setFormSpendType('Fixed Cost');
+                        setShowAddForm(!showAddForm);
+                    }}
                     className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all shadow-lg shadow-primary/20"
                 >
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
-                    Add Expense
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{showAddForm && !editingRecord ? 'close' : 'add'}</span>
+                    {showAddForm && !editingRecord ? 'Close' : 'Add Expense'}
                 </button>
 
                 <datalist id="source-list">
@@ -291,8 +395,8 @@ const FinancialRecordsTab: React.FC = () => {
 
             {/* ─── Inline Add Form ────────────────────────────── */}
             {showAddForm && (
-                <form onSubmit={handleAddExpense} className="bg-card-dark rounded-2xl border border-border-dark p-6">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">New Expense Record</h3>
+                <form onSubmit={editingRecord ? handleEditExpense : handleAddExpense} className="bg-card-dark rounded-2xl border border-border-dark p-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">{editingRecord ? 'Edit Expense Record' : 'New Expense Record'}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Date *</label>
@@ -308,10 +412,13 @@ const FinancialRecordsTab: React.FC = () => {
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Category *</label>
                             <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)}
                                 className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer">
-                                <option value="Fulfillment">Fulfillment</option>
                                 <option value="Ads">Ads</option>
-                                <option value="Personnel">Personnel</option>
-                                <option value="Others">Others</option>
+                                <option value="Software">Software</option>
+                                <option value="COGS">COGS</option>
+                                <option value="Office">Office</option>
+                                <option value="Rate Exchange">Rate Exchange</option>
+                                <option value="Shipping Fee">Shipping Fee</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
                         <div className="flex flex-col gap-1">
@@ -345,6 +452,14 @@ const FinancialRecordsTab: React.FC = () => {
                                 className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm placeholder:text-text-muted/40 w-full focus:outline-none focus:ring-2 focus:ring-primary/50"
                             />
                         </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Spend Type</label>
+                            <select value={formSpendType} onChange={(e) => setFormSpendType(e.target.value)}
+                                className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer">
+                                <option value="Fixed Cost">Fixed Cost</option>
+                                <option value="Variable Cost">Variable Cost</option>
+                            </select>
+                        </div>
                         <div className="flex flex-col gap-1 col-span-2 md:col-span-4">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Notes</label>
                             <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Optional notes"
@@ -355,9 +470,9 @@ const FinancialRecordsTab: React.FC = () => {
                         <button type="submit" disabled={saving}
                             className="flex items-center gap-1.5 px-5 py-2 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-50">
                             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>save</span>
-                            {saving ? 'Saving...' : 'Save Record'}
+                            {saving ? 'Saving...' : (editingRecord ? 'Update Record' : 'Save Record')}
                         </button>
-                        <button type="button" onClick={() => setShowAddForm(false)}
+                        <button type="button" onClick={() => { setShowAddForm(false); setEditingRecord(null); }}
                             className="px-4 py-2 text-text-muted hover:text-white border border-border-dark rounded-lg text-sm font-bold transition-all">
                             Cancel
                         </button>
@@ -371,7 +486,7 @@ const FinancialRecordsTab: React.FC = () => {
                     {[
                         { label: 'Total EUR Spend', value: formatEur(summary.totalEur), icon: 'euro', color: 'text-blue-400', border: 'border-l-blue-500' },
                         { label: 'Total VND Spend', value: formatVnd(summary.totalVnd), icon: 'currency_exchange', color: 'text-teal-400', border: 'border-l-teal-500' },
-                        { label: 'Fulfillment Costs', value: formatEur(summary.byCategory.Fulfillment || 0), icon: 'local_shipping', color: 'text-cyan-400', border: 'border-l-cyan-500' },
+                        { label: 'COGS & Shipping', value: formatEur((summary.byCategory.COGS || 0) + (summary.byCategory['Shipping Fee'] || 0)), icon: 'local_shipping', color: 'text-cyan-400', border: 'border-l-cyan-500' },
                         { label: 'Record Count', value: summary.recordCount.toString(), icon: 'receipt_long', color: 'text-purple-400', border: 'border-l-purple-500' },
                     ].map((card, i) => (
                         <div key={i} className={`bg-card-dark p-5 rounded-2xl border border-border-dark border-l-4 ${card.border} relative overflow-hidden group hover:shadow-lg transition-shadow`}>
@@ -387,10 +502,20 @@ const FinancialRecordsTab: React.FC = () => {
 
             {/* ─── Records Table ──────────────────────────────── */}
             <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-                <div className="px-6 py-4 border-b border-border-dark bg-[#14202c]">
+                <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">
                         📊 Financial Records ({records.length})
                     </h3>
+                    {selectedIds.size > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isDeleting}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                        >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            {isDeleting ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (
@@ -405,19 +530,27 @@ const FinancialRecordsTab: React.FC = () => {
                         <table className="w-full text-left border-collapse min-w-[1000px]">
                             <thead>
                                 <tr className="bg-[#17232f]">
+                                    <th className="px-4 py-2.5 w-10 text-center">
+                                        <input type="checkbox" checked={records.length > 0 && selectedIds.size === records.length} onChange={toggleSelectAll} className="rounded border-border-dark bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary" />
+                                    </th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Date</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Description</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Category</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Market</th>
+                                    <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Spend Type</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Amount EUR</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Amount VND</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Source</th>
                                     <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Order#</th>
+                                    <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-dark/50">
                                 {records.map((r) => (
                                     <tr key={r.id} className="hover:bg-primary/[0.03] transition-colors">
+                                        <td className="px-4 py-2.5 text-center">
+                                            <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} className="rounded border-border-dark bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary" />
+                                        </td>
                                         <td className="px-4 py-2.5 text-xs text-white font-medium whitespace-nowrap">
                                             {new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                         </td>
@@ -425,7 +558,7 @@ const FinancialRecordsTab: React.FC = () => {
                                             {r.description}
                                         </td>
                                         <td className="px-4 py-2.5">
-                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${CATEGORY_BADGES[r.category] || CATEGORY_BADGES.Others}`}>
+                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${CATEGORY_BADGES[r.category] || CATEGORY_BADGES.Other}`}>
                                                 {r.category}
                                             </span>
                                         </td>
@@ -436,6 +569,11 @@ const FinancialRecordsTab: React.FC = () => {
                                                 </span>
                                             ) : <span className="text-text-muted text-xs">—</span>}
                                         </td>
+                                        <td className="px-4 py-2.5">
+                                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full border ${r.spendType === 'Variable Cost' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                                {r.spendType || 'Fixed Cost'}
+                                            </span>
+                                        </td>
                                         <td className="px-4 py-2.5 text-xs font-black text-white text-right">{formatEur(Number(r.amountEur))}</td>
                                         <td className="px-4 py-2.5 text-xs font-bold text-teal-400 text-right">{formatVnd(r.amountVnd ? Number(r.amountVnd) : null)}</td>
                                         <td className="px-4 py-2.5">
@@ -445,6 +583,14 @@ const FinancialRecordsTab: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-2.5 text-xs text-primary font-mono">
                                             {r.order?.orderNumber || '—'}
+                                        </td>
+                                        <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                                            <button onClick={() => openEditForm(r)} className="text-text-muted hover:text-blue-400 transition-colors p-1" title="Edit">
+                                                <span className="material-symbols-outlined text-[16px]">edit</span>
+                                            </button>
+                                            <button onClick={() => handleDeleteRecord(r.id)} className="text-text-muted hover:text-rose-400 transition-colors p-1 ml-1" title="Delete">
+                                                <span className="material-symbols-outlined text-[16px]">delete</span>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

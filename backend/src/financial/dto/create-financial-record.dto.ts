@@ -8,7 +8,7 @@ export class CreateFinancialRecordDto {
     description: string;
 
     @IsString()
-    @IsIn(['Fulfillment', 'Ads', 'Personnel', 'Others'])
+    @IsIn(['Ads', 'Software', 'COGS', 'Office', 'Rate Exchange', 'Shipping Fee', 'Other'])
     category: string;
 
     @IsOptional()
@@ -31,6 +31,64 @@ export class CreateFinancialRecordDto {
     @IsOptional()
     @IsString()
     source?: string = 'manual';
+
+    @IsOptional()
+    @IsString()
+    @IsIn(['Fixed Cost', 'Variable Cost'])
+    spendType?: string;
+
+    @IsOptional()
+    @IsString()
+    orderId?: string;
+
+    @IsOptional()
+    @IsString()
+    fulfillmentCenterId?: string;
+
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}
+
+export class UpdateFinancialRecordDto {
+    @IsOptional()
+    @IsDateString()
+    date?: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsOptional()
+    @IsString()
+    @IsIn(['Ads', 'Software', 'COGS', 'Office', 'Rate Exchange', 'Shipping Fee', 'Other'])
+    category?: string;
+
+    @IsOptional()
+    @IsString()
+    @IsIn(['ES', 'IT', 'DE', 'PL'])
+    market?: string;
+
+    @IsOptional()
+    @IsNumber()
+    amountEur?: number;
+
+    @IsOptional()
+    @IsNumber()
+    amountVnd?: number;
+
+    @IsOptional()
+    @IsNumber()
+    exchangeRate?: number;
+
+    @IsOptional()
+    @IsString()
+    source?: string;
+
+    @IsOptional()
+    @IsString()
+    @IsIn(['Fixed Cost', 'Variable Cost'])
+    spendType?: string;
 
     @IsOptional()
     @IsString()

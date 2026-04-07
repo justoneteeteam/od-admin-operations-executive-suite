@@ -10,6 +10,7 @@ export interface FinancialRecord {
     amountVnd: number | null;
     exchangeRate: number | null;
     source: string;
+    spendType: string | null;
     orderId: string | null;
     fulfillmentCenterId: string | null;
     invoiceUploadId: string | null;
@@ -69,6 +70,7 @@ export const financialService = {
         amountVnd?: number;
         exchangeRate?: number;
         source?: string;
+        spendType?: string;
         orderId?: string;
         fulfillmentCenterId?: string;
         notes?: string;
@@ -79,6 +81,21 @@ export const financialService = {
 
     async bulkCreate(records: any[]): Promise<{ importedCount: number }> {
         const response = await apiClient.post('/financial/records/bulk', { records });
+        return response.data;
+    },
+
+    async updateRecord(id: string, data: Partial<FinancialRecord>): Promise<FinancialRecord> {
+        const response = await apiClient.put(`/financial/records/${id}`, data);
+        return response.data;
+    },
+
+    async deleteRecord(id: string): Promise<{ deleted: true, id: string }> {
+        const response = await apiClient.delete(`/financial/records/${id}`);
+        return response.data;
+    },
+
+    async bulkDeleteRecords(ids: string[]): Promise<{ deletedCount: number }> {
+        const response = await apiClient.post('/financial/records/bulk-delete', { ids });
         return response.data;
     },
 

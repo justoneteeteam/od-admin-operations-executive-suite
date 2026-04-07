@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateFinancialRecordDto } from './dto/create-financial-record.dto';
+import { CreateFinancialRecordDto, UpdateFinancialRecordDto } from './dto/create-financial-record.dto';
 import * as XLSX from 'xlsx';
 
 export interface ParsedPerOrderRow {
@@ -419,6 +419,7 @@ const rawRows = this._parseInvoice(fileBuffer);
                 amountVnd,
                 exchangeRate,
                 source: dto.source || 'manual',
+                spendType: dto.spendType || null,
                 orderId: dto.orderId || null,
                 fulfillmentCenterId: dto.fulfillmentCenterId || null,
                 notes: dto.notes || null,
@@ -428,6 +429,52 @@ const rawRows = this._parseInvoice(fileBuffer);
                 fulfillmentCenter: { select: { id: true, name: true } },
             },
         });
+    }
+
+    async updateRecord(id: string, dto: UpdateFinancialRecordDto) {
+        const existing = await this.prisma.financialRecord.findUnique({ where: { id } });
+        if (!existing) {
+            throw new NotFoundException(`Financial record ${id} not found`);
+        }
+
+        const data: any = {};
+        if (dto.date !== undefined) data.date = new Date(dto.date);
+        if (dto.description !== undefined) data.description = dto.description;
+        if (dto.category !== undefined) data.category = dto.category;
+        if (dto.market !== undefined) data.market = dto.market || null;
+        if (dto.amountEur !== undefined) data.amountEur = dto.amountEur;
+        if (dto.amountVnd !== undefined) data.amountVnd = dto.amountVnd;
+        if (dto.exchangeRate !== undefined) data.exchangeRate = dto.exchangeRate;
+        if (dto.source !== undefined) data.source = dto.source;
+        if (dto.spendType !== undefined) data.spendType = dto.spendType || null;
+        if (dto.orderId !== undefined) data.orderId = dto.orderId || null;
+        if (dto.fulfillmentCenterId !== undefined) data.fulfillmentCenterId = dto.fulfillmentCenterId || null;
+        if (dto.notes !== undefined) data.notes = dto.notes || null;
+
+        return this.prisma.financialRecord.update({
+            where: { id },
+            data,
+            include: {
+                order: { select: { id: true, orderNumber: true } },
+                fulfillmentCenter: { select: { id: true, name: true } },
+            },
+        });
+    }
+
+    async deleteRecord(id: string) {
+        const existing = await this.prisma.financialRecord.findUnique({ where: { id } });
+        if (!existing) {
+            throw new NotFoundException(`Financial record ${id} not found`);
+        }
+        await this.prisma.financialRecord.delete({ where: { id } });
+        return { deleted: true, id };
+    }
+
+    async bulkDeleteRecords(ids: string[]) {
+        const result = await this.prisma.financialRecord.deleteMany({
+            where: { id: { in: ids } },
+        });
+        return { deletedCount: result.count };
     }
 
     async getRecordsSummary(filters: { month?: string; market?: string }) {
@@ -447,17 +494,20 @@ const rawRows = this._parseInvoice(fileBuffer);
         const totalVnd = records.reduce((sum, r) => sum + (r.amountVnd ? Number(r.amountVnd) : 0), 0);
 
         const byCategory: Record<string, number> = {
-            Fulfillment: 0,
             Ads: 0,
-            Personnel: 0,
-            Others: 0,
+            Software: 0,
+            COGS: 0,
+            Office: 0,
+            'Rate Exchange': 0,
+            'Shipping Fee': 0,
+            Other: 0,
         };
         for (const r of records) {
             const cat = r.category as string;
             if (byCategory[cat] !== undefined) {
                 byCategory[cat] += Number(r.amountEur);
             } else {
-                byCategory['Others'] += Number(r.amountEur);
+                byCategory['Other'] += Number(r.amountEur);
             }
         }
 
@@ -509,6 +559,7 @@ const rawRows = this._parseInvoice(fileBuffer);
                     market: r.market || null,
                     amountEur: amountEur || 0,
                     amountVnd,
+                    spendType: r.spendType || null,
                     exchangeRate,
                     source: r.source || 'manual',
                     notes: r.notes || null,
