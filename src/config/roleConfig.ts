@@ -31,7 +31,7 @@ export const ROUTE_CONFIG: RouteConfig[] = [
   // Operations
   { path: '/incidents', label: 'Incidents', icon: 'report_problem', group: 'Operations', allowedRoles: ['ADMIN', 'CS'] },
   { path: '/communication', label: 'Communication', icon: 'forum', group: 'Operations', allowedRoles: ['ADMIN', 'CS'] },
-  { path: '/financial', label: 'Financial', icon: 'account_balance', group: 'Operations', allowedRoles: ['ADMIN'] },
+  { path: '/financial', label: 'Financial', icon: 'account_balance', group: 'Operations', allowedRoles: ['ADMIN', 'CS'] },
 
   // Marketing
   { path: '/ads', label: 'Ads Analytics', icon: 'campaign', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
