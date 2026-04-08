@@ -28,7 +28,7 @@ model User {
 }
 
 model Customer {
-  id                   String           @id @default(uuid())
+  id                   String           @id @default(uuid()) @db.Uuid
   name                 String
   email                String?          @unique
   phone                String
@@ -997,7 +997,7 @@ model Ticket {
   id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   ticketNumber      String    @unique @map("ticket_number") @db.VarChar(20)
   orderId           String?   @map("order_id") @db.Uuid
-  customerId        String?   @map("customer_id")
+  customerId        String?   @map("customer_id") @db.Uuid
   title             String    @db.VarChar(255)
   description       String?
   caseType          String    @default("other") @map("case_type") @db.VarChar(30)
