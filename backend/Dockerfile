@@ -51,4 +51,4 @@ COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "DIRECT_URL=$(echo $DATABASE_URL | sed 's/:6543/:5432/') DATABASE_URL=$DIRECT_URL npx prisma db push && npm run start:prod"]
+CMD ["sh", "-c", "DIRECT_URL=$(echo $DATABASE_URL | sed 's/:6543/:5432/') DATABASE_URL=$DIRECT_URL npx prisma db push --accept-data-loss && npm run start:prod"]
