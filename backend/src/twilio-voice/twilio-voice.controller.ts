@@ -338,10 +338,16 @@ export class TwilioVoiceController {
         });
 
         if (callLog) {
+            // Guard: never overwrite machine_detected — call-status fires AFTER AMD hangup
+            // and Twilio always sends CallStatus='completed' even for machine calls
+            const safeStatus = callLog.callStatus === 'machine_detected'
+                ? 'machine_detected'
+                : CallStatus;
+
             await this.prisma.callLog.update({
                 where: { id: callLog.id },
                 data: {
-                    callStatus: CallStatus,
+                    callStatus: safeStatus,
                     callDuration: CallDuration ? parseInt(CallDuration) : null,
                     completedAt: new Date(),
                 },
@@ -399,6 +405,13 @@ export class TwilioVoiceController {
         if (!callLog) {
             this.logger.warn(`Order ${orderId}: No call log found for recording ${RecordingSid} (CallSid: ${callSid})`);
             return { received: true, error: 'no call log found' };
+        }
+
+        // Guard: skip transcription for machine-detected calls — the recording
+        // only contains the voicemail greeting, not a real customer response
+        if (callLog.callStatus === 'machine_detected') {
+            this.logger.log(`Order ${orderId}: Skipping transcription for machine-detected call (${RecordingSid})`);
+            return { received: true, skipped: 'machine_detected' };
         }
 
         // Process recording asynchronously (don't block Twilio webhook response)
