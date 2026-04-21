@@ -946,7 +946,8 @@ const rawRows = this._parseInvoice(fileBuffer);
     private async _parseFfeuPdf(fileBuffer: Buffer): Promise<{ header: FfeuInvoiceHeader; rows: FfeuFeeRow[] }> {
         let pdfData: { text: string };
         try {
-            pdfData = await pdfParse(fileBuffer);
+            const parseFunc = typeof pdfParse === 'function' ? pdfParse : (pdfParse.default || pdfParse);
+            pdfData = await parseFunc(fileBuffer);
         } catch (e) {
             throw new BadRequestException('Failed to parse PDF file: ' + e.message);
         }
