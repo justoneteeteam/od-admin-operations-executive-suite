@@ -324,6 +324,7 @@ const FinancialRecordsTab: React.FC = () => {
                         className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[140px]"
                     >
                         <option value="">All</option>
+
                         <option value="Ads">Ads</option>
                         <option value="Software">Software</option>
                         <option value="COGS">COGS</option>
@@ -331,6 +332,13 @@ const FinancialRecordsTab: React.FC = () => {
                         <option value="Rate Exchange">Rate Exchange</option>
                         <option value="Shipping Fee">Shipping Fee</option>
                         <option value="Other">Other</option>
+                        <option value="Storage fee">Storage fee</option>
+                        <option value="Fulfillment">Fulfillment</option>
+                        <option value="R&D">R&D</option>
+                        <option value="Commission">Commission</option>
+                        <option value="Transaction fee">Transaction fee</option>
+                        <option value="Testing fee">Testing fee</option>
+                        <option value="People">People</option>
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -415,6 +423,7 @@ const FinancialRecordsTab: React.FC = () => {
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Category *</label>
                             <select value={formCategory} onChange={(e) => setFormCategory(e.target.value)}
                                 className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer">
+
                                 <option value="Ads">Ads</option>
                                 <option value="Software">Software</option>
                                 <option value="COGS">COGS</option>
@@ -422,6 +431,13 @@ const FinancialRecordsTab: React.FC = () => {
                                 <option value="Rate Exchange">Rate Exchange</option>
                                 <option value="Shipping Fee">Shipping Fee</option>
                                 <option value="Other">Other</option>
+                                <option value="Storage fee">Storage fee</option>
+                                <option value="Fulfillment">Fulfillment</option>
+                                <option value="R&D">R&D</option>
+                                <option value="Commission">Commission</option>
+                                <option value="Transaction fee">Transaction fee</option>
+                                <option value="Testing fee">Testing fee</option>
+                                <option value="People">People</option>
                             </select>
                         </div>
                         <div className="flex flex-col gap-1">

@@ -121,6 +121,26 @@ export const financialService = {
         return response.data;
     },
 
+    // ─── P&L Report ──────────────────────────────────────────────
+    async getPnlReport(year: number): Promise<{
+        year: number;
+        months: string[];
+        data: Array<{
+            sale: number; return: number; netSale: number;
+            cogs: number; returnCogs: number; netCogs: number;
+            storageFee: number; ads: number; fulfillment: number; rnd: number;
+            commission: number; transactionFee: number;
+            variableCostsTotal: number;
+            testingFee: number; people: number; office: number; other: number;
+            rateExchange: number; software: number;
+            fixedCostsTotal: number;
+            totalExpense: number; profitLoss: number;
+        }>;
+    }> {
+        const response = await apiClient.get(`/financial/pnl?year=${year}`);
+        return response.data;
+    },
+
     // ─── Invoice Upload & Import ─────────────────────────────────
     async uploadInvoice(
         file: File,

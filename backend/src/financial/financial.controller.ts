@@ -111,6 +111,14 @@ export class FinancialController {
         return this.financialService.bulkCreateRecords(records);
     }
 
+    // ─── P&L Report ───────────────────────────────────────────
+
+    @Get('pnl')
+    async getPnlReport(@Query('year') year?: string) {
+        const y = year ? parseInt(year, 10) : new Date().getFullYear();
+        return this.financialService.getPnlReport(y);
+    }
+
     // ─── Utility ──────────────────────────────────────────────
 
     @Get('exchange-rate')

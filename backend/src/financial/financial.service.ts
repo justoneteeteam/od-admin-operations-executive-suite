@@ -603,6 +603,194 @@ const rawRows = this._parseInvoice(fileBuffer);
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // P&L REPORT
+    // ═══════════════════════════════════════════════════════════════
+
+    async getPnlReport(year: number) {
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+
+        // Get exchange rate for VND→EUR conversion (for R&D from ads)
+        const currentRate = await this.getLatestExchangeRate();
+        const vndToEur = currentRate ? Number(currentRate.vndToEur) : null;
+
+        // Helper: month index (0-11) from a Date
+        const monthOf = (d: Date | string) => new Date(d).getMonth();
+
+        // Initialize 12-month data structure
+        const months: string[] = [];
+        const emptyMonth = () => ({
+            sale: 0, return: 0, netSale: 0,
+            cogs: 0, returnCogs: 0, netCogs: 0,
+            storageFee: 0, ads: 0, fulfillment: 0, rnd: 0,
+            commission: 0, transactionFee: 0,
+            variableCostsTotal: 0,
+            testingFee: 0, people: 0, office: 0, other: 0,
+            rateExchange: 0, software: 0,
+            fixedCostsTotal: 0,
+            totalExpense: 0, profitLoss: 0,
+        });
+        const monthData = Array.from({ length: 12 }, () => emptyMonth());
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        for (let i = 0; i < 12; i++) months.push(monthNames[i]);
+
+        // ─── 1. SALE: paid orders ────────────────────────────────
+        const paidOrders = await this.prisma.order.findMany({
+            where: {
+                paymentStatus: 'Paid',
+                orderDate: { gte: startOfYear, lte: endOfYear },
+            },
+            select: { orderDate: true, totalAmount: true },
+        });
+        for (const o of paidOrders) {
+            const m = monthOf(o.orderDate);
+            monthData[m].sale += Number(o.totalAmount) || 0;
+        }
+
+        // ─── 2. RETURN: returned orders ──────────────────────────
+        const returnedOrders = await this.prisma.order.findMany({
+            where: {
+                orderStatus: 'Returned',
+                orderDate: { gte: startOfYear, lte: endOfYear },
+            },
+            select: { orderDate: true, totalAmount: true, shippingFee: true },
+        });
+        for (const o of returnedOrders) {
+            const m = monthOf(o.orderDate);
+            monthData[m].return += (Number(o.totalAmount) || 0) + (Number(o.shippingFee) || 0);
+        }
+
+        // ─── 3. COGS: product cost of paid orders ───────────────
+        const paidOrdersWithItems = await this.prisma.order.findMany({
+            where: {
+                paymentStatus: 'Paid',
+                orderDate: { gte: startOfYear, lte: endOfYear },
+            },
+            select: {
+                orderDate: true,
+                items: {
+                    select: {
+                        quantity: true,
+                        unitCost: true,
+                        product: { select: { unitCost: true } },
+                    },
+                },
+            },
+        });
+        for (const o of paidOrdersWithItems) {
+            const m = monthOf(o.orderDate);
+            for (const item of o.items) {
+                // Use item-level unitCost first, fall back to product unitCost
+                const cost = Number(item.unitCost) || Number(item.product?.unitCost) || 0;
+                monthData[m].cogs += cost * item.quantity;
+            }
+        }
+
+        // ─── 4. RETURN COGS: product cost of returned orders ────
+        const returnedOrdersWithItems = await this.prisma.order.findMany({
+            where: {
+                orderStatus: 'Returned',
+                orderDate: { gte: startOfYear, lte: endOfYear },
+            },
+            select: {
+                orderDate: true,
+                items: {
+                    select: {
+                        quantity: true,
+                        unitCost: true,
+                        product: { select: { unitCost: true } },
+                    },
+                },
+            },
+        });
+        for (const o of returnedOrdersWithItems) {
+            const m = monthOf(o.orderDate);
+            for (const item of o.items) {
+                const cost = Number(item.unitCost) || Number(item.product?.unitCost) || 0;
+                monthData[m].returnCogs += cost * item.quantity;
+            }
+        }
+
+        // ─── 5. FINANCIAL RECORDS: expenses by category ─────────
+        const financialRecords = await this.prisma.financialRecord.findMany({
+            where: {
+                date: { gte: startOfYear, lte: endOfYear },
+            },
+            select: { date: true, category: true, amountEur: true },
+        });
+
+        const categoryMapping: Record<string, keyof ReturnType<typeof emptyMonth>> = {
+            'Storage fee': 'storageFee',
+            'Ads': 'ads',
+            'Fulfillment': 'fulfillment',
+            'Commission': 'commission',
+            'Transaction fee': 'transactionFee',
+            'Testing fee': 'testingFee',
+            'People': 'people',
+            'Office': 'office',
+            'Other': 'other',
+            'Others': 'other',
+            'Rate Exchange': 'rateExchange',
+            'Software': 'software',
+        };
+
+        for (const r of financialRecords) {
+            const m = monthOf(r.date);
+            const field = categoryMapping[r.category];
+            if (field && typeof monthData[m][field] === 'number') {
+                (monthData[m][field] as number) += Number(r.amountEur) || 0;
+            }
+        }
+
+        // ─── 6. R&D: Test/POC stage ads campaigns ───────────────
+        const rdCampaigns = await this.prisma.adsCampaign.findMany({
+            where: {
+                stage: { in: ['Test', 'TEST', 'test', 'POC', 'poc', 'Poc'] },
+                date: { gte: startOfYear, lte: endOfYear },
+            },
+            select: { date: true, spendVnd: true },
+        });
+        for (const c of rdCampaigns) {
+            const m = monthOf(c.date);
+            const spendVnd = Number(c.spendVnd) || 0;
+            // Convert VND to EUR
+            const spendEur = vndToEur ? spendVnd * vndToEur : 0;
+            monthData[m].rnd += spendEur;
+        }
+
+        // ─── 7. CALCULATE DERIVED ROWS ──────────────────────────
+        for (const d of monthData) {
+            // Round all raw values
+            d.sale = Math.round(d.sale * 100) / 100;
+            d.return = Math.round(d.return * 100) / 100;
+            d.cogs = Math.round(d.cogs * 100) / 100;
+            d.returnCogs = Math.round(d.returnCogs * 100) / 100;
+            d.storageFee = Math.round(d.storageFee * 100) / 100;
+            d.ads = Math.round(d.ads * 100) / 100;
+            d.fulfillment = Math.round(d.fulfillment * 100) / 100;
+            d.rnd = Math.round(d.rnd * 100) / 100;
+            d.commission = Math.round(d.commission * 100) / 100;
+            d.transactionFee = Math.round(d.transactionFee * 100) / 100;
+            d.testingFee = Math.round(d.testingFee * 100) / 100;
+            d.people = Math.round(d.people * 100) / 100;
+            d.office = Math.round(d.office * 100) / 100;
+            d.other = Math.round(d.other * 100) / 100;
+            d.rateExchange = Math.round(d.rateExchange * 100) / 100;
+            d.software = Math.round(d.software * 100) / 100;
+
+            // Derived
+            d.netSale = Math.round((d.sale - d.return) * 100) / 100;
+            d.netCogs = Math.round((d.cogs - d.returnCogs) * 100) / 100;
+            d.variableCostsTotal = Math.round((d.netCogs + d.storageFee + d.ads + d.fulfillment + d.rnd + d.commission + d.transactionFee) * 100) / 100;
+            d.fixedCostsTotal = Math.round((d.testingFee + d.people + d.office + d.other + d.rateExchange + d.software) * 100) / 100;
+            d.totalExpense = Math.round((d.variableCostsTotal + d.fixedCostsTotal) * 100) / 100;
+            d.profitLoss = Math.round((d.netSale - d.totalExpense) * 100) / 100;
+        }
+
+        return { year, months, data: monthData };
+    }
+
     async getLatestExchangeRate() {
         try {
             return await this.prisma.exchangeRate.findFirst({

@@ -8,7 +8,7 @@ export class CreateFinancialRecordDto {
     description: string;
 
     @IsString()
-    @IsIn(['Ads', 'Software', 'COGS', 'Office', 'Rate Exchange', 'Shipping Fee', 'Other'])
+    @IsIn(['Ads', 'Software', 'COGS', 'Office', 'Rate Exchange', 'Shipping Fee', 'Other', 'Storage fee', 'Fulfillment', 'R&D', 'Commission', 'Transaction fee', 'Testing fee', 'People'])
     category: string;
 
     @IsOptional()
@@ -61,7 +61,7 @@ export class UpdateFinancialRecordDto {
 
     @IsOptional()
     @IsString()
-    @IsIn(['Ads', 'Software', 'COGS', 'Office', 'Rate Exchange', 'Shipping Fee', 'Other'])
+    @IsIn(['Ads', 'Software', 'COGS', 'Office', 'Rate Exchange', 'Shipping Fee', 'Other', 'Storage fee', 'Fulfillment', 'R&D', 'Commission', 'Transaction fee', 'Testing fee', 'People'])
     category?: string;
 
     @IsOptional()
