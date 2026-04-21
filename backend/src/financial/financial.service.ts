@@ -24,9 +24,7 @@ export interface ParsedPerOrderRow {
 }
 
 export interface ParsedMonthlyRow {
-    clientName: string;
     shop: string;
-    concept: string;
     orders: number;
     totalEur: number;
     expenseEur: number;
@@ -212,32 +210,23 @@ const rawRows = this._parseInvoice(fileBuffer);
             throw new BadRequestException('XLSX file is empty or has no data rows');
         }
         // Validate required columns for monthly format
-        const requiredHeaders = ['Client Name', 'Shop', 'Concept', 'Orders', 'Total €'];
+        const requiredHeaders = ['Orders', 'Total €'];
         const missing = requiredHeaders.filter((h) => !(h in rawRows[0]));
         if (missing.length) {
             throw new BadRequestException(`Missing required columns: ${missing.join(', ')}`);
         }
 
-
-        if (!rawRows.length) {
-            throw new BadRequestException('XLSX file is empty or has no data rows');
-        }
-
         const currentRate = await this.getLatestExchangeRate();
 
         const parsedRows: ParsedMonthlyRow[] = rawRows.map((row) => {
-            const clientName = String(row['Client Name'] || '').trim();
-            const shop = String(row['Shop'] || '').trim();
-            const concept = String(row['Concept'] || '').trim();
+            const shop = String(row['Shop'] || 'Spain').trim();
             const orders = parseInt(String(row['Orders'] || '0'), 10) || 0;
             const totalEur = this.parseMoneyValue(row['Total €']);
-            const description = `Beeping Monthly — ${concept} (${shop})`;
+            const description = `Beeping Monthly — ${shop}`;
             const amountVnd = currentRate ? totalEur / Number(currentRate.vndToEur) : null;
 
             return {
-                clientName,
                 shop,
-                concept,
                 orders,
                 totalEur,
                 expenseEur: totalEur,

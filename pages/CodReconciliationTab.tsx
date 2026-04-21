@@ -523,9 +523,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                             </>
                                         ) : (
                                             <>
-                                                <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Client</th>
                                                 <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Shop</th>
-                                                <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Concept</th>
                                                 <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Orders</th>
                                                 <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Total€</th>
                                             </>
@@ -558,9 +556,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                                 </>
                                             ) : (
                                                 <>
-                                                    <td className="px-4 py-2.5 text-xs text-white">{row.clientName}</td>
                                                     <td className="px-4 py-2.5 text-xs text-white">{row.shop}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-white">{row.concept}</td>
                                                     <td className="px-4 py-2.5 text-xs text-white text-right">{row.orders}</td>
                                                     <td className="px-4 py-2.5 text-xs text-blue-400 font-black text-right">{formatEur(row.expenseEur)}</td>
                                                 </>
@@ -579,7 +575,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                             </>
                                         ) : (
                                             <>
-                                                <td colSpan={4} className="px-4 py-3 text-xs font-black text-text-muted uppercase text-right">Total:</td>
+                                                <td colSpan={2} className="px-4 py-3 text-xs font-black text-text-muted uppercase text-right">Total:</td>
                                                 <td className="px-4 py-3 text-sm font-black text-blue-400 text-right">{formatEur(uploadResult.summary.totalAmountEur)}</td>
                                             </>
                                         )}
