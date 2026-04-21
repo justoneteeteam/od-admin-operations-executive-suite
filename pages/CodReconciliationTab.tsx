@@ -6,6 +6,44 @@ interface CodReconciliationTabProps {
     onImportSuccess?: () => void;
 }
 
+// Extended upload result for FFEU PDF invoices
+interface FfeuUploadResult extends UploadResult {
+    invoiceFormat?: 'ffeu_pdf';
+    header?: {
+        invoiceNumber: string;
+        dateFrom: string;
+        dateTo: string;
+        numberOfOrders: number;
+        totalDue: number;
+        bankName: string;
+        bankNumber: string;
+        country: string;
+        taxNumber: string;
+        subtotalFees: number;
+        vat: number;
+        totalFees: number;
+        totalOrders: number;
+    };
+}
+
+const SECTION_COLORS: Record<string, string> = {
+    'CALL CENTER FEES': 'text-violet-400 bg-violet-500/10 border-violet-500/20',
+    'SHIPPING FEES': 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+    'FULFILLEMENT': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    'FULFILLMENT': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    'ORDERS': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    'GENERAL': 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+};
+
+const SECTION_ICON: Record<string, string> = {
+    'CALL CENTER FEES': 'call',
+    'SHIPPING FEES': 'local_shipping',
+    'FULFILLEMENT': 'inventory_2',
+    'FULFILLMENT': 'inventory_2',
+    'ORDERS': 'shopping_cart',
+    'GENERAL': 'receipt',
+};
+
 const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuccess }) => {
     const [subTab, setSubTab] = useState<'per_order' | 'monthly'>('per_order');
     const [fulfillmentCenters, setFulfillmentCenters] = useState<FulfillmentCenter[]>([]);
@@ -19,7 +57,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Preview state
-    const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+    const [uploadResult, setUploadResult] = useState<FfeuUploadResult | null>(null);
     const [importing, setImporting] = useState(false);
     const [importDone, setImportDone] = useState(false);
 
@@ -47,11 +85,21 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
         }
     }, [toast]);
 
+    // Accept .pdf only in monthly mode, .xlsx in per_order mode
+    const acceptedExtensions = subTab === 'monthly' ? '.xlsx,.pdf' : '.xlsx';
+
+    const isValidFile = (file: File) => {
+        if (subTab === 'monthly') {
+            return file.name.endsWith('.xlsx') || file.name.endsWith('.pdf');
+        }
+        return file.name.endsWith('.xlsx');
+    };
+
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setDragOver(false);
         const file = e.dataTransfer.files?.[0];
-        if (file && file.name.endsWith('.xlsx')) {
+        if (file && isValidFile(file)) {
             setSelectedFile(file);
         }
     };
@@ -71,7 +119,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                 periodMonth || undefined,
                 subTab,
             );
-            setUploadResult(result);
+            setUploadResult(result as FfeuUploadResult);
         } catch (err: any) {
             console.error('Upload failed:', err);
             alert(err.response?.data?.message || 'Failed to upload and parse invoice');
@@ -86,8 +134,12 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
         try {
             const result = await financialService.importInvoice(uploadResult.uploadId);
             setImportDone(true);
-            setToast(`✅ Imported ${result.imported} records. ${result.updatedOrders} orders updated.`);
-            // Reset after short delay
+            const isFfeu = uploadResult.invoiceFormat === 'ffeu_pdf';
+            if (isFfeu) {
+                setToast(`✅ Imported ${result.imported} FFEU fee records into Financial.`);
+            } else {
+                setToast(`✅ Imported ${result.imported} records. ${result.updatedOrders} orders updated.`);
+            }
             setTimeout(() => {
                 handleClear();
                 onImportSuccess?.();
@@ -107,7 +159,20 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const formatEur = (val: number) => `€${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatEur = (val: number) =>
+        `€${(val || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const isFfeu = uploadResult?.invoiceFormat === 'ffeu_pdf';
+
+    // Group FFEU rows by category
+    const ffeuGrouped: Record<string, any[]> = {};
+    if (isFfeu && uploadResult?.rows) {
+        for (const row of uploadResult.rows) {
+            const cat = row.category || 'GENERAL';
+            if (!ffeuGrouped[cat]) ffeuGrouped[cat] = [];
+            ffeuGrouped[cat].push(row);
+        }
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -141,7 +206,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
             {!uploadResult && (
                 <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-5">
-                        {subTab === 'per_order' ? '📦 Upload Beeping Per-order Invoice' : '📋 Upload Monthly Invoice'}
+                        {subTab === 'per_order' ? '📦 Upload Beeping Per-order Invoice' : '📋 Upload Monthly Invoice (XLSX or FFEU PDF)'}
                     </h3>
 
                     {/* Drag-and-drop area */}
@@ -160,21 +225,32 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".xlsx"
+                            accept={acceptedExtensions}
                             className="hidden"
                             onChange={handleFileSelect}
                         />
                         {selectedFile ? (
                             <div className="flex flex-col items-center gap-2">
-                                <span className="material-symbols-outlined text-[40px] text-emerald-400">description</span>
+                                <span className="material-symbols-outlined text-[40px] text-emerald-400">
+                                    {selectedFile.name.endsWith('.pdf') ? 'picture_as_pdf' : 'description'}
+                                </span>
                                 <p className="text-white font-bold text-sm">{selectedFile.name}</p>
                                 <p className="text-text-muted text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                                {selectedFile.name.endsWith('.pdf') && (
+                                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                        FFEU PDF
+                                    </span>
+                                )}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-2">
                                 <span className="material-symbols-outlined text-[40px] text-text-muted/30">cloud_upload</span>
-                                <p className="text-text-muted text-sm font-bold">Drag & drop your .xlsx file here, or click to browse</p>
-                                <p className="text-text-muted/50 text-xs">Only .xlsx files are accepted</p>
+                                <p className="text-text-muted text-sm font-bold">Drag & drop your file here, or click to browse</p>
+                                <p className="text-text-muted/50 text-xs">
+                                    {subTab === 'monthly'
+                                        ? 'Accepts .xlsx (Beeping) or .pdf (FFEU invoice)'
+                                        : 'Only .xlsx files are accepted'}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -225,8 +301,168 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                 </div>
             )}
 
-            {/* ─── Preview Table ───────────────────────────────── */}
-            {uploadResult && (
+            {/* ─── FFEU PDF Preview ───────────────────────────────── */}
+            {uploadResult && isFfeu && uploadResult.header && (
+                <div className="flex flex-col gap-5">
+                    {/* FFEU Header Card */}
+                    <div className="bg-gradient-to-br from-violet-500/10 to-blue-500/5 rounded-2xl border border-violet-500/20 p-5">
+                        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-violet-400" style={{ fontSize: '20px' }}>receipt_long</span>
+                                </div>
+                                <div>
+                                    <p className="text-white font-black text-lg">INVOICE #{uploadResult.header.invoiceNumber || '—'}</p>
+                                    <p className="text-text-muted text-xs">
+                                        {uploadResult.header.dateFrom} → {uploadResult.header.dateTo}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                                    FFEU PDF
+                                </span>
+                                <span className="text-[10px] font-black uppercase px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    {uploadResult.header.numberOfOrders} Orders
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Invoice metadata grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Bank</p>
+                                <p className="text-white font-medium">{uploadResult.header.bankName || '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Bank Number</p>
+                                <p className="text-white font-mono text-xs">{uploadResult.header.bankNumber || '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Country</p>
+                                <p className="text-white font-medium">{uploadResult.header.country || '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Tax Number</p>
+                                <p className="text-white font-mono text-xs">{uploadResult.header.taxNumber || '—'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Fee breakdown by section */}
+                    <div className="flex flex-col gap-4">
+                        {Object.entries(ffeuGrouped).map(([category, catRows]) => {
+                            const colorClass = SECTION_COLORS[category] || SECTION_COLORS['GENERAL'];
+                            const icon = SECTION_ICON[category] || 'receipt';
+                            const sectionTotal = catRows.reduce((sum, r) => sum + r.amountEur, 0);
+                            return (
+                                <div key={category} className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+                                    {/* Section header */}
+                                    <div className="flex items-center justify-between px-5 py-3 bg-[#17232f] border-b border-border-dark">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`material-symbols-outlined text-[16px] ${colorClass.split(' ')[0]}`}>{icon}</span>
+                                            <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${colorClass}`}>
+                                                {category}
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-black text-white">{formatEur(sectionTotal)}</span>
+                                    </div>
+                                    {/* Rows */}
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-[#141e29]">
+                                                <th className="px-5 py-2 text-text-muted font-black text-[10px] uppercase tracking-widest w-full">Item</th>
+                                                <th className="px-5 py-2 text-text-muted font-black text-[10px] uppercase tracking-widest text-center whitespace-nowrap">Qty</th>
+                                                <th className="px-5 py-2 text-text-muted font-black text-[10px] uppercase tracking-widest text-right whitespace-nowrap">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border-dark/40">
+                                            {catRows.map((row: any, idx: number) => (
+                                                <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                                                    <td className="px-5 py-2.5 text-xs text-white font-medium">{row.item}</td>
+                                                    <td className="px-5 py-2.5 text-xs text-text-muted text-center">
+                                                        {row.total !== null ? row.total : '—'}
+                                                    </td>
+                                                    <td className="px-5 py-2.5 text-xs font-black text-right">
+                                                        <span className={row.amountEur > 0 ? 'text-white' : 'text-text-muted'}>
+                                                            {formatEur(row.amountEur)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* FFEU Summary totals */}
+                    <div className="bg-card-dark rounded-2xl border border-border-dark p-5">
+                        <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-4">Invoice Summary</h4>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-muted">Subtotal Fees</span>
+                                <span className="text-white font-bold">{formatEur(uploadResult.header.subtotalFees)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-muted">VAT (0%)</span>
+                                <span className="text-white font-bold">{formatEur(uploadResult.header.vat)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm border-t border-border-dark pt-2 mt-1">
+                                <span className="text-text-muted font-bold">Total Fees</span>
+                                <span className="text-blue-400 font-black">{formatEur(uploadResult.header.totalFees)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-text-muted">Total Orders (COD Collected)</span>
+                                <span className="text-amber-400 font-bold">{formatEur(uploadResult.header.totalOrders)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm border-t border-border-dark pt-2 mt-1">
+                                <span className="text-white font-black text-base">Total Payment Due</span>
+                                <span className="text-emerald-400 font-black text-base">{formatEur(uploadResult.header.totalDue)}</span>
+                            </div>
+                        </div>
+                        <p className="text-text-muted/50 text-[10px] mt-4">
+                            * Only fee rows (excluding ORDERS) will be imported as Fulfillment expense records.
+                        </p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleImport}
+                            disabled={importing || importDone}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-40 shadow-lg shadow-primary/20"
+                        >
+                            {importing ? (
+                                <>
+                                    <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                                    Importing...
+                                </>
+                            ) : importDone ? (
+                                <>
+                                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                    Imported!
+                                </>
+                            ) : (
+                                <>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
+                                    Import {uploadResult.rows.filter((r: any) => r.category !== 'ORDERS' && r.amountEur > 0).length} Fee Records
+                                </>
+                            )}
+                        </button>
+                        <button
+                            onClick={handleClear}
+                            className="px-4 py-2.5 text-text-muted hover:text-white border border-border-dark rounded-lg text-sm font-bold transition-all"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Standard XLSX Preview Table ───────────────────────── */}
+            {uploadResult && !isFfeu && (
                 <div className="flex flex-col gap-4">
                     {/* Info banner */}
                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-5 py-3 flex items-start gap-3">

@@ -2,6 +2,8 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFinancialRecordDto, UpdateFinancialRecordDto } from './dto/create-financial-record.dto';
 import * as XLSX from 'xlsx';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require('pdf-parse');
 
 export interface ParsedPerOrderRow {
     store: string;
@@ -30,6 +32,30 @@ export interface ParsedMonthlyRow {
     expenseEur: number;
     description: string;
     amountVnd: number | null;
+}
+
+export interface FfeuInvoiceHeader {
+    invoiceNumber: string;
+    dateFrom: string;
+    dateTo: string;
+    numberOfOrders: number;
+    totalDue: number;
+    bankName: string;
+    bankNumber: string;
+    country: string;
+    taxNumber: string;
+    subtotalFees: number;
+    vat: number;
+    totalFees: number;
+    totalOrders: number;
+}
+
+export interface FfeuFeeRow {
+    item: string;
+    total: number | null;  // quantity / count
+    amountEur: number;
+    category: string;      // CALL CENTER FEES | SHIPPING FEES | FULFILLEMENT | ORDERS
+    description: string;
 }
 
 @Injectable()
@@ -250,6 +276,63 @@ const rawRows = this._parseInvoice(fileBuffer);
         };
     }
 
+    async uploadFfeuPdfInvoice(
+        fileBuffer: Buffer,
+        filename: string,
+        fulfillmentCenterId: string,
+        periodMonth?: string,
+        uploadedBy?: string,
+    ) {
+        if (!fileBuffer || fileBuffer.length === 0) {
+            throw new BadRequestException('Uploaded file is empty');
+        }
+
+        const { header, rows } = await this._parseFfeuPdf(fileBuffer);
+
+        const currentRate = await this.getLatestExchangeRate();
+        const rateValue = currentRate ? Number(currentRate.vndToEur) : null;
+
+        // Annotate VND amounts
+        const annotatedRows = rows.map((row) => ({
+            ...row,
+            amountVnd: rateValue ? row.amountEur / rateValue : null,
+        }));
+
+        // Total expense = sum of all fee rows (excluding ORDERS section which is revenue)
+        const totalAmountEur = annotatedRows
+            .filter((r) => r.category !== 'ORDERS')
+            .reduce((sum, r) => sum + r.amountEur, 0);
+
+        const upload = await this.prisma.fulfillmentInvoiceUpload.create({
+            data: {
+                fulfillmentCenterId,
+                invoiceType: 'monthly',
+                periodMonth: periodMonth || null,
+                filename,
+                totalLines: annotatedRows.length,
+                matchedLines: 0,
+                unmatchedLines: 0,
+                totalAmountEur,
+                status: 'pending',
+                rawData: { header, rows: annotatedRows } as any,
+                uploadedBy: uploadedBy || null,
+            },
+        });
+
+        return {
+            uploadId: upload.id,
+            invoiceFormat: 'ffeu_pdf' as const,
+            header,
+            rows: annotatedRows,
+            summary: {
+                total: annotatedRows.length,
+                matched: 0,
+                unmatched: 0,
+                totalAmountEur: Math.round(totalAmountEur * 100) / 100,
+            },
+        };
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // IMPORT (writes financial_records + updates orders)
     // ═══════════════════════════════════════════════════════════════
@@ -266,7 +349,12 @@ const rawRows = this._parseInvoice(fileBuffer);
             throw new BadRequestException(`Upload already ${upload.status}. Cannot import again.`);
         }
 
-        const rows = upload.rawData as any[];
+        // rawData can be a flat array (per_order / monthly XLSX)
+        // or { header, rows } object (FFEU PDF monthly)
+        const rawData = upload.rawData as any;
+        const rows: any[] = Array.isArray(rawData)
+            ? rawData
+            : (rawData?.rows ?? []);
         if (!rows || !rows.length) {
             throw new BadRequestException('No data to import');
         }
@@ -312,27 +400,65 @@ const rawRows = this._parseInvoice(fileBuffer);
                 }
             }
         } else {
-            // Monthly invoice — no order matching
-            for (const row of rows) {
-                const amountVnd = rateValue ? row.expenseEur / rateValue : null;
+            // Monthly invoice — could be FFEU PDF or simple monthly XLSX
+            // Detect FFEU format: rawData has { header, rows } shape
+            const isFfeu = rows[0] && 'category' in rows[0] && 'item' in rows[0];
 
-                operations.push(
-                    this.prisma.financialRecord.create({
-                        data: {
-                            date: new Date(),
-                            description: row.description,
-                            category: 'Fulfillment',
-                            market: null,
-                            amountEur: row.expenseEur,
-                            amountVnd: amountVnd,
-                            exchangeRate: rateValue,
-                            source: 'beeping',
-                            orderId: null,
-                            fulfillmentCenterId: upload.fulfillmentCenterId,
-                            invoiceUploadId: uploadId,
-                        },
-                    }),
-                );
+            if (isFfeu) {
+                // FFEU PDF: each fee row becomes its own financial record
+                const feeRows = rows.filter((r: any) => r.category !== 'ORDERS' && r.amountEur > 0);
+                for (const row of feeRows) {
+                    const amountVnd = rateValue ? (row.amountEur as number) / rateValue : null;
+                    // Map FFEU category to financial category
+                    const financialCategory = (() => {
+                        const cat = (row.category as string).toUpperCase();
+                        if (cat.includes('SHIPPING')) return 'Fulfillment';
+                        if (cat.includes('CALL CENTER')) return 'Fulfillment';
+                        if (cat.includes('FULFILLEMENT') || cat.includes('FULFILLMENT')) return 'Fulfillment';
+                        return 'Fulfillment';
+                    })();
+
+                    operations.push(
+                        this.prisma.financialRecord.create({
+                            data: {
+                                date: new Date(),
+                                description: row.description || `FFEU — ${row.item}`,
+                                category: financialCategory,
+                                market: null,
+                                amountEur: row.amountEur,
+                                amountVnd,
+                                exchangeRate: rateValue,
+                                source: 'ffeu',
+                                orderId: null,
+                                fulfillmentCenterId: upload.fulfillmentCenterId,
+                                invoiceUploadId: uploadId,
+                            },
+                        }),
+                    );
+                }
+            } else {
+                // Standard monthly XLSX rows
+                for (const row of rows) {
+                    const amountVnd = rateValue ? row.expenseEur / rateValue : null;
+
+                    operations.push(
+                        this.prisma.financialRecord.create({
+                            data: {
+                                date: new Date(),
+                                description: row.description,
+                                category: 'Fulfillment',
+                                market: null,
+                                amountEur: row.expenseEur,
+                                amountVnd: amountVnd,
+                                exchangeRate: rateValue,
+                                source: 'beeping',
+                                orderId: null,
+                                fulfillmentCenterId: upload.fulfillmentCenterId,
+                                invoiceUploadId: uploadId,
+                            },
+                        }),
+                    );
+                }
             }
         }
 
@@ -350,8 +476,11 @@ const rawRows = this._parseInvoice(fileBuffer);
         // Execute in a single transaction
         await this.prisma.$transaction(operations);
 
+        // operations includes 1 status-update at the end — subtract it for the count
+        const importedCount = operations.length - 1;
+
         return {
-            imported: rows.length,
+            imported: importedCount,
             updatedOrders,
         };
     }
@@ -819,5 +948,189 @@ const rawRows = this._parseInvoice(fileBuffer);
             throw new BadRequestException('XLSX file is empty or has no data rows');
         }
         return rows;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // FFEU PDF PARSER
+    // ═══════════════════════════════════════════════════════════════
+
+    private async _parseFfeuPdf(fileBuffer: Buffer): Promise<{ header: FfeuInvoiceHeader; rows: FfeuFeeRow[] }> {
+        let pdfData: { text: string };
+        try {
+            pdfData = await pdfParse(fileBuffer);
+        } catch (e) {
+            throw new BadRequestException('Failed to parse PDF file: ' + e.message);
+        }
+        const text = pdfData.text;
+        const lines = text.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0);
+
+        // ── Extract header fields ──────────────────────────────────
+        const header: FfeuInvoiceHeader = {
+            invoiceNumber: '',
+            dateFrom: '',
+            dateTo: '',
+            numberOfOrders: 0,
+            totalDue: 0,
+            bankName: '',
+            bankNumber: '',
+            country: '',
+            taxNumber: '',
+            subtotalFees: 0,
+            vat: 0,
+            totalFees: 0,
+            totalOrders: 0,
+        };
+
+        const fullText = lines.join(' ');
+
+        // Invoice number: INVOICE #ESxxxx or INVOICE #XXX
+        const invoiceMatch = fullText.match(/INVOICE\s*#([A-Z0-9]+)/i);
+        if (invoiceMatch) header.invoiceNumber = invoiceMatch[1];
+
+        // Date Transaction: YYYY-MM-DD - YYYY-MM-DD
+        const dateMatch = fullText.match(/(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/);
+        if (dateMatch) { header.dateFrom = dateMatch[1]; header.dateTo = dateMatch[2]; }
+
+        // Number Of Orders
+        const ordersMatch = fullText.match(/Number\s+Of\s+Orders\s*:?\s*(\d+)/i);
+        if (ordersMatch) header.numberOfOrders = parseInt(ordersMatch[1], 10);
+
+        // Total Due
+        const totalDueMatch = fullText.match(/Total\s+Due\s*:?\s*([\d,\.]+)\s*€/i);
+        if (totalDueMatch) header.totalDue = this.parseMoneyValue(totalDueMatch[1]);
+
+        // Bank name
+        const bankNameMatch = fullText.match(/Bank\s+name\s*:?\s*([^\d]+?)(?:Bank Number|DK|\d)/i);
+        if (bankNameMatch) header.bankName = bankNameMatch[1].trim();
+
+        // Bank number (IBAN format)
+        const bankNumMatch = fullText.match(/Bank\s+Number\s*:?\s*([A-Z0-9]+)/i);
+        if (bankNumMatch) header.bankNumber = bankNumMatch[1].trim();
+
+        // Country
+        const countryMatch = fullText.match(/Country\s*:?\s*([A-Za-z,\.\s]+?)(?:Tax|$)/i);
+        if (countryMatch) header.country = countryMatch[1].trim().replace(/,\s*$/, '');
+
+        // Tax number
+        const taxMatch = fullText.match(/Tax\s+number\s*:?\s*(\d+)/i);
+        if (taxMatch) header.taxNumber = taxMatch[1];
+
+        // Summary totals (usually near bottom)
+        const subtotalMatch = fullText.match(/Subtotal\s+Fees\s*:?\s*([\d,\.]+)\s*€/i);
+        if (subtotalMatch) header.subtotalFees = this.parseMoneyValue(subtotalMatch[1]);
+
+        const vatMatch = fullText.match(/Vat\s*\([\d\s%]+\)\s*:?\s*([\d,\.]+)\s*€/i);
+        if (vatMatch) header.vat = this.parseMoneyValue(vatMatch[1]);
+
+        const totalFeesMatch = fullText.match(/Total\s+Fees\s*:?\s*([\d,\.]+)\s*€/i);
+        if (totalFeesMatch) header.totalFees = this.parseMoneyValue(totalFeesMatch[1]);
+
+        const totalOrdersMatch = fullText.match(/Total\s+Orders\s*:?\s*([\d,\.]+)\s*€/i);
+        if (totalOrdersMatch) header.totalOrders = this.parseMoneyValue(totalOrdersMatch[1]);
+
+        // ── Extract fee rows ──────────────────────────────────────
+        const rows: FfeuFeeRow[] = [];
+        let currentCategory = 'GENERAL';
+
+        // Fee section headers
+        const sectionHeaders = [
+            'CALL CENTER FEES',
+            'SHIPPING FEES',
+            'FULFILLEMENT',
+            'FULFILLMENT',
+            'ORDERS',
+        ];
+
+        // Known fee line patterns: item name, optionally a number, then amount with €
+        // We scan line by line looking for fee lines
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].toUpperCase();
+
+            // Detect section headers
+            for (const section of sectionHeaders) {
+                if (line.includes(section)) {
+                    currentCategory = section.replace('FULFILLEMENT', 'FULFILLEMENT');
+                    break;
+                }
+            }
+
+            // Skip header/footer lines
+            if (
+                line.includes('INVOICE') ||
+                line.includes('DATE TRANSACTION') ||
+                line.includes('NUMBER OF ORDERS') ||
+                line.includes('INVOICE TO') ||
+                line.includes('BILL TO') ||
+                line.includes('TOTAL DUE') ||
+                line.includes('BANK NAME') ||
+                line.includes('BANK NUMBER') ||
+                line.includes('TAX NUMBER') ||
+                line.includes('COUNTRY') ||
+                line.includes('SUBTOTAL FEES') ||
+                line.includes('TOTAL FEES') ||
+                line.includes('TOTAL ORDERS') ||
+                line.includes('TOTAL PAYMENT') ||
+                line.includes('VAT') ||
+                line.includes('THANKS FOR') ||
+                line.includes('NOTE:') ||
+                line.includes('ITEM') ||
+                line.includes('AMOUNT') ||
+                sectionHeaders.some((s) => line.trim() === s || line.trim() === s + ' :')
+            ) {
+                continue;
+            }
+
+            // Try to match a fee line: "ITEM NAME  [count]  X.XX €"
+            // Pattern: text, optional number, then number with optional decimal and €
+            const feeLineMatch = lines[i].match(/^([A-Za-z &]+?)\s+(\d+)?\s*([\d]+[\.,][\d]+)\s*€?\s*$/);
+            if (feeLineMatch) {
+                const itemName = feeLineMatch[1].trim();
+                const count = feeLineMatch[2] ? parseInt(feeLineMatch[2], 10) : null;
+                const amount = this.parseMoneyValue(feeLineMatch[3]);
+
+                if (amount === 0 && count === null) continue;
+
+                rows.push({
+                    item: itemName,
+                    total: count,
+                    amountEur: amount,
+                    category: currentCategory,
+                    description: `FFEU ${header.invoiceNumber || 'Invoice'} — ${itemName}`,
+                });
+                continue;
+            }
+
+            // Alternative: just amount with € at end of a text line (no count)
+            const simpleMatch = lines[i].match(/^([A-Za-z &:]+?)\s+([\d]+[\.,][\d]+)\s*€?\s*$/);
+            if (simpleMatch) {
+                const itemName = simpleMatch[1].trim();
+                const amount = this.parseMoneyValue(simpleMatch[2]);
+                if (amount > 0) {
+                    rows.push({
+                        item: itemName,
+                        total: null,
+                        amountEur: amount,
+                        category: currentCategory,
+                        description: `FFEU ${header.invoiceNumber || 'Invoice'} — ${itemName}`,
+                    });
+                }
+            }
+        }
+
+        this.logger.log(`FFEU PDF parsed: invoice=${header.invoiceNumber}, rows=${rows.length}`);
+
+        if (rows.length === 0) {
+            // Fallback: create one summary row from the totalDue
+            this.logger.warn('FFEU PDF: no individual rows parsed, creating summary row from totalDue');
+            rows.push({
+                item: `Invoice ${header.invoiceNumber || ''} Total`,
+                total: header.numberOfOrders || null,
+                amountEur: header.totalDue,
+                category: 'GENERAL',
+                description: `FFEU ${header.invoiceNumber || 'Invoice'} — Total Due`,
+            });
+        }
+
+        return { header, rows };
     }
 }

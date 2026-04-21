@@ -22,7 +22,7 @@ export class FinancialController {
     // ─── Invoice Upload & Import ─────────────────────────────────
 
     @Post('invoices/upload')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
     async uploadInvoice(
         @UploadedFile() file: Express.Multer.File,
         @Body('fulfillment_center_id') fulfillmentCenterId: string,
@@ -37,8 +37,19 @@ export class FinancialController {
         }
 
         const type = invoiceType || 'per_order';
+        const isPdf = file.originalname.toLowerCase().endsWith('.pdf') ||
+            file.mimetype === 'application/pdf';
 
         if (type === 'monthly') {
+            // FFEU invoices come as PDF; standard Beeping monthly invoices come as XLSX
+            if (isPdf) {
+                return this.financialService.uploadFfeuPdfInvoice(
+                    file.buffer,
+                    file.originalname,
+                    fulfillmentCenterId,
+                    periodMonth,
+                );
+            }
             return this.financialService.uploadMonthlyInvoice(
                 file.buffer,
                 file.originalname,
