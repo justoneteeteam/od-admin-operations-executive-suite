@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { adsCampaignsService, PocReportData, PocCampaignDetail } from '../src/services/ads-campaigns.service';
 import { customersService } from '../src/services/customers.service';
 import { financialService } from '../src/services/financial.service';
+import ReportsTab from '../components/inventory/ReportsTab';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // P&L REPORT TAB
@@ -513,7 +514,7 @@ const PocReportTab: React.FC = () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ReportPage: React.FC = () => {
-    const [tab, setTab] = useState<'poc' | 'pnl'>('pnl');
+    const [tab, setTab] = useState<'poc' | 'pnl' | 'fulfillment'>('pnl');
 
     return (
         <div className="flex flex-col gap-6 pb-12">
@@ -533,6 +534,7 @@ const ReportPage: React.FC = () => {
                 {([
                     { key: 'pnl' as const, label: '📊 P&L Report' },
                     { key: 'poc' as const, label: '🧪 POC Report' },
+                    { key: 'fulfillment' as const, label: '📦 Fulfillment Report' },
                 ]).map(t => (
                     <button
                         key={t.key}
@@ -547,6 +549,7 @@ const ReportPage: React.FC = () => {
             {/* Tab Content */}
             {tab === 'pnl' && <PnlReportTab />}
             {tab === 'poc' && <PocReportTab />}
+            {tab === 'fulfillment' && <ReportsTab selectedWarehouse="" />}
         </div>
     );
 };
