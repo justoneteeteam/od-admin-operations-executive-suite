@@ -1001,8 +1001,11 @@ const rawRows = this._parseInvoice(fileBuffer);
             // Orders delivered
             const ordersDelivered = fcOrders.filter((o) => o.orderStatus === 'Delivered').length;
 
-            // Orders returned (Count only if Stock Return State is exactly 'Restocked (Available)')
-            const ordersReturned = fcOrders.filter((o) => o.returnStockState === 'restocked').length;
+            // Orders returned (Count if Stock Return State is 'returning', 'restocked', or 'written_off')
+            const returnedStates = ['returning', 'restocked', 'written_off'];
+            const ordersReturned = fcOrders.filter((o) => 
+                o.returnStockState && returnedStates.includes(o.returnStockState)
+            ).length;
 
             // % Delivered / Sent
             const deliveryRate = ordersSent > 0 ? (ordersDelivered / ordersSent) * 100 : 0;
