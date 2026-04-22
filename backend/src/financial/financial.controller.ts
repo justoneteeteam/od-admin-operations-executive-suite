@@ -130,6 +130,13 @@ export class FinancialController {
         return this.financialService.getPnlReport(y);
     }
 
+    // ─── Fulfillment Center Report ─────────────────────────────
+
+    @Get('fulfillment-report')
+    async getFulfillmentReport(@Query('month') month?: string) {
+        return this.financialService.getFulfillmentReport(month);
+    }
+
     // ─── Utility ──────────────────────────────────────────────
 
     @Get('exchange-rate')

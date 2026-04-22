@@ -141,6 +141,44 @@ export const financialService = {
         return response.data;
     },
 
+    // ─── Fulfillment Center Report ────────────────────────────
+    async getFulfillmentReport(month?: string): Promise<{
+        month: string;
+        centers: Array<{
+            fulfillmentCenterId: string;
+            fulfillmentCenterName: string;
+            fulfillmentCenterCode: string;
+            country: string;
+            totalOrders: number;
+            ordersSent: number;
+            ordersDelivered: number;
+            ordersReturned: number;
+            deliveryRate: number;
+            returnRate: number;
+            fulfillmentCost: number;
+            costPerOrder: number;
+            reshipmentCost: number;
+            aov: number;
+            revenue: number;
+            fulfillmentPctRevenue: number;
+            profit: number;
+        }>;
+        totals: {
+            totalOrders: number;
+            ordersSent: number;
+            ordersDelivered: number;
+            ordersReturned: number;
+            revenue: number;
+            fulfillmentCost: number;
+            reshipmentCost: number;
+            profit: number;
+        };
+    }> {
+        const params = month ? `?month=${month}` : '';
+        const response = await apiClient.get(`/financial/fulfillment-report${params}`);
+        return response.data;
+    },
+
     // ─── Invoice Upload & Import ─────────────────────────────────
     async uploadInvoice(
         file: File,

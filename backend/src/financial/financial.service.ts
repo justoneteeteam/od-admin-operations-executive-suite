@@ -909,6 +909,164 @@ const rawRows = this._parseInvoice(fileBuffer);
         return { year, months, data: monthData };
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // FULFILLMENT CENTER REPORT
+    // ═══════════════════════════════════════════════════════════════
+
+    async getFulfillmentReport(month?: string) {
+        // Parse month filter
+        let startDate: Date;
+        let endDate: Date;
+
+        if (month) {
+            const [year, m] = month.split('-').map(Number);
+            startDate = new Date(year, m - 1, 1);
+            endDate = new Date(year, m, 0, 23, 59, 59);
+        } else {
+            const now = new Date();
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        }
+
+        // Get all fulfillment centers
+        const fulfillmentCenters = await this.prisma.fulfillmentCenter.findMany({
+            select: { id: true, name: true, code: true, country: true },
+        });
+
+        // Get all orders in the month range with FC assigned
+        const orders = await this.prisma.order.findMany({
+            where: {
+                fulfillmentCenterId: { not: null },
+                orderDate: { gte: startDate, lte: endDate },
+            },
+            select: {
+                id: true,
+                fulfillmentCenterId: true,
+                orderStatus: true,
+                totalAmount: true,
+                fulfillmentCost: true,
+                orderDate: true,
+            },
+        });
+
+        // Get fulfillment costs from financial records for this month
+        const financialRecords = await this.prisma.financialRecord.findMany({
+            where: {
+                fulfillmentCenterId: { not: null },
+                category: 'Fulfillment',
+                date: { gte: startDate, lte: endDate },
+            },
+            select: {
+                fulfillmentCenterId: true,
+                amountEur: true,
+                description: true,
+            },
+        });
+
+        // Aggregate financial records by FC
+        const fulfillmentCostByFc: Record<string, number> = {};
+        const reshipmentCostByFc: Record<string, number> = {};
+        for (const fr of financialRecords) {
+            if (!fr.fulfillmentCenterId) continue;
+            // Check if this is a reshipment cost (by description pattern)
+            const desc = (fr.description || '').toLowerCase();
+            if (desc.includes('reshipment') || desc.includes('re-ship') || desc.includes('reship')) {
+                reshipmentCostByFc[fr.fulfillmentCenterId] =
+                    (reshipmentCostByFc[fr.fulfillmentCenterId] || 0) + Number(fr.amountEur);
+            } else {
+                fulfillmentCostByFc[fr.fulfillmentCenterId] =
+                    (fulfillmentCostByFc[fr.fulfillmentCenterId] || 0) + Number(fr.amountEur);
+            }
+        }
+
+        // Aggregate orders by FC
+        const sentStatuses = ['Shipped', 'OutForDelivery', 'Delivered', 'Returned', 'Return'];
+
+        const report = fulfillmentCenters.map((fc) => {
+            const fcOrders = orders.filter((o) => o.fulfillmentCenterId === fc.id);
+            const totalOrders = fcOrders.length;
+
+            // Orders sent = any order that was shipped out from FC
+            const ordersSent = fcOrders.filter((o) => sentStatuses.includes(o.orderStatus)).length;
+
+            // Orders delivered
+            const ordersDelivered = fcOrders.filter((o) => o.orderStatus === 'Delivered').length;
+
+            // Orders returned
+            const ordersReturned = fcOrders.filter(
+                (o) => o.orderStatus === 'Returned' || o.orderStatus === 'Return',
+            ).length;
+
+            // % Delivered / Sent
+            const deliveryRate = ordersSent > 0 ? (ordersDelivered / ordersSent) * 100 : 0;
+
+            // Return rate
+            const returnRate = ordersSent > 0 ? (ordersReturned / ordersSent) * 100 : 0;
+
+            // Revenue = sum of totalAmount for delivered orders
+            const revenue = fcOrders
+                .filter((o) => o.orderStatus === 'Delivered')
+                .reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+
+            // AOV = Average Order Value for all orders
+            const totalOrderValue = fcOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+            const aov = totalOrders > 0 ? totalOrderValue / totalOrders : 0;
+
+            // Fulfillment cost from financial records (uploaded via CodReconciliationTab)
+            const fulfillmentCost = fulfillmentCostByFc[fc.id] || 0;
+
+            // Cost per order = Fulfillment cost / Total orders uploaded
+            const costPerOrder = totalOrders > 0 ? fulfillmentCost / totalOrders : 0;
+
+            // Reshipment cost
+            const reshipmentCost = reshipmentCostByFc[fc.id] || 0;
+
+            // Fulfillment % of order revenue
+            const fulfillmentPctRevenue = revenue > 0 ? (fulfillmentCost / revenue) * 100 : 0;
+
+            // Profit = Revenue - Fulfillment Cost - Reshipment Cost
+            const profit = revenue - fulfillmentCost - reshipmentCost;
+
+            return {
+                fulfillmentCenterId: fc.id,
+                fulfillmentCenterName: fc.name,
+                fulfillmentCenterCode: fc.code,
+                country: fc.country,
+                totalOrders,
+                ordersSent,
+                ordersDelivered,
+                ordersReturned,
+                deliveryRate: Math.round(deliveryRate * 100) / 100,
+                returnRate: Math.round(returnRate * 100) / 100,
+                fulfillmentCost: Math.round(fulfillmentCost * 100) / 100,
+                costPerOrder: Math.round(costPerOrder * 100) / 100,
+                reshipmentCost: Math.round(reshipmentCost * 100) / 100,
+                aov: Math.round(aov * 100) / 100,
+                revenue: Math.round(revenue * 100) / 100,
+                fulfillmentPctRevenue: Math.round(fulfillmentPctRevenue * 100) / 100,
+                profit: Math.round(profit * 100) / 100,
+            };
+        });
+
+        // Include all FCs (even zero-order ones for visibility)
+        const totals = {
+            totalOrders: report.reduce((s, r) => s + r.totalOrders, 0),
+            ordersSent: report.reduce((s, r) => s + r.ordersSent, 0),
+            ordersDelivered: report.reduce((s, r) => s + r.ordersDelivered, 0),
+            ordersReturned: report.reduce((s, r) => s + r.ordersReturned, 0),
+            revenue: Math.round(report.reduce((s, r) => s + r.revenue, 0) * 100) / 100,
+            fulfillmentCost: Math.round(report.reduce((s, r) => s + r.fulfillmentCost, 0) * 100) / 100,
+            reshipmentCost: Math.round(report.reduce((s, r) => s + r.reshipmentCost, 0) * 100) / 100,
+            profit: Math.round(report.reduce((s, r) => s + r.profit, 0) * 100) / 100,
+        };
+
+        return {
+            month: month || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+            centers: report,
+            totals,
+        };
+    }
+
     async getLatestExchangeRate() {
         try {
             return await this.prisma.exchangeRate.findFirst({
