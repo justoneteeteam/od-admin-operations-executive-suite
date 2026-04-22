@@ -946,6 +946,7 @@ const rawRows = this._parseInvoice(fileBuffer);
                 totalAmount: true,
                 fulfillmentCost: true,
                 orderDate: true,
+                returnStockState: true,
             },
         });
 
@@ -992,10 +993,8 @@ const rawRows = this._parseInvoice(fileBuffer);
             // Orders delivered
             const ordersDelivered = fcOrders.filter((o) => o.orderStatus === 'Delivered').length;
 
-            // Orders returned
-            const ordersReturned = fcOrders.filter(
-                (o) => o.orderStatus === 'Returned' || o.orderStatus === 'Return',
-            ).length;
+            // Orders returned (Count only if Stock Return State is exactly 'Restocked (Available)')
+            const ordersReturned = fcOrders.filter((o) => o.returnStockState === 'restocked').length;
 
             // % Delivered / Sent
             const deliveryRate = ordersSent > 0 ? (ordersDelivered / ordersSent) * 100 : 0;
