@@ -947,6 +947,7 @@ const rawRows = this._parseInvoice(fileBuffer);
                 fulfillmentCost: true,
                 orderDate: true,
                 returnStockState: true,
+                confirmationStatus: true,
             },
         });
 
@@ -981,14 +982,21 @@ const rawRows = this._parseInvoice(fileBuffer);
         }
 
         // Aggregate orders by FC
-        const sentStatuses = ['Shipped', 'OutForDelivery', 'Delivered', 'Returned', 'Return'];
+        // "Confirm and Ship" -> must be Confirmed, and status indicates it left the warehouse.
+        const sentStatuses = [
+            'Shipped', 'InTransit', 'OutForDelivery', 'Delivered', 
+            'Undelivered', 'Exception', 'NotFound', 'Expired', 
+            'Returned', 'Return'
+        ];
 
         const report = fulfillmentCenters.map((fc) => {
             const fcOrders = orders.filter((o) => o.fulfillmentCenterId === fc.id);
             const totalOrders = fcOrders.length;
 
-            // Orders sent = any order that was shipped out from FC
-            const ordersSent = fcOrders.filter((o) => sentStatuses.includes(o.orderStatus)).length;
+            // Orders sent = fully confirmed AND package is dispatched
+            const ordersSent = fcOrders.filter(
+                (o) => o.confirmationStatus === 'Confirmed' && sentStatuses.includes(o.orderStatus)
+            ).length;
 
             // Orders delivered
             const ordersDelivered = fcOrders.filter((o) => o.orderStatus === 'Delivered').length;
