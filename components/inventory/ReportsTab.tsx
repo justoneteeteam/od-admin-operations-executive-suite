@@ -238,10 +238,9 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border-dark/40">
-                                        {report.centers.map((fc) => {
-                                            const hasOrders = fc.totalOrders > 0;
+                                        {report.centers.filter(fc => fc.totalOrders > 0).map((fc) => {
                                             return (
-                                                <tr key={fc.fulfillmentCenterId} className={`transition-colors ${hasOrders ? 'hover:bg-primary/[0.03]' : 'opacity-40'}`}>
+                                                <tr key={fc.fulfillmentCenterId} className="transition-colors hover:bg-primary/[0.03]">
                                                     {/* FC Name */}
                                                     <td className="px-4 py-3 sticky left-0 bg-card-dark z-10">
                                                         <div className="flex items-center gap-2">
