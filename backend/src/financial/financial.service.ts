@@ -998,12 +998,16 @@ const rawRows = this._parseInvoice(fileBuffer);
                 (o) => o.confirmationStatus === 'Confirmed' && sentStatuses.includes(o.orderStatus)
             ).length;
 
-            // Orders delivered
-            const ordersDelivered = fcOrders.filter((o) => o.orderStatus === 'Delivered').length;
+            // Orders delivered (must also be Confirmed to be consistent with sent count)
+            const ordersDelivered = fcOrders.filter(
+                (o) => o.confirmationStatus === 'Confirmed' && o.orderStatus === 'Delivered'
+            ).length;
 
-            // Orders returned (Count if Stock Return State is 'returning', 'restocked', or 'written_off')
+            // Orders returned (must also be in the "sent" set: Confirmed + dispatched)
             const returnedStates = ['returning', 'restocked', 'written_off'];
             const ordersReturned = fcOrders.filter((o) => 
+                o.confirmationStatus === 'Confirmed' &&
+                sentStatuses.includes(o.orderStatus) &&
                 o.returnStockState && returnedStates.includes(o.returnStockState)
             ).length;
 
