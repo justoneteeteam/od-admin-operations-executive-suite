@@ -345,6 +345,27 @@ export class OrdersService {
         try {
             const updateData: any = { ...orderData };
 
+            // Rule 2: If tracking number is being set, auto-confirm the order
+            if (updateData.trackingNumber && updateData.trackingNumber.trim() !== '') {
+                if (!updateData.confirmationStatus) {
+                    updateData.confirmationStatus = 'Confirmed';
+                }
+            }
+
+            // Rule 3: Fulfillment center is required when order is confirmed
+            if (updateData.confirmationStatus === 'Confirmed') {
+                // Check if FC is being set in this update, or already exists on the order
+                if (!updateData.fulfillmentCenterId) {
+                    const existingOrder = await this.prisma.order.findUnique({
+                        where: { id },
+                        select: { fulfillmentCenterId: true },
+                    });
+                    if (!existingOrder?.fulfillmentCenterId) {
+                        throw new Error('Fulfillment Center is required when confirming an order. Please assign a Fulfillment Center first.');
+                    }
+                }
+            }
+
             if (items) {
                 // Enforce System Price on Update
                 const processedItems = await Promise.all(items.map(async (item) => {
@@ -649,6 +670,11 @@ export class OrdersService {
                     trackingNumber: firstRow.tracking_number?.toString()?.trim() || null,
                     courier: firstRow.courier?.toString()?.trim() || null
                 };
+
+                // Rule 2: If tracking number present, auto-confirm
+                if (orderPayloadData.trackingNumber) {
+                    orderPayloadData.confirmationStatus = 'Confirmed';
+                }
 
                 let existingOrder: any = null;
                 if (providedOrderNumber) {

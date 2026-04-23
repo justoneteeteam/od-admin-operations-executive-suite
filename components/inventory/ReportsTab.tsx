@@ -14,8 +14,10 @@ interface FcReportRow {
     ordersSent: number;
     ordersDelivered: number;
     ordersReturned: number;
+    ordersCancelled: number;
     deliveryRate: number;
     returnRate: number;
+    cancelRate: number;
     fulfillmentCost: number;
     costPerOrder: number;
     reshipmentCost: number;
@@ -33,6 +35,7 @@ interface FcReportData {
         ordersSent: number;
         ordersDelivered: number;
         ordersReturned: number;
+        ordersCancelled: number;
         revenue: number;
         fulfillmentCost: number;
         reshipmentCost: number;
@@ -229,6 +232,8 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                             <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-center">Delivered</th>
                                             <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-center">% Del/Sent</th>
                                             <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-center">Return Rate</th>
+                                            <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-center">Cancelled</th>
+                                            <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-center">Cancel Rate</th>
                                             <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Cost/Order</th>
                                             <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">Reship Cost</th>
                                             <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest text-right">AOV</th>
@@ -287,6 +292,24 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                                     : 'bg-red-500/10 text-red-400 border border-red-500/20'
                                                         }`}>
                                                             {formatPct(fc.returnRate)}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Cancelled */}
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`text-xs font-bold ${fc.ordersCancelled > 0 ? 'text-orange-400' : 'text-text-muted/40'}`}>{fc.ordersCancelled}</span>
+                                                    </td>
+
+                                                    {/* Cancel Rate */}
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                                                            fc.cancelRate <= 5
+                                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                                : fc.cancelRate <= 15
+                                                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                                    : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                        }`}>
+                                                            {formatPct(fc.cancelRate)}
                                                         </span>
                                                     </td>
 
@@ -362,6 +385,16 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                         : '—'}
                                                 </span>
                                             </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-xs text-orange-400 font-black">{report.totals.ordersCancelled}</span>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="text-xs text-white font-black">
+                                                    {report.totals.totalOrders > 0
+                                                        ? formatPct((report.totals.ordersCancelled / report.totals.totalOrders) * 100)
+                                                        : '—'}
+                                                </span>
+                                            </td>
                                             <td className="px-4 py-3 text-right">
                                                 <span className="text-xs text-white font-black">
                                                     {report.totals.totalOrders > 0
@@ -425,7 +458,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                         </div>
 
                                         {/* Card Metrics */}
-                                        <div className="p-4 grid grid-cols-3 gap-3">
+                                        <div className="p-4 grid grid-cols-4 gap-3">
                                             {/* Order Pipeline */}
                                             <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[#141e29] border border-border-dark/40">
                                                 <span className="material-symbols-outlined text-blue-400" style={{ fontSize: '18px' }}>local_shipping</span>
@@ -442,9 +475,14 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                 <span className="text-[10px] text-text-muted font-bold uppercase">Returned</span>
                                                 <span className="text-lg font-black text-red-400">{fc.ordersReturned}</span>
                                             </div>
+                                            <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[#141e29] border border-border-dark/40">
+                                                <span className="material-symbols-outlined text-orange-400" style={{ fontSize: '18px' }}>block</span>
+                                                <span className="text-[10px] text-text-muted font-bold uppercase">Cancelled</span>
+                                                <span className="text-lg font-black text-orange-400">{fc.ordersCancelled}</span>
+                                            </div>
 
                                             {/* Financial Breakdown */}
-                                            <div className="col-span-3 mt-1 space-y-2">
+                                            <div className="col-span-4 mt-1 space-y-2">
                                                 <div className="flex justify-between items-center text-xs border-b border-border-dark/30 pb-1.5">
                                                     <span className="text-text-muted font-bold">Delivery Rate</span>
                                                     <span className={`font-black ${fc.deliveryRate >= 80 ? 'text-emerald-400' : fc.deliveryRate >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
@@ -455,6 +493,12 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                     <span className="text-text-muted font-bold">Return Rate</span>
                                                     <span className={`font-black ${fc.returnRate <= 10 ? 'text-emerald-400' : fc.returnRate <= 20 ? 'text-amber-400' : 'text-red-400'}`}>
                                                         {formatPct(fc.returnRate)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs border-b border-border-dark/30 pb-1.5">
+                                                    <span className="text-text-muted font-bold">Cancel Rate</span>
+                                                    <span className={`font-black ${fc.cancelRate <= 5 ? 'text-emerald-400' : fc.cancelRate <= 15 ? 'text-amber-400' : 'text-red-400'}`}>
+                                                        {formatPct(fc.cancelRate)}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs border-b border-border-dark/30 pb-1.5">

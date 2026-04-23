@@ -1003,12 +1003,19 @@ const rawRows = this._parseInvoice(fileBuffer);
                 (o) => o.confirmationStatus === 'Confirmed' && o.orderStatus === 'Delivered'
             ).length;
 
-            // Orders returned (must also be in the "sent" set: Confirmed + dispatched)
+            // Orders returned (must be Confirmed + sent status + has return state, but NOT Delivered)
+            // Rule 1: Delivered blocks return status — if delivered, it's not counted as returned
             const returnedStates = ['returning', 'restocked', 'written_off'];
             const ordersReturned = fcOrders.filter((o) => 
                 o.confirmationStatus === 'Confirmed' &&
                 sentStatuses.includes(o.orderStatus) &&
+                o.orderStatus !== 'Delivered' &&
                 o.returnStockState && returnedStates.includes(o.returnStockState)
+            ).length;
+
+            // Orders cancelled (Confirmed orders that were later cancelled)
+            const ordersCancelled = fcOrders.filter(
+                (o) => o.confirmationStatus === 'Cancelled'
             ).length;
 
             // % Delivered / Sent
@@ -1016,6 +1023,9 @@ const rawRows = this._parseInvoice(fileBuffer);
 
             // Return rate
             const returnRate = ordersSent > 0 ? (ordersReturned / ordersSent) * 100 : 0;
+
+            // Cancel rate (cancelled / total orders assigned to this FC)
+            const cancelRate = totalOrders > 0 ? (ordersCancelled / totalOrders) * 100 : 0;
 
             // Revenue = sum of totalAmount for delivered orders
             const revenue = fcOrders
@@ -1050,8 +1060,10 @@ const rawRows = this._parseInvoice(fileBuffer);
                 ordersSent,
                 ordersDelivered,
                 ordersReturned,
+                ordersCancelled,
                 deliveryRate: Math.round(deliveryRate * 100) / 100,
                 returnRate: Math.round(returnRate * 100) / 100,
+                cancelRate: Math.round(cancelRate * 100) / 100,
                 fulfillmentCost: Math.round(fulfillmentCost * 100) / 100,
                 costPerOrder: Math.round(costPerOrder * 100) / 100,
                 reshipmentCost: Math.round(reshipmentCost * 100) / 100,
@@ -1068,6 +1080,7 @@ const rawRows = this._parseInvoice(fileBuffer);
             ordersSent: report.reduce((s, r) => s + r.ordersSent, 0),
             ordersDelivered: report.reduce((s, r) => s + r.ordersDelivered, 0),
             ordersReturned: report.reduce((s, r) => s + r.ordersReturned, 0),
+            ordersCancelled: report.reduce((s, r) => s + r.ordersCancelled, 0),
             revenue: Math.round(report.reduce((s, r) => s + r.revenue, 0) * 100) / 100,
             fulfillmentCost: Math.round(report.reduce((s, r) => s + r.fulfillmentCost, 0) * 100) / 100,
             reshipmentCost: Math.round(report.reduce((s, r) => s + r.reshipmentCost, 0) * 100) / 100,
