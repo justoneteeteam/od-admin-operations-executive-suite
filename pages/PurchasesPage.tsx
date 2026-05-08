@@ -604,107 +604,78 @@ ${items.map((item: any) => {
   }, [vndInput, latestVndToEur]);
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-text-muted text-sm font-medium">Home</span>
-          <span className="text-text-muted text-sm">/</span>
-          <span className="text-on-surface text-sm font-medium">Procurement Management</span>
+    <div className="flex flex-col gap-4">
+      {/* CRM Compact Header */}
+      <div className="flex items-center justify-between py-2 mb-1 border-b border-border-dark/60">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <span>Home</span><span className="opacity-40">/</span>
+            <span className="text-on-surface font-semibold">Purchases</span>
+          </div>
+          <span className="w-px h-3 bg-border-dark opacity-60" />
+          <h1 className="text-sm font-bold text-on-surface hidden sm:block">Procurement Management</h1>
+          <span className="text-[11px] text-text-muted">{purchases.length} purchases</span>
         </div>
-        <div className="flex flex-wrap justify-between items-end gap-4 mt-2">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-on-surface text-4xl font-black tracking-tight">Purchase</h1>
-            <p className="text-text-muted text-sm">Manage your purchases and supplier relations.</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleAddPurchase}
-              className="flex items-center justify-center rounded-xl h-12 px-6 bg-[#f59e0b] text-white text-sm font-bold hover:bg-[#f59e0b]/90 transition-all shadow-lg shadow-orange-500/20"
-            >
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '20px' }}>add_circle</span>
-              Add Purchase
-            </button>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleAddPurchase}
+            className="flex items-center gap-1 h-[30px] px-3 rounded bg-amber-500 text-white text-[11px] font-bold hover:bg-amber-500/90 transition-all"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add_circle</span>
+            Add Purchase
+          </button>
         </div>
       </div>
 
       {/* Main Table */}
-      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden flex flex-col shadow-2xl mb-12">
+      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col mb-6">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
-              <tr className="bg-surface-container/50 border-b border-border-dark">
-                <th className="px-4 py-5 w-10">
-                  <input
-                    type="checkbox"
-                    checked={purchases.length > 0 && selectedIds.size === purchases.length}
-                    onChange={toggleSelectAll}
-                    className="accent-primary w-4 h-4 cursor-pointer"
-                  />
+              <tr className="bg-surface-container border-b border-border-dark">
+                <th className="px-3 py-2 w-10">
+                  <input type="checkbox" checked={purchases.length > 0 && selectedIds.size === purchases.length} onChange={toggleSelectAll} className="accent-primary w-3.5 h-3.5 cursor-pointer" />
                 </th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Internal Ref</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Fulfillment Ref</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Supplier</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Date</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Status</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Total</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider">Tracking #</th>
-                <th className="px-4 py-5 text-text-muted font-bold text-xs uppercase tracking-wider w-32">Actions</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Ref</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">FC Ref</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Supplier</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Date</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Status</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Total</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Tracking</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider w-28">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-dark/40">
               {purchases.map((purchase) => (
-                <tr key={purchase.id} className={`hover:bg-primary/[0.04] transition-colors ${selectedIds.has(purchase.id) ? 'bg-primary/[0.06]' : ''}`}>
-                  <td className="px-4 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(purchase.id)}
-                      onChange={() => toggleSelect(purchase.id)}
-                      className="accent-primary w-4 h-4 cursor-pointer"
-                    />
+                <tr key={purchase.id} className={`hover:bg-surface-high/60 transition-colors border-b border-border-dark/40 last:border-0 ${selectedIds.has(purchase.id) ? 'bg-primary/5' : ''}`}>
+                  <td className="px-3 py-1.5">
+                    <input type="checkbox" checked={selectedIds.has(purchase.id)} onChange={() => toggleSelect(purchase.id)} className="accent-primary w-3.5 h-3.5 cursor-pointer" />
                   </td>
-                  <td className="px-4 py-4 text-sm font-mono text-primary">{purchase.purchaseOrderNumber}</td>
-                  <td className="px-4 py-4 text-sm text-on-surface">{purchase.fulfillmentRef || '—'}</td>
-                  <td className="px-4 py-4 text-sm font-semibold text-on-surface">{purchase.supplier?.name || "Unknown"}</td>
-                  <td className="px-4 py-4 text-sm text-text-muted">{new Date(purchase.orderDate).toLocaleDateString()}</td>
-                  <td className="px-4 py-4">
-                    <span className="px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-[#f59e0b]/10 text-[#f59e0b]">
-                      {purchase.purchaseStatus}
-                    </span>
+                  <td className="px-3 py-1.5 text-[11px] font-mono text-primary">{purchase.purchaseOrderNumber}</td>
+                  <td className="px-3 py-1.5 text-[11px] text-on-surface">{purchase.fulfillmentRef || '—'}</td>
+                  <td className="px-3 py-1.5 text-[11px] font-semibold text-on-surface">{purchase.supplier?.name || 'Unknown'}</td>
+                  <td className="px-3 py-1.5 text-[11px] text-text-muted">{new Date(purchase.orderDate).toLocaleDateString()}</td>
+                  <td className="px-3 py-1.5">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-500 border border-amber-500/20">{purchase.purchaseStatus}</span>
                   </td>
-                  <td className="px-4 py-4 text-sm font-bold text-on-surface">€{Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</td>
-                  <td className="px-4 py-4 text-sm font-mono">
-                    {purchase.trackingNumber
-                      ? <span className="text-emerald-400">{purchase.trackingNumber}</span>
-                      : <span className="text-text-muted italic">ND</span>
-                    }
+                  <td className="px-3 py-1.5 text-[11px] font-bold text-on-surface">€{Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</td>
+                  <td className="px-3 py-1.5 text-[11px] font-mono">
+                    {purchase.trackingNumber ? <span className="text-emerald-400">{purchase.trackingNumber}</span> : <span className="text-text-muted italic">ND</span>}
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2 relative">
-                      <button
-                        onClick={() => handleEditPurchase(purchase)}
-                        className="text-text-muted hover:text-on-surface transition-colors"
-                        title="Edit"
-                      >
-                        <span className="material-symbols-outlined text-sm">edit</span>
+                  <td className="px-3 py-1.5">
+                    <div className="flex items-center gap-1.5 relative">
+                      <button onClick={() => handleEditPurchase(purchase)} className="text-text-muted hover:text-primary transition-colors p-1 rounded hover:bg-primary/10" title="Edit">
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span>
                       </button>
                       {(purchase.purchaseStatus === 'Ordered' || purchase.purchaseStatus === 'Partially Received') && (
-                        <button
-                          onClick={() => handleOpenReceive(purchase)}
-                          className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                          title="Receive Goods"
-                        >
-                          <span className="material-symbols-outlined text-sm">inventory_2</span>
+                        <button onClick={() => handleOpenReceive(purchase)} className="text-emerald-400 hover:text-emerald-300 transition-colors p-1 rounded hover:bg-emerald-500/10" title="Receive Goods">
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>inventory_2</span>
                         </button>
                       )}
                       <div className="relative">
-                        <button
-                          onClick={() => setExportOpenId(exportOpenId === purchase.id ? null : purchase.id)}
-                          className="text-text-muted hover:text-amber-400 transition-colors"
-                          title="Export Invoice"
-                        >
-                          <span className="material-symbols-outlined text-sm">download</span>
+                        <button onClick={() => setExportOpenId(exportOpenId === purchase.id ? null : purchase.id)} className="text-text-muted hover:text-amber-400 transition-colors p-1 rounded hover:bg-amber-500/10" title="Export">
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>download</span>
                         </button>
                         {exportOpenId === purchase.id && (
                           <div className="absolute right-0 top-8 z-50 bg-surface-lowest border border-border-dark rounded-xl shadow-2xl overflow-hidden min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">

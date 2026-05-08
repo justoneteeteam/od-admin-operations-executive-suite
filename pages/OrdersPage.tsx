@@ -587,209 +587,218 @@ const OrdersPage: React.FC = () => {
   // ================================== //
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          <span className="text-text-muted text-xs font-medium">Home</span>
-          <span className="text-text-muted text-xs">/</span>
-          <span className="text-on-surface text-xs font-medium">Orders Console</span>
-        </div>
-        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mt-2">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-on-surface text-2xl sm:text-3xl font-black tracking-tight">Orders Console</h1>
-            <p className="text-text-muted text-sm">Review, track and manage your COD order pipeline.</p>
+    <div className="flex flex-col gap-0">
+      {/* ── CRM Compact Header ── */}
+      <div className="flex items-center justify-between px-0 py-2 mb-1 border-b border-border-dark/60">
+        <div className="flex items-center gap-3">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <span>Home</span>
+            <span className="opacity-40">/</span>
+            <span className="text-on-surface font-semibold">Orders Console</span>
           </div>
-          {/* SKU Type Tabs */}
-          <div className="flex gap-1 bg-surface-lowest p-1 rounded-xl border border-border-dark self-end">
+          <span className="w-px h-3 bg-border-dark opacity-60" />
+          {/* SKU Toggle - compact pill tabs */}
+          <div className="flex gap-0 border border-border-dark rounded-md overflow-hidden">
             <button
               onClick={() => setSkuTab('sku')}
-              className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-                skuTab === 'sku'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'text-text-muted hover:text-on-surface hover:bg-surface-high'
+              className={`px-3 py-1 text-[11px] font-bold transition-all flex items-center gap-1 ${
+                skuTab === 'sku' ? 'bg-primary text-white' : 'bg-surface-container text-text-muted hover:bg-surface-high'
               }`}
             >
-              <span className="material-symbols-outlined text-sm mr-1.5 align-middle" style={{ fontSize: '16px' }}>inventory_2</span>
-              Actual Order (SKU)
+              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>inventory_2</span>
+              SKU
             </button>
             <button
               onClick={() => setSkuTab('non-sku')}
-              className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
-                skuTab === 'non-sku'
-                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                  : 'text-text-muted hover:text-on-surface hover:bg-surface-high'
+              className={`px-3 py-1 text-[11px] font-bold transition-all flex items-center gap-1 border-l border-border-dark ${
+                skuTab === 'non-sku' ? 'bg-amber-500 text-white' : 'bg-surface-container text-text-muted hover:bg-surface-high'
               }`}
             >
-              <span className="material-symbols-outlined text-sm mr-1.5 align-middle" style={{ fontSize: '16px' }}>science</span>
-              Test Order (Non-SKU)
+              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>science</span>
+              Non-SKU
             </button>
           </div>
-          <div className="flex gap-2 sm:gap-3">
-            {selectedOrderIds.length > 0 && (
-              <button
-                onClick={handleBulkDelete}
-                className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-red-500/10 text-red-500 text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-all mr-1"
-              >
-                <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>delete</span>
-                Delete ({selectedOrderIds.length})
-              </button>
-            )}
-            <button className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-surface-container text-on-surface text-sm font-bold border border-outline-variant hover:bg-surface-container transition-all">
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>cloud_download</span>
-              Export XLS
-            </button>
+          <h1 className="text-sm font-bold text-on-surface hidden sm:block">Orders Console</h1>
+          {totalOrders > 0 && (
+            <span className="text-[11px] text-text-muted font-medium">{totalOrders.toLocaleString()} orders</span>
+          )}
+        </div>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5">
+          {selectedOrderIds.length > 0 && (
             <button
-              onClick={() => setShowImportModal(true)}
-              className="flex flex-[2] md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-surface-high text-emerald-400 text-sm font-bold border border-outline-variant hover:bg-surface-container transition-all"
+              onClick={handleBulkDelete}
+              className="flex items-center gap-1 h-[30px] px-2.5 rounded border border-red-500/30 bg-red-500/10 text-red-400 text-[11px] font-bold hover:bg-red-500/20 transition-all"
             >
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>upload_file</span>
-              Import Orders
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+              Delete ({selectedOrderIds.length})
             </button>
-            <button
-              onClick={() => navigate('/orders/create')}
-              className="flex flex-[2] md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-            >
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>add</span>
-              Create Order
-            </button>
+          )}
+          <button className="flex items-center gap-1 h-[30px] px-2.5 rounded border border-border-dark bg-surface-container text-on-surface text-[11px] font-semibold hover:bg-surface-high transition-all">
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>cloud_download</span>
+            Export
+          </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1 h-[30px] px-2.5 rounded border border-border-dark bg-surface-container text-emerald-400 text-[11px] font-semibold hover:bg-surface-high transition-all"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>upload_file</span>
+            Import
+          </button>
+          <button
+            onClick={() => navigate('/orders/create')}
+            className="flex items-center gap-1 h-[30px] px-3 rounded bg-primary text-white text-[11px] font-bold hover:bg-primary/90 transition-all"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
+            New Order
+          </button>
+        </div>
+      </div>
+
+      {/* ── CRM Compact Filter Bar ── */}
+      <div className="flex flex-wrap items-center gap-1.5 py-2 mb-2">
+        {/* Search */}
+        <div className="flex h-[34px] border border-border-dark rounded overflow-hidden flex-shrink-0">
+          <select
+            className="h-full pl-2 pr-6 bg-surface-container border-r border-border-dark text-on-surface text-[11px] font-medium cursor-pointer focus:outline-none"
+            style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7f95' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center' }}
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value)}
+          >
+            <option value="orderNumber">Order #</option>
+            <option value="customerName">Customer</option>
+            <option value="trackingNumber">Tracking</option>
+          </select>
+          <div className="relative flex items-center">
+            <span className="material-symbols-outlined absolute left-2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>search</span>
+            <input
+              type="text"
+              placeholder="Search..."
+              className="h-full pl-7 pr-3 w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4">
-          <div className="md:col-span-2 lg:col-span-2 flex gap-0">
-            <div className="relative flex-shrink-0">
-              <select
-                className="h-full pl-3 pr-7 py-2.5 bg-surface-container border border-border-dark border-r-0 rounded-l-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm cursor-pointer font-medium"
-                style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7f95' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value)}
-              >
-                <option value="orderNumber">Order #</option>
-                <option value="customerName">Customer</option>
-                <option value="trackingNumber">Tracking #</option>
-              </select>
-            </div>
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
-              <input
-                type="text"
-                placeholder={searchType === 'orderNumber' ? 'Search by order number...' : searchType === 'customerName' ? 'Search by customer name...' : 'Search by tracking number...'}
-                className="w-full pl-10 pr-4 py-2.5 bg-surface-lowest border border-border-dark rounded-r-xl text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="relative">
-            <select
-              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
-              value={confirmationFilter}
-              onChange={(e) => setConfirmationFilter(e.target.value)}
-            >
-              <option>All Confirmations</option>
-              <option>Pending</option>
-              <option>Confirmed</option>
-              <option>Declined</option>
-              <option>Call Center</option>
-              <option>Cancelled</option>
-              <option>No Answer</option>
-              <option>Wait Until Stock</option>
-              <option>Out of Area</option>
-              <option>Duplicated</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
-          </div>
-          <div className="relative">
-            <select
-              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
-              value={orderStatusFilter}
-              onChange={(e) => setOrderStatusFilter(e.target.value)}
-            >
-              <option>All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Processing">Processing</option>
-              <option value="InfoReceived">Info Received</option>
-              <option value="Shipped">Shipped</option>
-              <option value="NotFound">Not Found</option>
-              <option value="InTransit">In transit</option>
-              <option value="OutForDelivery">Pickup (Out of delivery)</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Undelivered">Undelivered</option>
-              <option value="Exception">Exception</option>
-              <option value="Expired">Expired</option>
-              <option value="Cancelled">Cancel</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">expand_more</span>
-          </div>
-          <div className="relative">
-            <select
-              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-            >
-              <option>Last 30 Days</option>
-              <option>Yesterday</option>
-              <option>Last 7 Days</option>
-              <option>Today</option>
-              <option>Custom Range</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">calendar_today</span>
-          </div>
-          <div className="relative">
-            <select
-              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm appearance-none cursor-pointer"
-              value={riskFilter}
-              onChange={(e) => setRiskFilter(e.target.value)}
-            >
-              <option>All Risk Levels</option>
-              <option value="LOW">Low Risk</option>
-              <option value="MEDIUM">Medium Risk</option>
-              <option value="HIGH">High Risk</option>
-              <option value="BLOCKED">Blocked</option>
-              <option value="Unassessed">Unassessed</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">shield</span>
-            </div>
-            <div className="relative">
-            <select
-              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm appearance-none cursor-pointer"
-              value={trafficChannelFilter}
-              onChange={(e) => setTrafficChannelFilter(e.target.value)}
-            >
-              <option>All Channels</option>
-              <option value="tiktok">TikTok</option>
-              <option value="facebook">Facebook</option>
-              <option value="google">Google</option>
-              <option value="seo">SEO</option>
-            </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none text-[20px]">campaign</span>
-            </div>
+        {/* Confirmation */}
+        <div className="relative h-[34px]">
+          <select
+            className="h-full pl-2.5 pr-7 border border-border-dark rounded bg-surface-lowest text-on-surface text-[11px] appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50"
+            value={confirmationFilter}
+            onChange={(e) => setConfirmationFilter(e.target.value)}
+          >
+            <option>All Confirmations</option>
+            <option>Pending</option>
+            <option>Confirmed</option>
+            <option>Declined</option>
+            <option>Call Center</option>
+            <option>Cancelled</option>
+            <option>No Answer</option>
+            <option>Wait Until Stock</option>
+            <option>Out of Area</option>
+            <option>Duplicated</option>
+          </select>
+          <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>expand_more</span>
+        </div>
+
+        {/* Order Status */}
+        <div className="relative h-[34px]">
+          <select
+            className="h-full pl-2.5 pr-7 border border-border-dark rounded bg-surface-lowest text-on-surface text-[11px] appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50"
+            value={orderStatusFilter}
+            onChange={(e) => setOrderStatusFilter(e.target.value)}
+          >
+            <option>All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Processing">Processing</option>
+            <option value="InfoReceived">Info Received</option>
+            <option value="Shipped">Shipped</option>
+            <option value="NotFound">Not Found</option>
+            <option value="InTransit">In Transit</option>
+            <option value="OutForDelivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Undelivered">Undelivered</option>
+            <option value="Exception">Exception</option>
+            <option value="Expired">Expired</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>expand_more</span>
+        </div>
+
+        {/* Date */}
+        <div className="relative h-[34px]">
+          <select
+            className="h-full pl-2.5 pr-7 border border-border-dark rounded bg-surface-lowest text-on-surface text-[11px] appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          >
+            <option>Last 30 Days</option>
+            <option>Yesterday</option>
+            <option>Last 7 Days</option>
+            <option>Today</option>
+            <option>Custom Range</option>
+          </select>
+          <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" style={{ fontSize: '13px' }}>calendar_today</span>
+        </div>
+
+        {/* Risk */}
+        <div className="relative h-[34px]">
+          <select
+            className="h-full pl-2.5 pr-7 border border-border-dark rounded bg-surface-lowest text-on-surface text-[11px] appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.target.value)}
+          >
+            <option>All Risk</option>
+            <option value="LOW">Low Risk</option>
+            <option value="MEDIUM">Medium Risk</option>
+            <option value="HIGH">High Risk</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="Unassessed">Unassessed</option>
+          </select>
+          <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>shield</span>
+        </div>
+
+        {/* Channel */}
+        <div className="relative h-[34px]">
+          <select
+            className="h-full pl-2.5 pr-7 border border-border-dark rounded bg-surface-lowest text-on-surface text-[11px] appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
+            value={trafficChannelFilter}
+            onChange={(e) => setTrafficChannelFilter(e.target.value)}
+          >
+            <option>All Channels</option>
+            <option value="tiktok">TikTok</option>
+            <option value="facebook">Facebook</option>
+            <option value="google">Google</option>
+            <option value="seo">SEO</option>
+          </select>
+          <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>campaign</span>
         </div>
       </div>
 
       {/* Main Table */}
-      <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden flex flex-col mb-12 shadow-2xl">
+      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col mb-6">
         <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[900px] lg:min-w-[1200px]">
+          <table className="w-full text-left border-collapse min-w-[900px] lg:min-w-[1100px]">
             <thead>
-              <tr className="bg-surface-container border-b border-outline-variant">
-                <th className="px-4 py-5 w-[40px] text-center">
+              <tr className="bg-surface-container border-b border-border-dark">
+                <th className="px-3 py-2 w-[36px] text-center">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-outline-variant bg-surface-container checked:bg-primary cursor-pointer accent-primary align-middle"
+                    className="w-3.5 h-3.5 rounded border-border-dark bg-surface-container checked:bg-primary cursor-pointer accent-primary align-middle"
                     checked={filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length}
                     onChange={handleSelectAll}
                   />
                 </th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Risk</th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order Details</th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Confirmation</th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest">Order Status</th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest text-right">Revenue</th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest text-right">COD Collected</th>
-                <th className="px-4 sm:px-6 py-5 text-text-muted font-bold text-[10px] uppercase tracking-widest text-right">Net Profit</th>
-                <th className="px-4 sm:px-6 py-5 text-center text-text-muted font-bold text-[10px] uppercase tracking-widest">Action</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Risk</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Order</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Confirmation</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Status</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider text-right">Revenue</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider text-right">COD</th>
+                <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider text-right">Net Profit</th>
+                <th className="px-3 py-2 text-center text-text-muted font-bold text-[10px] uppercase tracking-wider">Act.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
@@ -826,64 +835,57 @@ const OrdersPage: React.FC = () => {
                   return (
                     <tr
                       key={order.id}
-                      className={`hover:bg-surface-high transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-surface-high/50' : ''} ${!order.trackingNumber ? 'opacity-[0.55]' : ''}`}
+                      className={`hover:bg-surface-high/60 transition-colors cursor-pointer group border-b border-border-dark/40 last:border-0 ${selectedOrderIds.includes(order.id) ? 'bg-primary/5' : ''} ${!order.trackingNumber ? 'opacity-60' : ''}`}
                       onClick={() => { setSelectedOrder(order); setShowDrawer(true); }}
                     >
-                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-3 py-0 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          className="w-4 h-4 rounded border-outline-variant bg-surface-container checked:bg-primary cursor-pointer accent-primary align-middle"
+                          className="w-3.5 h-3.5 rounded border-border-dark checked:bg-primary cursor-pointer accent-primary align-middle"
                           checked={selectedOrderIds.includes(order.id)}
                           onChange={(e) => handleSelectOrder(e, order.id)}
                         />
                       </td>
-                      <td className="px-4 sm:px-6 py-3 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          {order.riskLevel === 'LOW' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" title="LOW Risk"><span className="material-symbols-outlined text-sm">shield</span></span>}
-                          {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="MEDIUM Risk"><span className="material-symbols-outlined text-sm">warning</span></span>}
-                          {order.riskLevel === 'HIGH' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30" title="HIGH Risk"><span className="material-symbols-outlined text-sm">front_hand</span></span>}
-                          {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 border border-red-500/30" title="BLOCKED"><span className="material-symbols-outlined text-sm">block</span></span>}
-                          {!order.riskLevel && <span className="inline-flex size-6 items-center justify-center rounded-full bg-surface-high text-text-muted border border-border-dark" title="Unassessed"><span className="material-symbols-outlined text-sm">help</span></span>}
-                          <span className={`text-[10px] font-bold ${order.riskLevel === 'LOW' ? 'text-emerald-400' : order.riskLevel === 'MEDIUM' ? 'text-yellow-400' : order.riskLevel === 'HIGH' ? 'text-orange-400' : order.riskLevel === 'BLOCKED' ? 'text-red-400' : 'text-text-muted'}`}>
-                            {order.riskScore != null ? order.riskScore : '—'}
-                          </span>
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          {order.riskLevel === 'LOW' && <span className="inline-flex size-5 items-center justify-center rounded bg-emerald-500/15 text-emerald-400" title="LOW"><span className="material-symbols-outlined" style={{fontSize:'12px'}}>shield</span></span>}
+                          {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-5 items-center justify-center rounded bg-yellow-500/15 text-yellow-400" title="MED"><span className="material-symbols-outlined" style={{fontSize:'12px'}}>warning</span></span>}
+                          {order.riskLevel === 'HIGH' && <span className="inline-flex size-5 items-center justify-center rounded bg-orange-500/15 text-orange-400" title="HIGH"><span className="material-symbols-outlined" style={{fontSize:'12px'}}>front_hand</span></span>}
+                          {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-5 items-center justify-center rounded bg-red-500/15 text-red-400" title="BLK"><span className="material-symbols-outlined" style={{fontSize:'12px'}}>block</span></span>}
+                          {!order.riskLevel && <span className="inline-flex size-5 items-center justify-center rounded bg-surface-high text-text-muted/40" title="—"><span className="material-symbols-outlined" style={{fontSize:'12px'}}>help</span></span>}
+                          {order.riskScore != null && <span className={`text-[9px] font-bold leading-none ${order.riskLevel === 'LOW' ? 'text-emerald-400' : order.riskLevel === 'MEDIUM' ? 'text-yellow-400' : order.riskLevel === 'HIGH' ? 'text-orange-400' : order.riskLevel === 'BLOCKED' ? 'text-red-400' : 'text-text-muted'}`}>{order.riskScore}</span>}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-3">
-                        <p className="text-sm font-bold text-primary group-hover:underline underline-offset-4">#{order.orderNumber}</p>
-                        <p className="text-xs text-on-surface mt-0.5 font-medium">{order.customer?.name || 'Unknown User'}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-[10px] text-text-muted uppercase tracking-widest">{order.shippingCountry || 'N/A'}</p>
-                          <span className="text-[10px] text-text-muted/40">·</span>
-                          <p className="text-[10px] text-text-muted/70">
+                      <td className="px-3 py-2">
+                        <p className="text-[12px] font-bold text-primary leading-tight">#{order.orderNumber}</p>
+                        <p className="text-[11px] text-on-surface font-medium leading-tight">{order.customer?.name || 'Unknown'}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-[10px] text-text-muted">{order.shippingCountry || 'N/A'}</span>
+                          <span className="text-text-muted/30">·</span>
+                          <span className="text-[10px] text-text-muted/70">
                             {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}
-                          </p>
-                        </div>
-                        {order.trafficChannel && (
-                          <span className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
-                            order.trafficChannel === 'tiktok' ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/25' :
-                            order.trafficChannel === 'facebook' ? 'bg-blue-500/15 text-blue-400 border-blue-500/25' :
-                            order.trafficChannel === 'google' ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' :
-                            order.trafficChannel === 'seo' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' :
-                            'bg-purple-500/15 text-purple-400 border-purple-500/25'
-                          }`}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>campaign</span>
-                            {order.trafficChannel}
                           </span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3">
-                        <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-opacity-10 border ${(order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                          (order.confirmationStatus || 'Pending') === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                            (order.confirmationStatus || 'Pending') === 'Out of Area' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
-                              (order.confirmationStatus || 'Pending') === 'Duplicated' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                'bg-red-500/10 text-red-400 border-red-500/20'
-                          }`}>
-                          {order.confirmationStatus || 'Pending'}
+                          {order.trafficChannel && (
+                            <span className={`ml-1 px-1 py-px rounded text-[9px] font-bold uppercase ${
+                              order.trafficChannel === 'tiktok' ? 'bg-cyan-500/15 text-cyan-400' :
+                              order.trafficChannel === 'facebook' ? 'bg-blue-500/15 text-blue-400' :
+                              order.trafficChannel === 'google' ? 'bg-amber-500/15 text-amber-400' :
+                              'bg-emerald-500/15 text-emerald-400'
+                            }`}>{order.trafficChannel}</span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-3">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                          (order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                          (order.confirmationStatus || 'Pending') === 'Pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                          (order.confirmationStatus || 'Pending') === 'Out of Area' ? 'bg-violet-500/10 text-violet-400 border-violet-500/20' :
+                          (order.confirmationStatus || 'Pending') === 'Duplicated' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                          'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>{order.confirmationStatus || 'Pending'}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1.5">
                           {(() => {
                             const rss = order.returnStockState;
                             const isRestocked = rss === 'restocked';
@@ -922,36 +924,36 @@ const OrdersPage: React.FC = () => {
                                 {icon ? (
                                   <span className={`material-symbols-outlined ${iconColor}`} style={{ fontSize: '14px' }}>{icon}</span>
                                 ) : (
-                                  <span className={`size-1.5 rounded-full ${dotColor}`}></span>
+                                  <span className={`size-[5px] rounded-full ${dotColor}`}></span>
                                 )}
-                                <span className={`text-xs uppercase tracking-wider ${textColor}`}>{label}</span>
+                                <span className={`text-[11px] uppercase tracking-wide ${textColor}`}>{label}</span>
                               </>
                             );
                           })()}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-3 text-sm font-black text-on-surface text-right whitespace-nowrap">
-                        {skuTab === 'non-sku' ? <span className="text-text-muted">$0</span> : `$${order.totalAmount.toLocaleString()}`}
+                      <td className="px-3 py-2 text-[12px] font-bold text-on-surface text-right whitespace-nowrap">
+                        {skuTab === 'non-sku' ? <span className="text-text-muted">—</span> : `$${order.totalAmount.toLocaleString()}`}
                       </td>
-                      <td className="px-4 sm:px-6 py-3 text-sm font-black text-text-muted text-right whitespace-nowrap">
-                        {skuTab === 'non-sku' ? '$0' : `$${(order.paymentStatus === 'Paid' ? order.totalAmount : 0).toLocaleString()}`}
+                      <td className="px-3 py-2 text-[12px] font-bold text-text-muted text-right whitespace-nowrap">
+                        {skuTab === 'non-sku' ? '—' : `$${(order.paymentStatus === 'Paid' ? order.totalAmount : 0).toLocaleString()}`}
                       </td>
-                      <td className={`px-4 sm:px-6 py-3 text-sm font-black text-right whitespace-nowrap ${skuTab === 'non-sku' ? 'text-text-muted' : profit > 0 ? 'text-emerald-400' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
-                        {skuTab === 'non-sku' ? '$0' : `${profit >= 0 ? '+' : ''}$${profit.toLocaleString()}`}
+                      <td className={`px-3 py-2 text-[12px] font-bold text-right whitespace-nowrap ${skuTab === 'non-sku' ? 'text-text-muted' : profit > 0 ? 'text-emerald-500' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
+                        {skuTab === 'non-sku' ? '—' : `${profit >= 0 ? '+' : ''}$${profit.toLocaleString()}`}
                       </td>
-                      <td className="px-4 sm:px-6 py-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1">
                           <button
-                            className="p-2 hover:bg-primary/10 rounded-xl text-text-muted hover:text-primary transition-all"
+                            className="p-1 hover:bg-primary/10 rounded text-text-muted hover:text-primary transition-all"
                             onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowDrawer(true); }}
                           >
-                            <span className="material-symbols-outlined text-[20px]">edit_square</span>
+                            <span className="material-symbols-outlined" style={{fontSize:'16px'}}>edit_square</span>
                           </button>
                           <button
-                            className="p-2 hover:bg-red-500/10 rounded-xl text-text-muted hover:text-red-500 transition-all"
+                            className="p-1 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-all"
                             onClick={(e) => handleDeleteOrder(e, order.id)}
                           >
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                            <span className="material-symbols-outlined" style={{fontSize:'16px'}}>delete</span>
                           </button>
                         </div>
                       </td>
@@ -966,45 +968,40 @@ const OrdersPage: React.FC = () => {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="bg-surface-container/80 px-4 sm:px-6 py-6 border-t border-outline-variant flex flex-col xl:flex-row items-center justify-between gap-6">
-          <span className="text-text-muted text-sm font-medium whitespace-nowrap">
-            Showing <span className="text-on-surface font-bold">{page}</span> of <span className="text-on-surface font-bold">{totalPages}</span> pages
-            <span className="mx-2 opacity-30">|</span>
-            {totalOrders} total orders
+        <div className="px-0 py-2 border-t border-border-dark/40 flex items-center justify-between gap-4">
+          <span className="text-[11px] text-text-muted whitespace-nowrap">
+            Page <span className="text-on-surface font-semibold">{page}</span> / <span className="text-on-surface font-semibold">{totalPages}</span>
+            <span className="mx-1.5 opacity-30">·</span>
+            <span>{totalOrders} orders</span>
           </span>
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 xl:pb-0 w-full xl:w-auto scrollbar-hide">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-on-surface transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
+              className="flex items-center gap-1 h-[28px] px-2.5 rounded border border-border-dark text-text-muted hover:bg-surface-high hover:text-on-surface transition-all disabled:opacity-30 text-[11px] font-medium"
             >
-              &larr; Previous
+              &larr; Prev
             </button>
-
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {getPageNumbers().map((p, i) => (
                 <React.Fragment key={i}>
                   {p === '...' ? (
-                    <span className="text-text-muted px-1">...</span>
+                    <span className="text-text-muted px-1 text-[11px]">...</span>
                   ) : (
                     <button
                       onClick={() => setPage(p as number)}
-                      className={`min-w-[42px] h-[42px] flex items-center justify-center rounded-xl border transition-all text-sm font-bold ${page === p
-                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                        : 'border-primary text-text-muted hover:bg-primary/10 hover:text-on-surface'
-                        }`}
-                    >
-                      {p}
-                    </button>
+                      className={`min-w-[28px] h-[28px] flex items-center justify-center rounded border transition-all text-[11px] font-bold ${
+                        page === p ? 'bg-primary border-primary text-white' : 'border-border-dark text-text-muted hover:bg-surface-high'
+                      }`}
+                    >{p}</button>
                   )}
                 </React.Fragment>
               ))}
             </div>
-
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-on-surface transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
+              className="flex items-center gap-1 h-[28px] px-2.5 rounded border border-border-dark text-text-muted hover:bg-surface-high hover:text-on-surface transition-all disabled:opacity-30 text-[11px] font-medium"
             >
               Next &rarr;
             </button>

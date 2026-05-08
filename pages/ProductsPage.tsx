@@ -218,43 +218,31 @@ const ProductsPage: React.FC = () => {
         onEdit={(p) => { setIsDetailOpen(false); openEditModal(p); }}
       />
 
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-text-muted text-sm font-medium">Home</span>
-          <span className="text-text-muted text-sm">/</span>
-          <span className="text-on-surface text-sm font-medium">Inventory & Cost</span>
+      {/* CRM Compact Header */}
+      <div className="flex items-center justify-between py-2 mb-2 border-b border-border-dark/60">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <span>Home</span><span className="opacity-40">/</span>
+            <span className="text-on-surface font-semibold">Products</span>
+          </div>
+          <span className="w-px h-3 bg-border-dark opacity-60" />
+          <h1 className="text-sm font-bold text-on-surface hidden sm:block">Product Inventory & Cost</h1>
+          <span className="text-[11px] text-text-muted">{filteredProducts.length} products</span>
         </div>
-        <div className="flex flex-wrap justify-between items-end gap-4 mt-2">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-on-surface text-3xl font-black tracking-tight">Product Inventory & Cost</h1>
-            <p className="text-text-muted text-sm">Review stock levels, unit costs, and SKU performance metrics.</p>
+        <div className="flex items-center gap-1.5">
+          <div className="flex h-[34px] border border-border-dark rounded overflow-hidden">
+            <span className="material-symbols-outlined flex items-center px-2 text-text-muted" style={{ fontSize: '14px' }}>search</span>
+            <input type="text" placeholder="Search name or SKU..." className="h-full pr-3 w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
-          <div className="flex gap-3 items-center">
-            {/* Search */}
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-text-muted text-sm">search</span>
-              <input
-                type="text"
-                placeholder="Search by name or SKU..."
-                className="bg-surface-lowest border border-border-dark text-on-surface text-sm rounded-lg pl-9 pr-4 py-2 w-64 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <button
-              onClick={openCreateModal}
-              className="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90"
-            >
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>add</span>
-              Add Product
-            </button>
-          </div>
+          <button onClick={openCreateModal} className="flex items-center gap-1 h-[30px] px-3 rounded bg-primary text-white text-[11px] font-bold hover:bg-primary/90 transition-all">
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
+            Add Product
+          </button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden flex flex-col">
+      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>

@@ -166,41 +166,39 @@ const FulfillmentPage: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
           {activeTab === 'detail' && (
-            <button onClick={() => setActiveTab('overview')} className="p-2 rounded-full hover:bg-white/10 text-on-surface transition-all">
-              <span className="material-symbols-outlined">arrow_back</span>
+            <button onClick={() => setActiveTab('overview')} className="p-1.5 rounded hover:bg-surface-high text-on-surface transition-all">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
             </button>
           )}
-          <h1 className="text-3xl font-black text-on-surface tracking-tight">
-            {activeTab === 'detail' && selectedCenter ? selectedCenter.name : 'Fulfillment Center'}
-          </h1>
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <span>Home</span><span className="opacity-40">/</span>
+            <span className="text-on-surface font-semibold">{activeTab === 'detail' && selectedCenter ? selectedCenter.name : 'Fulfillment Centers'}</span>
+          </div>
         </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-border-dark gap-8">
+        {/* Compact Tabs */}
+        <div className="flex border-b border-border-dark gap-4">
           <button
             onClick={() => { setActiveTab('overview'); setEditingId(null); setSelectedCenter(null); }}
-            className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'overview' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
+            className={`pb-2 text-[12px] font-bold transition-all relative ${activeTab === 'overview' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
           >
-            Fulfillment Overview
-            {activeTab === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50"></div>}
+            Overview
+            {activeTab === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>}
           </button>
           <button
             onClick={() => { setActiveTab('create'); setEditingId(null); setFormData({ name: '', country: '', city: '', addressLine1: '', personInCharge: '', contactEmail: '', contactPhone: '', status: 'Active', notes: '' }); }}
-            className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'create' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
+            className={`pb-2 text-[12px] font-bold transition-all relative ${activeTab === 'create' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
           >
-            {editingId ? 'Edit Fulfillment Center' : 'Create Fulfillment Center'}
-            {activeTab === 'create' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50"></div>}
+            {editingId ? 'Edit Center' : 'Create Center'}
+            {activeTab === 'create' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>}
           </button>
           {activeTab === 'detail' && (
-            <button
-              className={`pb-3 text-sm font-bold transition-all relative text-primary`}
-            >
-              Detail View
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50"></div>
+            <button className="pb-2 text-[12px] font-bold text-primary relative">
+              Detail
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
             </button>
           )}
         </div>
@@ -209,88 +207,60 @@ const FulfillmentPage: React.FC = () => {
       {activeTab === 'overview' ? (
         <div className="space-y-6">
           {/* Table Area */}
-          <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-2xl">
-            {/* ... Search & Add logic ... */}
-            <div className="p-4 border-b border-border-dark flex flex-wrap justify-between items-center gap-4 bg-surface-low">
-              <div className="flex h-10 items-center rounded-lg bg-background-dark border border-border-dark w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
-                <div className="text-text-muted flex items-center justify-center pl-4">
-                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>search</span>
-                </div>
-                <input
-                  className="w-full border-none bg-transparent text-on-surface focus:ring-0 placeholder:text-text-muted pl-2 text-sm"
-                  placeholder="Search Fulfillment Centers..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden">
+            <div className="p-3 border-b border-border-dark flex flex-wrap justify-between items-center gap-3 bg-surface-low">
+              <div className="flex h-[34px] items-center rounded border border-border-dark bg-surface-lowest w-64 focus-within:ring-1 focus-within:ring-primary/40 transition-all overflow-hidden">
+                <span className="material-symbols-outlined text-text-muted pl-3" style={{ fontSize: '15px' }}>search</span>
+                <input className="w-full border-none bg-transparent text-on-surface focus:ring-0 placeholder:text-text-muted pl-2 text-[11px]" placeholder="Search Fulfillment Centers..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveTab('create')}
-                  className="flex h-10 items-center gap-2 rounded-lg bg-primary text-white px-4 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                  <span className="text-xs font-bold uppercase tracking-widest">Add Fulfillment Center</span>
-                </button>
-              </div>
+              <button onClick={() => setActiveTab('create')} className="flex h-[30px] items-center gap-1 rounded bg-primary text-white px-3 hover:bg-primary/90 transition-all">
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
+                <span className="text-[11px] font-bold">Add Center</span>
+              </button>
             </div>
 
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
-                  <tr className="bg-surface-container/50 border-b border-border-dark">
-                    <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">Country</th>
-                    <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">City</th>
-                    <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">PIC (Person In Charge)</th>
-                    <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">Orders</th>
-                    <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-center text-text-muted font-bold text-[10px] uppercase tracking-wider">Actions</th>
+                  <tr className="bg-surface-container border-b border-border-dark">
+                    <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Name</th>
+                    <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Country</th>
+                    <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">City</th>
+                    <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">PIC</th>
+                    <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Orders</th>
+                    <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider">Status</th>
+                    <th className="px-3 py-2 text-center text-text-muted font-bold text-[10px] uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-dark/40">
                   {isLoading ? (
-                    <tr><td colSpan={8} className="text-center py-12 text-text-muted">
-                      <div className="flex items-center justify-center gap-3">
-                        Loading...
-                      </div>
-                    </td></tr>
+                    <tr><td colSpan={8} className="text-center py-8 text-text-muted text-sm">Loading...</td></tr>
                   ) : filteredCenters.length === 0 ? (
-                    <tr><td colSpan={8} className="text-center py-12 text-text-muted italic">No fulfillment centers found</td></tr>
+                    <tr><td colSpan={8} className="text-center py-8 text-text-muted italic text-sm">No fulfillment centers found</td></tr>
                   ) : filteredCenters.map((center) => (
-                    <tr key={center.id}
-                      className="hover:bg-white/[0.02] transition-colors group cursor-pointer"
-                      onClick={() => handleViewDetail(center)}
-                    >
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary border border-primary/20">
-                            <span className="material-symbols-outlined text-xl">warehouse</span>
+                    <tr key={center.id} className="hover:bg-surface-high/60 transition-colors group cursor-pointer border-b border-border-dark/40 last:border-0" onClick={() => handleViewDetail(center)}>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="size-7 bg-primary/10 rounded flex items-center justify-center text-primary border border-primary/20">
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>warehouse</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{center.name}</p>
+                            <p className="text-[12px] font-bold text-on-surface group-hover:text-primary transition-colors">{center.name}</p>
                             <p className="text-[10px] text-text-muted font-mono">{center.code}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-sm text-text-muted">flag</span>
-                          <span className="text-sm text-on-surface">{center.country}</span>
-                        </div>
+                      <td className="px-3 py-2 text-[11px] text-on-surface">{center.country}</td>
+                      <td className="px-3 py-2 text-[11px] text-on-surface">{center.city}</td>
+                      <td className="px-3 py-2 text-[11px] text-text-muted">{center.personInCharge}</td>
+                      <td className="px-3 py-2 text-[11px] font-bold text-on-surface">{center._count?.orders ?? 0}</td>
+                      <td className="px-3 py-2">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border ${center.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>{center.status}</span>
                       </td>
-                      <td className="px-6 py-5 text-sm text-on-surface">{center.city}</td>
-                      <td className="px-6 py-5 text-sm text-text-muted">{center.personInCharge}</td>
-                      <td className="px-6 py-5 text-sm text-on-surface font-bold">{center._count?.orders ?? 0}</td>
-                      <td className="px-6 py-5">
-                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${center.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-                          }`}>
-                          {center.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => handleEdit(center)} className="p-1.5 hover:bg-primary/10 rounded-lg text-text-muted hover:text-primary transition-all shadow-sm" title="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-                          <button onClick={() => handleDelete(center.id)} className="p-1.5 hover:bg-red-500/10 rounded-lg text-text-muted hover:text-red-400 transition-all shadow-sm" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-1">
+                          <button onClick={() => handleEdit(center)} className="p-1 hover:bg-primary/10 rounded text-text-muted hover:text-primary transition-all" title="Edit"><span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span></button>
+                          <button onClick={() => handleDelete(center.id)} className="p-1 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-all" title="Delete"><span className="material-symbols-outlined" style={{ fontSize: '15px' }}>delete</span></button>
                         </div>
                       </td>
                     </tr>

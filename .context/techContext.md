@@ -7,7 +7,7 @@
 - **Build Tool**: Vite
 - **Language**: TypeScript
 - **Routing**: React Router v7
-- **Styling**: Tailwind CSS (Utility-first CSS framework)
+- **Styling**: Tailwind CSS (Corporate light theme design system with standardized tokens replacing hardcoded utilities)
 - **Icons**: Material Symbols Outlined, Lucide React
 - **Stats/Charts**: Recharts
 - **HTTP Client**: Axios (custom wrapper with Interceptors)

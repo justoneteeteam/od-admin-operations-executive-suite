@@ -57,3 +57,5 @@ Deploy the COD Admin Dashboard to a production-like cloud environment for intern
 7. ✅ **Risk Scoring Engine**: Two-layer scoring with Loqate
 8. ✅ **Incident Management**: Auto-tickets, SLA, resolution workflows
 9. ✅ **Shopify Webhooks**: Inbound order processing
+10. ✅ **CRM Refactoring**: Migrated to corporate light theme and hierarchical sidebar
+11. ✅ **Advanced Analytics**: Geo Distribution Reports and Performance Page

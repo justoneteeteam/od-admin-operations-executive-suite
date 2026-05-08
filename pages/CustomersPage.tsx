@@ -186,65 +186,61 @@ const CustomersPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header Section */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-text-muted text-sm font-medium">Home</span>
-          <span className="text-text-muted text-sm">/</span>
-          <span className="text-on-surface text-sm font-medium">Customer Intelligence</span>
+    <div className="flex flex-col gap-0">
+      {/* CRM Compact Header */}
+      <div className="flex items-center justify-between py-2 mb-2 border-b border-border-dark/60">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[11px] text-text-muted">
+            <span>Home</span><span className="opacity-40">/</span>
+            <span className="text-on-surface font-semibold">Customers</span>
+          </div>
+          <span className="w-px h-3 bg-border-dark opacity-60" />
+          <h1 className="text-sm font-bold text-on-surface hidden sm:block">Customer Intelligence</h1>
+          <span className="text-[11px] text-text-muted font-medium">{customers.length.toLocaleString()} records</span>
         </div>
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 mt-2">
-          <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <h1 className="text-on-surface text-3xl sm:text-4xl font-black tracking-tight">Customers</h1>
-            <p className="text-text-muted text-sm max-w-xl leading-relaxed">
-              Monitor buyer history and manage blocklists for COD fulfillment.
-            </p>
+        <div className="flex items-center gap-1.5">
+          <div className="flex h-[34px] border border-border-dark rounded overflow-hidden">
+            <span className="material-symbols-outlined flex items-center px-2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>search</span>
+            <input
+              type="text"
+              placeholder="Search customers..."
+              className="h-full pr-3 w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none"
+              value={searchTerm}
+              onChange={handleSearch}
+            />
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-            <div className="relative w-full sm:w-auto">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
-              <input
-                type="text"
-                placeholder="Search customers..."
-                className="bg-surface-lowest border border-border-dark text-on-surface text-sm rounded-xl h-12 pl-10 pr-4 focus:ring-primary/40 focus:border-primary transition-all w-full sm:w-64"
-                value={searchTerm}
-                onChange={handleSearch}
-              />
-            </div>
-            <button
-              onClick={() => setShowBlockModal(true)}
-              className="flex flex-1 sm:flex-none items-center justify-center rounded-xl h-12 px-6 bg-red-500/10 text-red-400 border border-red-500/20 text-sm font-bold hover:bg-red-500/20 transition-all whitespace-nowrap"
-            >
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '20px' }}>block</span>
-              Block List
-            </button>
-            <button
-              onClick={handleAddNew}
-              className="flex flex-1 sm:flex-none items-center justify-center rounded-xl h-12 px-6 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
-            >
-              <span className="material-symbols-outlined mr-2" style={{ fontSize: '20px' }}>person_add</span>
-              Add Customer
-            </button>
-          </div>
+          <button
+            onClick={() => setShowBlockModal(true)}
+            className="flex items-center gap-1 h-[30px] px-2.5 rounded border border-red-500/30 bg-red-500/10 text-red-400 text-[11px] font-semibold hover:bg-red-500/20 transition-all"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>block</span>
+            Block List
+          </button>
+          <button
+            onClick={handleAddNew}
+            className="flex items-center gap-1 h-[30px] px-3 rounded bg-primary text-white text-[11px] font-bold hover:bg-primary/90 transition-all"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>person_add</span>
+            Add Customer
+          </button>
         </div>
       </div>
 
       {/* Database View */}
-      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col">
         {isLoading ? (
-          <div className="p-10 text-center text-text-muted animate-pulse">Loading users...</div>
+          <div className="p-6 text-center text-text-muted animate-pulse text-sm">Loading users...</div>
         ) : error ? (
-          <div className="p-10 text-center text-red-400">{error}</div>
+          <div className="p-6 text-center text-red-400 text-sm">{error}</div>
         ) : (
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
-                <tr className="bg-surface-container/50 border-b border-border-dark">
-                  <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] w-[35%]">Customer Profile</th>
-                  <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-center">Contact</th>
-                  <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-center">Stats</th>
-                  <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-center">Actions</th>
+                <tr className="bg-surface-container border-b border-border-dark">
+                  <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider w-[35%]">Customer</th>
+                  <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Contact</th>
+                  <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Stats</th>
+                  <th className="px-3 py-2 text-text-muted font-bold text-[10px] uppercase tracking-wider text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-dark/40">
@@ -256,80 +252,48 @@ const CustomersPage: React.FC = () => {
                   filteredCustomers.map((customer) => (
                     <tr
                       key={customer.id}
-                      className={`transition-all duration-200 hover:bg-primary/[0.04] cursor-pointer ${customer.status === 'Blocked' ? 'bg-red-500/[0.03] border-l-2 border-l-red-500' : 'border-l-2 border-l-transparent'
-                        }`}
+                      className={`transition-all hover:bg-surface-high/60 cursor-pointer border-b border-border-dark/40 last:border-0 ${customer.status === 'Blocked' ? 'bg-red-500/[0.03] border-l-2 border-l-red-500' : 'border-l-2 border-l-transparent'}`}
                       onClick={() => openDetailDrawer(customer)}
                     >
-                      {/* Profile Column */}
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className={`size-11 rounded-xl flex items-center justify-center text-sm font-bold border transition-colors ${customer.status === 'Blocked'
-                            ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                            : 'bg-surface-high text-on-surface border-outline-variant'
-                            }`}>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`size-7 rounded flex items-center justify-center text-[11px] font-bold border ${customer.status === 'Blocked' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-surface-high text-on-surface border-border-dark'}`}>
                             {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                           </div>
-                          <div className="flex flex-col gap-0.5">
-                            <p className={`text-base font-bold transition-colors ${customer.status === 'Blocked' ? 'text-red-400' : 'text-on-surface'}`}>
-                              {customer.name}
-                            </p>
-                            <p className="text-xs text-text-muted opacity-70 flex items-center gap-1">
-                              <span className={`size-1.5 rounded-full ${customer.status === 'Blocked' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                          <div>
+                            <p className={`text-[12px] font-bold leading-tight ${customer.status === 'Blocked' ? 'text-red-400' : 'text-on-surface'}`}>{customer.name}</p>
+                            <p className="text-[10px] text-text-muted flex items-center gap-1">
+                              <span className={`size-1 rounded-full inline-block ${customer.status === 'Blocked' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
                               {customer.status || 'Standard'}
                             </p>
                           </div>
                         </div>
                       </td>
-
-                      {/* Contact Column */}
-                      <td className="px-8 py-6 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-sm font-medium text-on-surface">{customer.email || 'No Email'}</span>
-                          <span className="text-xs text-text-muted">{customer.phone}</span>
-                          <span className="text-[10px] text-text-muted uppercase mt-1">{customer.country}</span>
-                        </div>
+                      <td className="px-3 py-2 text-center">
+                        <p className="text-[11px] text-on-surface">{customer.email || '—'}</p>
+                        <p className="text-[10px] text-text-muted">{customer.phone}</p>
+                        <p className="text-[10px] text-text-muted uppercase">{customer.country}</p>
                       </td>
-
-                      <td className="px-8 py-6 text-center">
-                        <div className="flex flex-col items-center">
-                          <p className="text-base font-black text-on-surface">{customer.ordersCount || 0} Orders</p>
-                          <p className="text-[10px] text-text-muted font-medium mt-1">
-                            ${(customer.totalSpent || 0).toLocaleString()} Spent
-                          </p>
-                          <div className={`mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full border ${customer.avgRiskScore! >= 4 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                              customer.avgRiskScore! >= 2 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                                'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                            }`}>
-                            Avg Risk: {customer.avgRiskScore?.toFixed(1) || '0.0'}
-                          </div>
-                        </div>
+                      <td className="px-3 py-2 text-center">
+                        <p className="text-[12px] font-bold text-on-surface">{customer.ordersCount || 0} orders</p>
+                        <p className="text-[10px] text-text-muted">${(customer.totalSpent || 0).toLocaleString()}</p>
+                        <span className={`text-[9px] font-bold px-1.5 py-px rounded border ${
+                          customer.avgRiskScore! >= 4 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                          customer.avgRiskScore! >= 2 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                          'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                          Risk {customer.avgRiskScore?.toFixed(1) || '0.0'}
+                        </span>
                       </td>
-
-                      {/* Actions Column */}
-                      <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-center items-center gap-3">
-                          <button
-                            onClick={() => toggleBlock(customer)}
-                            className={`p-2 rounded-lg transition-all ${customer.status === 'Blocked' ? 'bg-red-500/20 text-red-400' : 'bg-surface-high text-text-muted hover:text-on-surface'}`}
-                            title={customer.status === 'Blocked' ? "Unblock Customer" : "Block Customer"}
-                          >
-                            <span className="material-symbols-outlined text-[20px]">{customer.status === 'Blocked' ? 'block' : 'check_circle'}</span>
+                      <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-center items-center gap-1">
+                          <button onClick={() => toggleBlock(customer)} className={`p-1 rounded transition-all ${customer.status === 'Blocked' ? 'bg-red-500/20 text-red-400' : 'text-text-muted hover:text-on-surface hover:bg-surface-high'}`} title={customer.status === 'Blocked' ? 'Unblock' : 'Block'}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{customer.status === 'Blocked' ? 'block' : 'check_circle'}</span>
                           </button>
-
-                          <button
-                            onClick={() => handleEdit(customer)}
-                            className="p-2 hover:bg-primary/10 rounded-lg text-text-muted hover:text-primary transition-all"
-                            title="Edit Customer"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">edit_square</span>
+                          <button onClick={() => handleEdit(customer)} className="p-1 hover:bg-primary/10 rounded text-text-muted hover:text-primary transition-all" title="Edit">
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit_square</span>
                           </button>
-
-                          <button
-                            onClick={() => handleDelete(customer.id)}
-                            className="p-2 hover:bg-red-500/10 rounded-lg text-text-muted hover:text-red-500 transition-all"
-                            title="Delete Customer"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          <button onClick={() => handleDelete(customer.id)} className="p-1 hover:bg-red-500/10 rounded text-text-muted hover:text-red-400 transition-all" title="Delete">
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>delete</span>
                           </button>
                         </div>
                       </td>

@@ -33,6 +33,8 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
 - **Parent-Child SKU Organization**: Warehouse-specialized SKU structures dictating localized product coding without breaking master inventory numbers.
 - **Bulk Customer Blocking**: Automated bulk blocking for customers based on unmatched phone numbers with intelligent country detection.
 - **Tracking Automations**: Advanced courier detections based upon raw tracking string formats.
+- **Geo Distribution Reports**: Visual mapping of SKU and non-SKU orders aggregated by country/city with island-detection logic for logistics monitoring.
+- **Corporate UI Theme**: Standardized light mode styling and hierarchical sidebar navigation for improved UX accessibility.
 
 ## Order Lifecycle & Workflows
 ### 1. Standard Order Flow
@@ -80,6 +82,8 @@ Managing COD e-commerce operations involves complex logistics, financial reconci
   - **Purchases ↔ Suppliers**: Purchase orders linked to Suppliers with auto-populated contact info. Receiving a PO auto-recalculates the product's weighted average unit cost.
   - **Orders ↔ Tickets**: Incident tickets auto-linked to originating orders. Tracking number formats intelligently snap to matching carrier configurations (17Track).
   - **Prisma Relations**: Changes ripple through the system.
+- **CRM Refactoring**: UI transition to a modern corporate light theme using Tailwind tokens, a hierarchical collapsible sidebar navigation, and decommissioning older modules (e.g., Incidents UI) while fixing product history tab rendering.
+- **Data Integrity**: Automated cascading logic for foreign key dependency resolution during order deletions to prevent crashes.
 - **Quality of Life Fixes**: UI order table density/sorting, robust CSV processing, Purchase Order data visibility, European decimal handling, pagination for call records.
 
 ## Financial Logic & Formulas
