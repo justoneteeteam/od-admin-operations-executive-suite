@@ -8,7 +8,7 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('admin@cod.com');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('admin123');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,34 +29,36 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="bg-pattern text-white font-display min-h-screen flex items-center justify-center p-6">
+    <div className="bg-surface-low font-display min-h-screen flex items-center justify-center p-6"
+      style={{ backgroundImage: 'radial-gradient(at 0% 0%, hsla(230,100%,96%,0.7) 0, transparent 55%), radial-gradient(at 100% 100%, hsla(217,91%,95%,0.5) 0, transparent 55%)' }}
+    >
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <img src="/logo.svg" alt="JOT COD" className="h-16 w-auto mb-2" />
-          <p className="text-text-muted text-sm mt-1">Management Operations System</p>
+          <p className="text-on-surface-variant text-sm mt-1">Management Operations System</p>
         </div>
 
-        <div className="backdrop-blur-xl bg-card-dark/80 border border-border-dark rounded-2xl p-8 shadow-2xl">
+        <div className="bg-surface-lowest border border-outline-variant rounded-2xl p-8" style={{ boxShadow: '0px 10px 32px rgba(0,0,0,0.08)' }}>
           <div className="mb-8">
-            <h2 className="text-xl font-bold text-white">Sign In</h2>
-            <p className="text-text-muted text-sm mt-1">Enter your credentials to access the dashboard.</p>
+            <h2 className="text-xl font-bold text-on-surface">Sign In</h2>
+            <p className="text-on-surface-variant text-sm mt-1">Enter your credentials to access the dashboard.</p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-sm p-3 rounded-xl flex items-center gap-2">
+              <div className="bg-error-container border border-error/20 text-on-error-container text-sm p-3 rounded-xl flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg">error</span>
                 {error}
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-text-muted ml-1" htmlFor="email">Email Address</label>
+              <label className="text-sm font-semibold text-on-surface-variant ml-1" htmlFor="email">Email Address</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
                   <span className="material-symbols-outlined text-[20px]">mail</span>
                 </div>
                 <input
-                  className="block w-full pl-10 pr-3 py-3 bg-card-dark border border-border-dark rounded-xl text-white placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm disabled:opacity-50"
+                  className="block w-full pl-10 pr-3 py-3 bg-surface-low border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm disabled:opacity-50"
                   id="email"
                   type="email"
                   placeholder="name@company.com"
@@ -69,15 +71,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-text-muted ml-1" htmlFor="password">Password</label>
+                <label className="text-sm font-semibold text-on-surface-variant ml-1" htmlFor="password">Password</label>
                 <a className="text-xs font-bold text-primary hover:underline transition-all" href="#">Forgot Password?</a>
               </div>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted group-focus-within:text-primary transition-colors">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline group-focus-within:text-primary transition-colors">
                   <span className="material-symbols-outlined text-[20px]">lock</span>
                 </div>
                 <input
-                  className="block w-full pl-10 pr-3 py-3 bg-card-dark border border-border-dark rounded-xl text-white placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm disabled:opacity-50"
+                  className="block w-full pl-10 pr-3 py-3 bg-surface-low border border-outline-variant rounded-lg text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all text-sm disabled:opacity-50"
                   id="password"
                   type="password"
                   placeholder="••••••••"
@@ -89,12 +91,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             </div>
 
             <div className="flex items-center">
-              <input className="w-4 h-4 text-primary bg-card-dark border-border-dark rounded focus:ring-primary/50 focus:ring-offset-0 transition-all cursor-pointer" id="remember" type="checkbox" />
-              <label className="ml-2 text-sm font-medium text-text-muted cursor-pointer select-none" htmlFor="remember">Remember this device</label>
+              <input className="w-4 h-4 text-primary bg-surface-low border-outline-variant rounded focus:ring-primary/30 focus:ring-offset-0 transition-all cursor-pointer" id="remember" type="checkbox" />
+              <label className="ml-2 text-sm font-medium text-on-surface-variant cursor-pointer select-none" htmlFor="remember">Remember this device</label>
             </div>
 
             <button
-              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-primary-btn hover:bg-primary text-white font-bold py-3.5 rounded-lg transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
               disabled={isLoading}
             >
@@ -104,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           </form>
         </div>
 
-        <p className="text-center text-text-muted text-xs mt-8">
+        <p className="text-center text-on-surface-variant text-xs mt-8">
           © 2024 COD Operations Management. All rights reserved.<br />
           <span className="inline-block mt-2">Secure encrypted session active.</span>
         </p>

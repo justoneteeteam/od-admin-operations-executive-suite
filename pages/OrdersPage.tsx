@@ -406,26 +406,39 @@ const OrdersPage: React.FC = () => {
 
   const handleDeleteOrder = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this order?')) {
+    if (window.confirm('Are you sure you want to delete this order? This will also remove its tracking history, responses, and call logs.')) {
       try {
         await ordersService.delete(id);
         await fetchOrders();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to delete order', err);
-        alert('Failed to delete order. Please try again.');
+        const msg = err.response?.data?.message || err.message || '';
+        if (msg.toLowerCase().includes('foreign key') || msg.toLowerCase().includes('constraint') || msg.toLowerCase().includes('violates')) {
+          alert('Cannot delete this order because it has dependent records (tracking, returns, financial entries). Please contact your administrator to cascade-delete from the backend.');
+        } else {
+          alert('Failed to delete order. Please try again.');
+        }
       }
     }
   };
 
   const handleBulkDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete ${selectedOrderIds.length} orders?`)) {
-      try {
-        await Promise.all(selectedOrderIds.map(id => ordersService.delete(id)));
-        await fetchOrders();
-        setSelectedOrderIds([]);
-      } catch (err) {
-        console.error('Failed to delete orders', err);
-        alert('Failed to delete some orders. Please try again.');
+    if (window.confirm(`Are you sure you want to delete ${selectedOrderIds.length} orders? This will also remove their dependent records.`)) {
+      let successCount = 0;
+      let failCount = 0;
+      for (const id of selectedOrderIds) {
+        try {
+          await ordersService.delete(id);
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to delete order ${id}`, err);
+          failCount++;
+        }
+      }
+      await fetchOrders();
+      setSelectedOrderIds([]);
+      if (failCount > 0) {
+        alert(`Deleted ${successCount} orders. ${failCount} orders failed (likely due to dependent records).`);
       }
     }
   };
@@ -579,21 +592,21 @@ const OrdersPage: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
           <span className="text-text-muted text-xs font-medium">Home</span>
           <span className="text-text-muted text-xs">/</span>
-          <span className="text-white text-xs font-medium">Orders Console</span>
+          <span className="text-on-surface text-xs font-medium">Orders Console</span>
         </div>
         <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mt-2">
           <div className="flex flex-col gap-1">
-            <h1 className="text-white text-2xl sm:text-3xl font-black tracking-tight">Orders Console</h1>
+            <h1 className="text-on-surface text-2xl sm:text-3xl font-black tracking-tight">Orders Console</h1>
             <p className="text-text-muted text-sm">Review, track and manage your COD order pipeline.</p>
           </div>
           {/* SKU Type Tabs */}
-          <div className="flex gap-1 bg-[#111a22] p-1 rounded-xl border border-border-dark self-end">
+          <div className="flex gap-1 bg-surface-lowest p-1 rounded-xl border border-border-dark self-end">
             <button
               onClick={() => setSkuTab('sku')}
               className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
                 skuTab === 'sku'
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'
+                  : 'text-text-muted hover:text-on-surface hover:bg-surface-high'
               }`}
             >
               <span className="material-symbols-outlined text-sm mr-1.5 align-middle" style={{ fontSize: '16px' }}>inventory_2</span>
@@ -604,7 +617,7 @@ const OrdersPage: React.FC = () => {
               className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${
                 skuTab === 'non-sku'
                   ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                  : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'
+                  : 'text-text-muted hover:text-on-surface hover:bg-surface-high'
               }`}
             >
               <span className="material-symbols-outlined text-sm mr-1.5 align-middle" style={{ fontSize: '16px' }}>science</span>
@@ -621,13 +634,13 @@ const OrdersPage: React.FC = () => {
                 Delete ({selectedOrderIds.length})
               </button>
             )}
-            <button className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-[#233648] text-white text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all">
+            <button className="flex flex-1 md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-surface-container text-on-surface text-sm font-bold border border-outline-variant hover:bg-surface-container transition-all">
               <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>cloud_download</span>
               Export XLS
             </button>
             <button
               onClick={() => setShowImportModal(true)}
-              className="flex flex-[2] md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-[#1c2d3d] text-emerald-400 text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all"
+              className="flex flex-[2] md:flex-none items-center justify-center rounded-lg h-10 px-4 bg-surface-high text-emerald-400 text-sm font-bold border border-outline-variant hover:bg-surface-container transition-all"
             >
               <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>upload_file</span>
               Import Orders
@@ -647,7 +660,7 @@ const OrdersPage: React.FC = () => {
           <div className="md:col-span-2 lg:col-span-2 flex gap-0">
             <div className="relative flex-shrink-0">
               <select
-                className="h-full pl-3 pr-7 py-2.5 bg-[#17232f] border border-border-dark border-r-0 rounded-l-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm cursor-pointer font-medium"
+                className="h-full pl-3 pr-7 py-2.5 bg-surface-container border border-border-dark border-r-0 rounded-l-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm cursor-pointer font-medium"
                 style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7f95' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value)}
@@ -662,7 +675,7 @@ const OrdersPage: React.FC = () => {
               <input
                 type="text"
                 placeholder={searchType === 'orderNumber' ? 'Search by order number...' : searchType === 'customerName' ? 'Search by customer name...' : 'Search by tracking number...'}
-                className="w-full pl-10 pr-4 py-2.5 bg-card-dark border border-border-dark rounded-r-xl text-white placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-surface-lowest border border-border-dark rounded-r-xl text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -670,7 +683,7 @@ const OrdersPage: React.FC = () => {
           </div>
           <div className="relative">
             <select
-              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
+              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
               value={confirmationFilter}
               onChange={(e) => setConfirmationFilter(e.target.value)}
             >
@@ -689,7 +702,7 @@ const OrdersPage: React.FC = () => {
           </div>
           <div className="relative">
             <select
-              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
+              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
               value={orderStatusFilter}
               onChange={(e) => setOrderStatusFilter(e.target.value)}
             >
@@ -711,7 +724,7 @@ const OrdersPage: React.FC = () => {
           </div>
           <div className="relative">
             <select
-              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
+              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm appearance-none cursor-pointer"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             >
@@ -725,7 +738,7 @@ const OrdersPage: React.FC = () => {
           </div>
           <div className="relative">
             <select
-              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm appearance-none cursor-pointer"
+              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all text-sm appearance-none cursor-pointer"
               value={riskFilter}
               onChange={(e) => setRiskFilter(e.target.value)}
             >
@@ -740,7 +753,7 @@ const OrdersPage: React.FC = () => {
             </div>
             <div className="relative">
             <select
-              className="w-full px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm appearance-none cursor-pointer"
+              className="w-full px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all text-sm appearance-none cursor-pointer"
               value={trafficChannelFilter}
               onChange={(e) => setTrafficChannelFilter(e.target.value)}
             >
@@ -756,15 +769,15 @@ const OrdersPage: React.FC = () => {
       </div>
 
       {/* Main Table */}
-      <div className="bg-[#111a22] rounded-xl border border-border-dark overflow-hidden flex flex-col mb-12 shadow-2xl">
+      <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden flex flex-col mb-12 shadow-2xl">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[900px] lg:min-w-[1200px]">
             <thead>
-              <tr className="bg-[#17232f] border-b border-[#233648]">
+              <tr className="bg-surface-container border-b border-outline-variant">
                 <th className="px-4 py-5 w-[40px] text-center">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-[#2d445a] bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary align-middle"
+                    className="w-4 h-4 rounded border-outline-variant bg-surface-container checked:bg-primary cursor-pointer accent-primary align-middle"
                     checked={filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length}
                     onChange={handleSelectAll}
                   />
@@ -779,7 +792,7 @@ const OrdersPage: React.FC = () => {
                 <th className="px-4 sm:px-6 py-5 text-center text-text-muted font-bold text-[10px] uppercase tracking-widest">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#233648]">
+            <tbody className="divide-y divide-outline-variant">
               {isLoading ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-12 text-center text-text-muted">
@@ -813,13 +826,13 @@ const OrdersPage: React.FC = () => {
                   return (
                     <tr
                       key={order.id}
-                      className={`hover:bg-[#1c2d3d] transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-[#1c2d3d]/50' : ''} ${!order.trackingNumber ? 'opacity-[0.55]' : ''}`}
+                      className={`hover:bg-surface-high transition-colors cursor-pointer group ${selectedOrderIds.includes(order.id) ? 'bg-surface-high/50' : ''} ${!order.trackingNumber ? 'opacity-[0.55]' : ''}`}
                       onClick={() => { setSelectedOrder(order); setShowDrawer(true); }}
                     >
                       <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          className="w-4 h-4 rounded border-[#2d445a] bg-[#1c2d3d] checked:bg-primary cursor-pointer accent-primary align-middle"
+                          className="w-4 h-4 rounded border-outline-variant bg-surface-container checked:bg-primary cursor-pointer accent-primary align-middle"
                           checked={selectedOrderIds.includes(order.id)}
                           onChange={(e) => handleSelectOrder(e, order.id)}
                         />
@@ -830,7 +843,7 @@ const OrdersPage: React.FC = () => {
                           {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" title="MEDIUM Risk"><span className="material-symbols-outlined text-sm">warning</span></span>}
                           {order.riskLevel === 'HIGH' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30" title="HIGH Risk"><span className="material-symbols-outlined text-sm">front_hand</span></span>}
                           {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-6 items-center justify-center rounded-full bg-red-500/20 text-red-400 border border-red-500/30" title="BLOCKED"><span className="material-symbols-outlined text-sm">block</span></span>}
-                          {!order.riskLevel && <span className="inline-flex size-6 items-center justify-center rounded-full bg-[#1c2d3d] text-text-muted border border-border-dark" title="Unassessed"><span className="material-symbols-outlined text-sm">help</span></span>}
+                          {!order.riskLevel && <span className="inline-flex size-6 items-center justify-center rounded-full bg-surface-high text-text-muted border border-border-dark" title="Unassessed"><span className="material-symbols-outlined text-sm">help</span></span>}
                           <span className={`text-[10px] font-bold ${order.riskLevel === 'LOW' ? 'text-emerald-400' : order.riskLevel === 'MEDIUM' ? 'text-yellow-400' : order.riskLevel === 'HIGH' ? 'text-orange-400' : order.riskLevel === 'BLOCKED' ? 'text-red-400' : 'text-text-muted'}`}>
                             {order.riskScore != null ? order.riskScore : '—'}
                           </span>
@@ -838,7 +851,7 @@ const OrdersPage: React.FC = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-3">
                         <p className="text-sm font-bold text-primary group-hover:underline underline-offset-4">#{order.orderNumber}</p>
-                        <p className="text-xs text-white mt-0.5 font-medium">{order.customer?.name || 'Unknown User'}</p>
+                        <p className="text-xs text-on-surface mt-0.5 font-medium">{order.customer?.name || 'Unknown User'}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <p className="text-[10px] text-text-muted uppercase tracking-widest">{order.shippingCountry || 'N/A'}</p>
                           <span className="text-[10px] text-text-muted/40">·</span>
@@ -887,7 +900,7 @@ const OrdersPage: React.FC = () => {
                               (s === 'InTransit' || s === 'Shipped' || s === 'Processing' || s === 'InfoReceived') ? 'bg-blue-400' :
                               s === 'NotFound' ? 'bg-gray-500' : 'bg-primary/60';
                             const textColor = isRestocked ? 'text-emerald-400 font-black' :
-                              isWrittenOff ? 'text-gray-400 font-black' :
+                              isWrittenOff ? 'text-on-surface-variant font-black' :
                               isReturning ? 'text-pink-400 font-black' :
                               (s === 'Expired' || s === 'Cancelled') ? 'text-red-500 font-black' :
                               (s === 'Exception' || s === 'Undelivered') ? 'text-amber-400 font-black' :
@@ -903,7 +916,7 @@ const OrdersPage: React.FC = () => {
                               s === 'Cancelled' ? 'Cancel' :
                               (s === 'Exception' || s === 'Undelivered') ? 'Incident' : s;
                             const icon = isRestocked ? 'inventory_2' : isWrittenOff ? 'remove_circle' : isReturning ? 'warning' : null;
-                            const iconColor = isRestocked ? 'text-emerald-400' : isWrittenOff ? 'text-gray-400' : 'text-pink-400';
+                            const iconColor = isRestocked ? 'text-emerald-400' : isWrittenOff ? 'text-on-surface-variant' : 'text-pink-400';
                             return (
                               <>
                                 {icon ? (
@@ -917,7 +930,7 @@ const OrdersPage: React.FC = () => {
                           })()}
                         </div>
                       </td>
-                      <td className="px-4 sm:px-6 py-3 text-sm font-black text-white text-right whitespace-nowrap">
+                      <td className="px-4 sm:px-6 py-3 text-sm font-black text-on-surface text-right whitespace-nowrap">
                         {skuTab === 'non-sku' ? <span className="text-text-muted">$0</span> : `$${order.totalAmount.toLocaleString()}`}
                       </td>
                       <td className="px-4 sm:px-6 py-3 text-sm font-black text-text-muted text-right whitespace-nowrap">
@@ -953,9 +966,9 @@ const OrdersPage: React.FC = () => {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="bg-[#17232f]/80 px-4 sm:px-6 py-6 border-t border-[#233648] flex flex-col xl:flex-row items-center justify-between gap-6">
+        <div className="bg-surface-container/80 px-4 sm:px-6 py-6 border-t border-outline-variant flex flex-col xl:flex-row items-center justify-between gap-6">
           <span className="text-text-muted text-sm font-medium whitespace-nowrap">
-            Showing <span className="text-white font-bold">{page}</span> of <span className="text-white font-bold">{totalPages}</span> pages
+            Showing <span className="text-on-surface font-bold">{page}</span> of <span className="text-on-surface font-bold">{totalPages}</span> pages
             <span className="mx-2 opacity-30">|</span>
             {totalOrders} total orders
           </span>
@@ -963,7 +976,7 @@ const OrdersPage: React.FC = () => {
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-on-surface transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
             >
               &larr; Previous
             </button>
@@ -978,7 +991,7 @@ const OrdersPage: React.FC = () => {
                       onClick={() => setPage(p as number)}
                       className={`min-w-[42px] h-[42px] flex items-center justify-center rounded-xl border transition-all text-sm font-bold ${page === p
                         ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20'
-                        : 'border-primary text-text-muted hover:bg-primary/10 hover:text-white'
+                        : 'border-primary text-text-muted hover:bg-primary/10 hover:text-on-surface'
                         }`}
                     >
                       {p}
@@ -991,7 +1004,7 @@ const OrdersPage: React.FC = () => {
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary text-text-muted hover:bg-primary hover:text-on-surface transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-text-muted whitespace-nowrap text-sm font-medium"
             >
               Next &rarr;
             </button>
@@ -1003,12 +1016,12 @@ const OrdersPage: React.FC = () => {
       {
         showDrawer && editOrder && (
           <div className="fixed inset-0 z-[200] flex justify-end">
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
-            <div className="side-drawer relative w-full sm:w-[680px] lg:w-[720px] h-full bg-[#111a22] border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
+            <div className="side-drawer relative w-full sm:w-[680px] lg:w-[720px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
               {/* Header */}
-              <div className="px-6 sm:px-8 py-6 border-b border-border-dark flex items-center justify-between bg-[#14202c]">
+              <div className="px-6 sm:px-8 py-6 border-b border-border-dark flex items-center justify-between bg-surface-low">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-3 tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-black text-on-surface flex items-center gap-3 tracking-tight">
                     Edit Order Details
                     <span className="hidden xs:inline-block text-xs font-bold px-3 py-1 rounded-lg bg-primary/20 text-primary border border-primary/30">
                       #{editOrder.orderNumber}
@@ -1031,7 +1044,7 @@ const OrdersPage: React.FC = () => {
                       <h4 className="text-orange-500 font-bold text-sm">Action Required: Restock Confirmation</h4>
                       <p className="text-orange-500/80 text-xs mt-1">This order's return has arrived at the warehouse but rests in returning float. Switch to Inventory &gt; Planning or click confirm here to evaluate condition and commit to available stock.</p>
                       <button 
-                        className="mt-3 bg-orange-500 text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-orange-600 transition-colors"
+                        className="mt-3 bg-orange-500 text-on-surface text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-orange-600 transition-colors"
                         onClick={async (e) => {
                            e.preventDefault();
                            try {
@@ -1078,12 +1091,12 @@ const OrdersPage: React.FC = () => {
                     <span className="material-symbols-outlined text-sm">fingerprint</span>
                     Identity & Store
                   </h3>
-                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
+                  <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order ID</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all font-mono"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all font-mono"
                           value={editOrder.orderNumber}
                           readOnly
                         />
@@ -1092,7 +1105,7 @@ const OrdersPage: React.FC = () => {
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order Date</label>
                         <input
                           type="date"
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all text-text-muted focus:text-white"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all text-text-muted focus:text-on-surface"
                           value={editOrder.orderDate ? new Date(new Date(editOrder.orderDate).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0] : ''}
                           onChange={(e) => {
                             if (e.target.value) {
@@ -1107,7 +1120,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Store Name</label>
                         <select
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none cursor-pointer"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none cursor-pointer"
                           value={editOrder.storeId || ''}
                           onChange={(e) => {
                             const selected = storeNames.find(s => s.id === e.target.value);
@@ -1144,11 +1157,11 @@ const OrdersPage: React.FC = () => {
                         {editOrder.riskLevel} RISK (Score: {editOrder.riskScore})
                       </div>
                     </div>
-                    <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-amber-500/20 space-y-4">
+                    <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-amber-500/20 space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-[#1c2d3d] p-4 rounded-xl border border-border-dark space-y-2">
+                        <div className="bg-surface-high p-4 rounded-xl border border-border-dark space-y-2">
                           <span className="text-[10px] font-black text-text-muted uppercase">Recommended Action</span>
-                          <p className="text-sm font-black text-white">{
+                          <p className="text-sm font-black text-on-surface">{
                             editOrder.riskAction === 'twilio_short' ? 'Short Voice Confirmation' :
                               editOrder.riskAction === 'twilio_long' ? 'Full Voice Confirmation' :
                                 editOrder.riskAction === 'call_center' ? 'Manual Call Center Review' :
@@ -1156,7 +1169,7 @@ const OrdersPage: React.FC = () => {
                                     (editOrder.riskAction || 'None')
                           }</p>
                         </div>
-                        <div className="bg-[#1c2d3d] p-4 rounded-xl border border-border-dark space-y-2">
+                        <div className="bg-surface-high p-4 rounded-xl border border-border-dark space-y-2">
                           <span className="text-[10px] font-black text-text-muted uppercase">Address Analysis</span>
                           <div className="flex gap-2 text-xs font-medium">
                             <span className="text-text-muted">Requires further implementation. Check raw log.</span>
@@ -1173,7 +1186,7 @@ const OrdersPage: React.FC = () => {
                     <span className="material-symbols-outlined text-sm">person</span>
                     Customer Information
                   </h3>
-                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
+                  <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Customer Name</label>
@@ -1197,7 +1210,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Phone Number</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                           value={editOrder.customer?.phone || ''}
                           onChange={(e) => handleInputChange('customerPhone', e.target.value)}
                           placeholder="+1 234 567 890"
@@ -1206,7 +1219,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2 sm:col-span-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">House # / Street Address</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                           value={editOrder.shippingAddressLine1 || ''}
                           onChange={(e) => handleInputChange('shippingAddressLine1', e.target.value)}
                         />
@@ -1216,7 +1229,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">City</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                           value={editOrder.shippingCity || ''}
                           onChange={(e) => handleInputChange('shippingCity', e.target.value)}
                         />
@@ -1224,7 +1237,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Province</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                           value={editOrder.shippingProvince || ''}
                           onChange={(e) => handleInputChange('shippingProvince', e.target.value)}
                         />
@@ -1232,7 +1245,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Zipcode</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                           value={editOrder.shippingPostalCode || ''}
                           onChange={(e) => handleInputChange('shippingPostalCode', e.target.value)}
                         />
@@ -1240,7 +1253,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Country</label>
                         <select
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none"
                           value={editOrder.shippingCountry || ''}
                           onChange={(e) => handleInputChange('shippingCountry', e.target.value)}
                         >
@@ -1261,14 +1274,14 @@ const OrdersPage: React.FC = () => {
                     </h3>
                     <button
                       onClick={handleAddItem}
-                      className="text-[10px] font-bold uppercase tracking-widest text-primary hover:text-white transition-colors flex items-center gap-1"
+                      className="text-[10px] font-bold uppercase tracking-widest text-primary hover:text-on-surface transition-colors flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-sm">add</span>
                       Add Item
                     </button>
                   </div>
 
-                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-4">
+                  <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-border-dark space-y-4">
                     {(!editOrder.items || editOrder.items.length === 0) && (
                       <div className="text-center py-4 text-text-muted text-sm italic">
                         No items in this order.
@@ -1283,7 +1296,7 @@ const OrdersPage: React.FC = () => {
                         <div className="sm:col-span-6 space-y-2">
                           <label className="text-[10px] font-black text-text-muted uppercase ml-1">SKU / Product Name</label>
                           <select
-                            className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-10 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none"
+                            className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-10 px-4 focus:ring-primary/40 focus:border-primary transition-all appearance-none"
                             value={item.productId || ''}
                             onChange={(e) => handleProductSelect(index, e.target.value)}
                           >
@@ -1297,7 +1310,7 @@ const OrdersPage: React.FC = () => {
                           <label className="text-[10px] font-black text-text-muted uppercase ml-1">Qty</label>
                           <input
                             type="number"
-                            className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-10 px-4 focus:ring-primary/40 focus:border-primary transition-all text-center"
+                            className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-10 px-4 focus:ring-primary/40 focus:border-primary transition-all text-center"
                             value={item.quantity}
                             min="1"
                             onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
@@ -1305,7 +1318,7 @@ const OrdersPage: React.FC = () => {
                         </div>
                         <div className="sm:col-span-2 space-y-2">
                           <label className="text-[10px] font-black text-text-muted uppercase ml-1">Total</label>
-                          <div className="h-10 flex items-center px-2 text-white font-mono text-sm max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={`$${((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()}`}>
+                          <div className="h-10 flex items-center px-2 text-on-surface font-mono text-sm max-w-full overflow-hidden text-ellipsis whitespace-nowrap" title={`$${((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()}`}>
                             ${((item.quantity || 0) * (item.unitPrice || 0)).toLocaleString()}
                           </div>
                         </div>
@@ -1329,12 +1342,12 @@ const OrdersPage: React.FC = () => {
                     <span className="material-symbols-outlined text-sm">local_shipping</span>
                     Fulfillment & Logistics
                   </h3>
-                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
+                  <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Fulfillment Center</label>
                         <select
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                           value={editOrder.fulfillmentCenterId || ''}
                           onChange={(e) => handleInputChange('fulfillmentCenterId', e.target.value)}
                         >
@@ -1353,7 +1366,7 @@ const OrdersPage: React.FC = () => {
                                 href={`https://t.17track.net/en#nums=${editOrder.trackingNumber}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-[10px] text-primary hover:text-white flex items-center gap-1 transition-colors font-semibold"
+                                className="text-[10px] text-primary hover:text-on-surface flex items-center gap-1 transition-colors font-semibold"
                                 title="Track package on 17Track"
                               >
                                 <span className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -1397,7 +1410,7 @@ const OrdersPage: React.FC = () => {
                                     btn.disabled = false;
                                   }
                                 }}
-                                className="text-[10px] text-amber-400 hover:text-white flex items-center gap-1 transition-colors font-semibold disabled:opacity-50 disabled:cursor-wait"
+                                className="text-[10px] text-amber-400 hover:text-on-surface flex items-center gap-1 transition-colors font-semibold disabled:opacity-50 disabled:cursor-wait"
                                 title="Sync tracking with 17Track"
                               >
                                 <span className="material-symbols-outlined text-[14px]">sync</span>
@@ -1407,7 +1420,7 @@ const OrdersPage: React.FC = () => {
                           )}
                         </div>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 font-mono"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 font-mono"
                           placeholder="AWB-XXXXX"
                           value={editOrder.trackingNumber || ''}
                           onChange={(e) => handleInputChange('trackingNumber', e.target.value)}
@@ -1422,7 +1435,7 @@ const OrdersPage: React.FC = () => {
                         )}
                       </label>
                       <select
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                         value={editOrder.courier || ''}
                         onChange={(e) => handleInputChange('courier', e.target.value)}
                       >
@@ -1444,7 +1457,7 @@ const OrdersPage: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order Notes / Instructions</label>
                       <textarea
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-24 p-4 focus:ring-primary/40 resize-none"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-24 p-4 focus:ring-primary/40 resize-none"
                         placeholder="Internal notes or special handling..."
                         value={editOrder.notes || ''}
                         onChange={(e) => handleInputChange('notes', e.target.value)}
@@ -1461,7 +1474,7 @@ const OrdersPage: React.FC = () => {
                               editOrder.trafficChannel === 'facebook' ? 'bg-blue-500/10 text-blue-400 border-blue-500/25 focus:ring-blue-500/40' :
                               editOrder.trafficChannel === 'google' ? 'bg-amber-500/10 text-amber-400 border-amber-500/25 focus:ring-amber-500/40' :
                               editOrder.trafficChannel === 'seo' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25 focus:ring-emerald-500/40' :
-                              'bg-[#1c2d3d] text-text-muted border-[#2d445a] focus:ring-primary/40'
+                              'bg-surface-high text-text-muted border-outline-variant focus:ring-primary/40'
                             }`}
                             value={editOrder.trafficChannel || ''}
                             onChange={(e) => handleInputChange('trafficChannel', e.target.value || null)}
@@ -1477,9 +1490,9 @@ const OrdersPage: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Browser IP Address</label>
-                        <div className="flex items-center gap-2 h-12 px-4 rounded-xl border border-border-dark bg-[#1c2d3d] text-sm font-mono">
+                        <div className="flex items-center gap-2 h-12 px-4 rounded-xl border border-border-dark bg-surface-high text-sm font-mono">
                           <span className="material-symbols-outlined text-text-muted" style={{ fontSize: '16px' }}>language</span>
-                          <span className={editOrder.browserIp ? 'text-white' : 'text-text-muted/50'}>{editOrder.browserIp || 'N/A'}</span>
+                          <span className={editOrder.browserIp ? 'text-on-surface' : 'text-text-muted/50'}>{editOrder.browserIp || 'N/A'}</span>
                         </div>
                       </div>
                     </div>
@@ -1492,12 +1505,12 @@ const OrdersPage: React.FC = () => {
                     <span className="material-symbols-outlined text-sm">assignment_return</span>
                     Return Tracking & Stock Recovery
                   </h3>
-                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
+                  <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Return Tracking Number</label>
                         <input
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all font-mono"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all font-mono"
                           placeholder="RET-XXXXX"
                           value={editOrder.returnTrackingNumber || ''}
                           onChange={(e) => handleInputChange('returnTrackingNumber', e.target.value)}
@@ -1506,7 +1519,7 @@ const OrdersPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Stock Return State</label>
                         <select
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                           value={editOrder.returnStockState || 'pending'}
                           onChange={(e) => handleInputChange('returnStockState', e.target.value)}
                         >
@@ -1519,7 +1532,7 @@ const OrdersPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3 pt-2">
                       <button
-                        className="bg-primary/20 hover:bg-primary/30 text-primary hover:text-white border border-primary/30 px-5 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-50"
+                        className="bg-primary/20 hover:bg-primary/30 text-primary hover:text-on-surface border border-primary/30 px-5 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm disabled:opacity-50"
                         disabled={!editOrder.returnTrackingNumber}
                         onClick={async (e) => {
                           e.preventDefault();
@@ -1573,12 +1586,12 @@ const OrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="bg-[#17232f] rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
+                  <div className="bg-surface-container rounded-2xl p-5 sm:p-6 border border-border-dark space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-text-muted uppercase ml-1">Confirmation Status</label>
                         <select
-                          className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                          className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                           value={editOrder.confirmationStatus || 'Pending'}
                           onChange={(e) => handleInputChange('confirmationStatus', e.target.value)}
                         >
@@ -1597,7 +1610,7 @@ const OrdersPage: React.FC = () => {
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-text-muted uppercase ml-1">Order (Shipping) Status</label>
                           <select
-                            className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             value={editOrder.orderStatus}
                             onChange={(e) => handleInputChange('orderStatus', e.target.value)}
                             disabled={editOrder.confirmationStatus !== 'Confirmed'}
@@ -1620,24 +1633,24 @@ const OrdersPage: React.FC = () => {
                     </div>
 
                     {/* Revenue Breakdown */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#1c2d3d]/50 p-4 rounded-xl border border-border-dark/50">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface-high/50 p-4 rounded-xl border border-border-dark/50">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-text-muted uppercase">Shipping ($)</label>
-                        <input type="number" className="bg-[#17232f] border border-border-dark text-white text-xs rounded-lg w-full h-9 px-3"
+                        <input type="number" className="bg-surface-container border border-border-dark text-on-surface text-xs rounded-lg w-full h-9 px-3"
                           value={editOrder.shippingFee || 0}
                           onChange={(e) => handleInputChange('shippingFee', parseFloat(e.target.value) || 0)}
                         />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-text-muted uppercase">Tax ($)</label>
-                        <input type="number" className="bg-[#17232f] border border-border-dark text-white text-xs rounded-lg w-full h-9 px-3"
+                        <input type="number" className="bg-surface-container border border-border-dark text-on-surface text-xs rounded-lg w-full h-9 px-3"
                           value={editOrder.taxCollected || 0}
                           onChange={(e) => handleInputChange('taxCollected', parseFloat(e.target.value) || 0)}
                         />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black text-text-muted uppercase">Discount ($)</label>
-                        <input type="number" className="bg-[#17232f] border border-border-dark text-white text-xs rounded-lg w-full h-9 px-3"
+                        <input type="number" className="bg-surface-container border border-border-dark text-on-surface text-xs rounded-lg w-full h-9 px-3"
                           value={editOrder.discountGiven || 0}
                           onChange={(e) => handleInputChange('discountGiven', parseFloat(e.target.value) || 0)}
                         />
@@ -1656,7 +1669,7 @@ const OrdersPage: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">Payment Status</label>
                       <select
-                        className="bg-[#1c2d3d] border-[#2d445a] text-emerald-400 font-bold text-sm rounded-xl w-full h-12 px-4 focus:ring-emerald-500/40"
+                        className="bg-surface-high border-outline-variant text-emerald-400 font-bold text-sm rounded-xl w-full h-12 px-4 focus:ring-emerald-500/40"
                         value={editOrder.paymentStatus || 'Pending'}
                         onChange={(e) => handleInputChange('paymentStatus', e.target.value)}
                       >
@@ -1675,7 +1688,7 @@ const OrdersPage: React.FC = () => {
                     <span className="material-symbols-outlined text-sm">history</span>
                     Tracking & Communication History
                   </h3>
-                  <div className="bg-[#17232f] rounded-2xl p-6 border border-border-dark space-y-8">
+                  <div className="bg-surface-container rounded-2xl p-6 border border-border-dark space-y-8">
                     {(() => {
                       // Merge Tracking Logs + Customer Responses + Call Logs
                       const historyItems = [...(editOrder.trackingHistory || [])].map(t => ({ ...t, _type: 'tracking', _date: t.statusDate }));
@@ -1724,7 +1737,7 @@ const OrdersPage: React.FC = () => {
                                 <span className="text-[10px] font-black text-text-muted tracking-widest uppercase">{formattedDate}</span>
                                 <div className="flex items-center gap-2">
                                   <span className="material-symbols-outlined" style={{ fontSize: 14, color: isSuccess ? '#22c55e' : isFailed ? '#ef4444' : '#eab308' }}>call</span>
-                                  <span className="text-sm font-black text-white">Twilio Call — Attempt #{log.attemptNumber || '?'}</span>
+                                  <span className="text-sm font-black text-on-surface">Twilio Call — Attempt #{log.attemptNumber || '?'}</span>
                                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isSuccess ? 'bg-green-500/10 text-green-400 border border-green-500/20' : isFailed ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>
                                     {statusLabel}
                                   </span>
@@ -1758,13 +1771,13 @@ const OrdersPage: React.FC = () => {
                                   ) : (
                                     <span className="material-symbols-outlined text-blue-400" style={{ fontSize: 14 }}>chat</span>
                                   )}
-                                  <span className="text-sm font-black text-white">Sent {isWa ? 'WhatsApp' : 'SMS'}</span>
+                                  <span className="text-sm font-black text-on-surface">Sent {isWa ? 'WhatsApp' : 'SMS'}</span>
                                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${log.status === 'sent' || log.status === 'delivered' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'}`}>
                                     {log.status}
                                   </span>
                                 </div>
-                                <div className="bg-[#1a2332] border border-border-dark p-3 rounded-xl mt-1 text-xs text-text-muted opacity-90 relative">
-                                  <span className="absolute -top-1.5 -left-1.5 size-3 bg-[#1a2332] border-l border-t border-border-dark rotate-45 transform"></span>
+                                <div className="bg-surface-high border border-border-dark p-3 rounded-xl mt-1 text-xs text-text-muted opacity-90 relative">
+                                  <span className="absolute -top-1.5 -left-1.5 size-3 bg-surface-high border-l border-t border-border-dark rotate-45 transform"></span>
                                   {log.messageContent}
                                 </div>
                               </div>
@@ -1781,7 +1794,7 @@ const OrdersPage: React.FC = () => {
                             <div className="z-10 mt-1.5 size-2.5 rounded-full bg-primary ring-4 ring-primary/10 shrink-0"></div>
                             <div className="flex flex-col gap-1 w-full relative">
                               <span className="text-[10px] font-black text-text-muted tracking-widest uppercase">{formattedDate}</span>
-                              <span className="text-sm font-black text-white">{log.status} <span className="text-text-muted">{log.substatus ? `- ${log.substatus}` : ''}</span></span>
+                              <span className="text-sm font-black text-on-surface">{log.status} <span className="text-text-muted">{log.substatus ? `- ${log.substatus}` : ''}</span></span>
                               {log.description && <span className="text-xs text-text-muted italic opacity-80 mt-1">{log.description}</span>}
                               {log.carrierName && <span className="text-[10px] text-primary mt-0.5">{log.carrierName} {log.location ? `— ${log.location}` : ''}</span>}
                             </div>
@@ -1795,13 +1808,13 @@ const OrdersPage: React.FC = () => {
               </div>
 
               {/* Sticky Actions */}
-              <div className="p-6 sm:p-8 bg-[#17232f] border-t border-border-dark flex gap-3 sm:gap-4 sticky bottom-0 z-[110] shadow-2xl">
-                <button onClick={() => setShowDrawer(false)} className="flex-1 h-12 sm:h-14 bg-[#1c2d3d] hover:bg-[#233648] text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-border-dark">
+              <div className="p-6 sm:p-8 bg-surface-container border-t border-border-dark flex gap-3 sm:gap-4 sticky bottom-0 z-[110] shadow-2xl">
+                <button onClick={() => setShowDrawer(false)} className="flex-1 h-12 sm:h-14 bg-surface-high hover:bg-surface-container text-on-surface text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-border-dark">
                   Discard
                 </button>
                 <button
                   onClick={saveChanges}
-                  className="flex-[2] h-12 sm:h-14 bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
+                  className="flex-[2] h-12 sm:h-14 bg-primary hover:bg-primary/90 text-on-surface text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20"
                 >
                   <span className="material-symbols-outlined text-lg hidden xs:inline-block">check_circle</span>
                   Save Changes
@@ -1815,13 +1828,13 @@ const OrdersPage: React.FC = () => {
       {/* Success Toast */}
       {
         showSuccessToast && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-[#101922]/60 backdrop-blur-sm" onClick={() => setShowSuccessToast(false)}>
-            <div className="bg-[#101922] rounded-xl px-12 py-10 shadow-[0_0_40px_rgba(34,197,94,0.15)] flex flex-col items-center gap-3 max-w-sm w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowSuccessToast(false)}>
+            <div className="bg-surface-lowest rounded-xl px-12 py-10 shadow-xl border border-border-dark flex flex-col items-center gap-3 max-w-sm w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
               <span className="material-symbols-outlined text-green-500 text-6xl font-light mb-2" style={{ fontVariationSettings: "'wght' 200, 'FILL' 0" }}>check_circle</span>
-              <h2 className="text-white text-xl font-semibold tracking-wide text-center">
+              <h2 className="text-on-surface text-xl font-semibold tracking-wide text-center">
                 Changes Saved
               </h2>
-              <p className="text-white/40 text-sm text-center">
+              <p className="text-on-surface/40 text-sm text-center">
                 Your order has been updated in the system.
               </p>
             </div>
@@ -1832,16 +1845,16 @@ const OrdersPage: React.FC = () => {
       {/* Error Toast */}
       {
         showErrorToast && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-[#101922]/60 backdrop-blur-sm" onClick={() => setShowErrorToast(false)}>
-            <div className="bg-[#101922] border border-red-500/20 rounded-xl p-12 shadow-[0_0_50px_-12px_rgba(239,68,68,0.3)] flex flex-col items-center gap-6 max-w-sm w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowErrorToast(false)}>
+            <div className="bg-surface-lowest border border-red-500/20 rounded-xl p-12 shadow-xl flex flex-col items-center gap-6 max-w-sm w-full animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
               <div className="size-16 rounded-full bg-red-500/10 flex items-center justify-center">
                 <span className="material-symbols-outlined text-red-500 text-4xl">cancel</span>
               </div>
               <div className="text-center">
-                <h2 className="text-white text-2xl font-bold tracking-tight mb-2">
+                <h2 className="text-on-surface text-2xl font-bold tracking-tight mb-2">
                   Save Order Failed
                 </h2>
-                <p className="text-white/50 text-sm leading-relaxed">
+                <p className="text-on-surface/50 text-sm leading-relaxed">
                   Please check your connection and try again.
                 </p>
               </div>
@@ -1858,13 +1871,13 @@ const OrdersPage: React.FC = () => {
           <div className="bg-card w-full max-w-4xl max-h-[90vh] rounded-2xl border border-border flex flex-col relative shadow-2xl overflow-hidden animate-fade-in-up">
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-card-dark">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-surface-lowest">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <span className="material-symbols-outlined">upload_file</span>
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-white tracking-tight">Bulk Import Orders</h2>
+                  <h2 className="text-xl font-black text-on-surface tracking-tight">Bulk Import Orders</h2>
                   <p className="text-sm font-medium text-text-muted mt-0.5">
                     {importStep === 1 && "Upload your CSV or Excel file"}
                     {importStep === 2 && "Preview and map your data"}
@@ -1887,30 +1900,30 @@ const OrdersPage: React.FC = () => {
               {importStep === 1 && (
                 <div className="space-y-6 animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-[#1c2d3d] rounded-xl p-4 border border-[#2d445a]">
+                    <div className="bg-surface-high rounded-xl p-4 border border-outline-variant">
                       <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
                         <span className="material-symbols-outlined text-[18px]">add_circle</span>
                       </div>
-                      <h3 className="text-sm font-bold text-white mb-1">Create New</h3>
+                      <h3 className="text-sm font-bold text-on-surface mb-1">Create New</h3>
                       <p className="text-[11px] text-text-muted leading-relaxed">Leave <code className="text-emerald-400 bg-emerald-400/10 px-1 rounded">order_number</code> blank to securely auto-generate an ID.</p>
                     </div>
-                    <div className="bg-[#1c2d3d] rounded-xl p-4 border border-[#2d445a]">
+                    <div className="bg-surface-high rounded-xl p-4 border border-outline-variant">
                       <div className="size-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center mb-3">
                         <span className="material-symbols-outlined text-[18px]">update</span>
                       </div>
-                      <h3 className="text-sm font-bold text-white mb-1">Update Existing</h3>
+                      <h3 className="text-sm font-bold text-on-surface mb-1">Update Existing</h3>
                       <p className="text-[11px] text-text-muted leading-relaxed">Match an existing <code className="text-blue-400 bg-blue-400/10 px-1 rounded">order_number</code> to overwrite its components.</p>
                     </div>
-                    <div className="bg-[#1c2d3d] rounded-xl p-4 border border-[#2d445a]">
+                    <div className="bg-surface-high rounded-xl p-4 border border-outline-variant">
                       <div className="size-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
                         <span className="material-symbols-outlined text-[18px]">layers</span>
                       </div>
-                      <h3 className="text-sm font-bold text-white mb-1">Multi-Item</h3>
+                      <h3 className="text-sm font-bold text-on-surface mb-1">Multi-Item</h3>
                       <p className="text-[11px] text-text-muted leading-relaxed">Duplicate the <code className="text-purple-400 bg-purple-400/10 px-1 rounded">order_number</code> across multiple rows for nested cart items.</p>
                     </div>
                   </div>
 
-                  <div className="border-2 border-dashed border-[#2d445a] rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-[#1c2d3d]/50 hover:bg-[#1c2d3d] transition-colors relative group">
+                  <div className="border-2 border-dashed border-outline-variant rounded-2xl p-10 flex flex-col items-center justify-center text-center bg-surface-high/50 hover:bg-surface-high transition-colors relative group">
                     <input
                       type="file"
                       accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
@@ -1920,13 +1933,13 @@ const OrdersPage: React.FC = () => {
                     <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <span className="material-symbols-outlined text-3xl">upload_file</span>
                     </div>
-                    <h3 className="text-lg font-black text-white mb-2">Drag & Drop your file here</h3>
+                    <h3 className="text-lg font-black text-on-surface mb-2">Drag & Drop your file here</h3>
                     <p className="text-sm font-medium text-text-muted max-w-sm mb-6">
                       Support for standard .CSV or .XLSX spreadsheets. Ensure your column names strictly match the system headers.
                     </p>
                     <button
                       onClick={(e) => { e.stopPropagation(); downloadTemplate(); }}
-                      className="relative z-20 flex items-center justify-center rounded-lg h-10 px-6 bg-[#233648] text-white text-sm font-bold border border-[#2d445a] hover:bg-[#2d445a] transition-all"
+                      className="relative z-20 flex items-center justify-center rounded-lg h-10 px-6 bg-surface-container text-on-surface text-sm font-bold border border-outline-variant hover:bg-surface-container transition-all"
                     >
                       <span className="material-symbols-outlined mr-2" style={{ fontSize: '18px' }}>download</span>
                       Download Template File
@@ -1940,21 +1953,21 @@ const OrdersPage: React.FC = () => {
                 <div className="space-y-6 animate-fade-in">
                   <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-end">
                     <div>
-                      <h3 className="text-lg font-black text-white">Data Preview</h3>
+                      <h3 className="text-lg font-black text-on-surface">Data Preview</h3>
                       <p className="text-sm font-medium text-text-muted">Total rows detected: {importData.length}</p>
                     </div>
-                    <div className="flex flex-col gap-2 bg-[#1c2d3d] p-4 rounded-xl border border-[#2d445a]">
+                    <div className="flex flex-col gap-2 bg-surface-high p-4 rounded-xl border border-outline-variant">
                       <label className="flex items-center gap-3 cursor-pointer group">
                         <div className="relative flex items-center justify-center">
                           <input
                             type="checkbox"
                             checked={skipRiskAssessment}
                             onChange={(e) => setSkipRiskAssessment(e.target.checked)}
-                            className="peer appearance-none size-5 rounded-md border-2 border-border-dark bg-card-dark checked:bg-orange-500 checked:border-orange-500 transition-all"
+                            className="peer appearance-none size-5 rounded-md border-2 border-border-dark bg-surface-lowest checked:bg-orange-500 checked:border-orange-500 transition-all"
                           />
-                          <span className="material-symbols-outlined absolute text-white text-[16px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
+                          <span className="material-symbols-outlined absolute text-on-surface text-[16px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                         </div>
-                        <span className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">Skip Risk Assessment (Twilio Calls)</span>
+                        <span className="text-sm font-bold text-on-surface group-hover:text-orange-400 transition-colors">Skip Risk Assessment (Twilio Calls)</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer group">
                         <div className="relative flex items-center justify-center">
@@ -1962,18 +1975,18 @@ const OrdersPage: React.FC = () => {
                             type="checkbox"
                             checked={skipInventory}
                             onChange={(e) => setSkipInventory(e.target.checked)}
-                            className="peer appearance-none size-5 rounded-md border-2 border-border-dark bg-card-dark checked:bg-orange-500 checked:border-orange-500 transition-all"
+                            className="peer appearance-none size-5 rounded-md border-2 border-border-dark bg-surface-lowest checked:bg-orange-500 checked:border-orange-500 transition-all"
                           />
-                          <span className="material-symbols-outlined absolute text-white text-[16px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
+                          <span className="material-symbols-outlined absolute text-on-surface text-[16px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                         </div>
-                        <span className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">Skip Inventory Deductions</span>
+                        <span className="text-sm font-bold text-on-surface group-hover:text-orange-400 transition-colors">Skip Inventory Deductions</span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="border border-border-dark rounded-xl overflow-x-auto bg-[#1c2d3d] max-h-[400px]">
+                  <div className="border border-border-dark rounded-xl overflow-x-auto bg-surface-high max-h-[400px]">
                     <table className="w-full text-left border-collapse whitespace-nowrap">
-                      <thead className="bg-[#233648] sticky top-0 z-10">
+                      <thead className="bg-surface-container sticky top-0 z-10">
                         <tr>
                           {importData.length > 0 && Object.keys(importData[0]).map((key) => (
                             <th key={key} className="px-4 py-3 text-xs font-bold text-text-muted uppercase tracking-wider border-b border-border-dark">
@@ -1986,7 +1999,7 @@ const OrdersPage: React.FC = () => {
                         {importData.slice(0, 5).map((row, i) => (
                           <tr key={i} className="border-b border-border-dark/50 hover:bg-white/5">
                             {Object.values(row).map((val: any, j) => (
-                              <td key={j} className={`px-4 py-3 text-sm ${!val && i === 0 ? 'text-red-400 font-bold bg-red-500/10' : 'text-white'}`}>
+                              <td key={j} className={`px-4 py-3 text-sm ${!val && i === 0 ? 'text-red-400 font-bold bg-red-500/10' : 'text-on-surface'}`}>
                                 {val?.toString() || '-'}
                               </td>
                             ))}
@@ -2005,10 +2018,10 @@ const OrdersPage: React.FC = () => {
 
                   {isImporting ? (
                     <div className="flex flex-col items-center max-w-md text-center">
-                      <div className="size-16 border-4 border-[#2d445a] border-t-primary rounded-full animate-spin mb-6"></div>
-                      <h3 className="text-xl font-black text-white mb-2">Processing Data...</h3>
+                      <div className="size-16 border-4 border-outline-variant border-t-primary rounded-full animate-spin mb-6"></div>
+                      <h3 className="text-xl font-black text-on-surface mb-2">Processing Data...</h3>
                       <p className="text-sm font-medium text-text-muted">We are safely upserting {importData.length} rows. Please do not close your browser.</p>
-                      <div className="w-full bg-[#1c2d3d] rounded-full h-2.5 mt-6 overflow-hidden">
+                      <div className="w-full bg-surface-high rounded-full h-2.5 mt-6 overflow-hidden">
                         <div className="bg-primary h-2.5 rounded-full w-full animate-pulse"></div>
                       </div>
                     </div>
@@ -2018,24 +2031,24 @@ const OrdersPage: React.FC = () => {
                         <div className={`size-16 rounded-full flex items-center justify-center text-3xl mb-4 ${(importResults?.errors?.length || 0) > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-400'}`}>
                           <span className="material-symbols-outlined">{(importResults?.errors?.length || 0) > 0 ? 'warning' : 'check_circle'}</span>
                         </div>
-                        <h3 className="text-xl font-black text-white mb-2">Import Finished</h3>
+                        <h3 className="text-xl font-black text-on-surface mb-2">Import Finished</h3>
                         <p className="text-sm font-medium text-text-muted">The dataset has been completely processed.</p>
                       </div>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                        <div className="bg-surface-lowest border border-border-dark p-4 rounded-xl text-center">
                           <div className="text-2xl font-black text-emerald-400 mb-1">{importResults?.created || 0}</div>
                           <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Created</div>
                         </div>
-                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                        <div className="bg-surface-lowest border border-border-dark p-4 rounded-xl text-center">
                           <div className="text-2xl font-black text-blue-400 mb-1">{importResults?.updated || 0}</div>
                           <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Updated</div>
                         </div>
-                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
-                          <div className="text-2xl font-black text-white mb-1">{importResults?.skipped || 0}</div>
+                        <div className="bg-surface-lowest border border-border-dark p-4 rounded-xl text-center">
+                          <div className="text-2xl font-black text-on-surface mb-1">{importResults?.skipped || 0}</div>
                           <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Skipped</div>
                         </div>
-                        <div className="bg-card-dark border border-border-dark p-4 rounded-xl text-center">
+                        <div className="bg-surface-lowest border border-border-dark p-4 rounded-xl text-center">
                           <div className="text-2xl font-black text-red-400 mb-1">{importResults?.errors?.length || 0}</div>
                           <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Errors</div>
                         </div>
@@ -2063,11 +2076,11 @@ const OrdersPage: React.FC = () => {
 
             {/* Modal Footer */}
             {!isImporting && (
-              <div className="p-4 border-t border-border-dark bg-[#1c2d3d] flex justify-end gap-3">
+              <div className="p-4 border-t border-border-dark bg-surface-high flex justify-end gap-3">
                 {importStep < 3 && (
                   <button
                     onClick={closeImportModal}
-                    className="h-10 px-6 rounded-lg font-bold text-sm text-white bg-transparent hover:bg-white/5 transition-colors"
+                    className="h-10 px-6 rounded-lg font-bold text-sm text-on-surface bg-transparent hover:bg-white/5 transition-colors"
                   >
                     Cancel
                   </button>
@@ -2075,7 +2088,7 @@ const OrdersPage: React.FC = () => {
                 {importStep === 2 && (
                   <button
                     onClick={executeImport}
-                    className="h-10 px-8 rounded-lg font-bold text-sm text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                    className="h-10 px-8 rounded-lg font-bold text-sm text-on-surface bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
                   >
                     Confirm Import
                   </button>
@@ -2083,7 +2096,7 @@ const OrdersPage: React.FC = () => {
                 {importStep === 3 && (
                   <button
                     onClick={closeImportModal}
-                    className="h-10 px-8 rounded-lg font-bold text-sm text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+                    className="h-10 px-8 rounded-lg font-bold text-sm text-on-surface bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
                   >
                     Done
                   </button>

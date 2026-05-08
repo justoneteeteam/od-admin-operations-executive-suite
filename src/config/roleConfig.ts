@@ -29,13 +29,18 @@ export const ROUTE_CONFIG: RouteConfig[] = [
   { path: '/logistics', label: 'Logistic', icon: 'package_2', group: 'Logistics', allowedRoles: ['ADMIN', 'CS'] },
 
   // Operations
-  { path: '/incidents', label: 'Incidents', icon: 'report_problem', group: 'Operations', allowedRoles: ['ADMIN', 'CS'] },
+
   { path: '/communication', label: 'Communication', icon: 'forum', group: 'Operations', allowedRoles: ['ADMIN', 'CS'] },
   { path: '/financial', label: 'Financial', icon: 'account_balance', group: 'Operations', allowedRoles: ['ADMIN', 'CS'] },
 
   // Marketing
   { path: '/ads', label: 'Ads Analytics', icon: 'campaign', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
-  { path: '/reports', label: 'Reports', icon: 'assessment', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
+  
+  // Reports
+  { path: '/reports/pnl', label: 'P&L Report', icon: 'insert_chart', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
+  { path: '/reports/poc', label: 'POC Report', icon: 'science', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
+  { path: '/reports/fulfillment', label: 'Fulfillment', icon: 'local_shipping', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
+  { path: '/reports/distribution', label: 'Distribution', icon: 'public', group: 'Marketing', allowedRoles: ['ADMIN', 'MARKETING'] },
 
   // System
   { path: '/settings', label: 'Settings', icon: 'settings', group: 'System', allowedRoles: ['ADMIN', 'CS'] },

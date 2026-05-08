@@ -610,11 +610,11 @@ ${items.map((item: any) => {
         <div className="flex items-center gap-2">
           <span className="text-text-muted text-sm font-medium">Home</span>
           <span className="text-text-muted text-sm">/</span>
-          <span className="text-white text-sm font-medium">Procurement Management</span>
+          <span className="text-on-surface text-sm font-medium">Procurement Management</span>
         </div>
         <div className="flex flex-wrap justify-between items-end gap-4 mt-2">
           <div className="flex flex-col gap-1">
-            <h1 className="text-white text-4xl font-black tracking-tight">Purchase</h1>
+            <h1 className="text-on-surface text-4xl font-black tracking-tight">Purchase</h1>
             <p className="text-text-muted text-sm">Manage your purchases and supplier relations.</p>
           </div>
           <div className="flex gap-3">
@@ -630,11 +630,11 @@ ${items.map((item: any) => {
       </div>
 
       {/* Main Table */}
-      <div className="bg-[#111a22] rounded-2xl border border-border-dark overflow-hidden flex flex-col shadow-2xl mb-12">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden flex flex-col shadow-2xl mb-12">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
-              <tr className="bg-[#17232f]/50 border-b border-border-dark">
+              <tr className="bg-surface-container/50 border-b border-border-dark">
                 <th className="px-4 py-5 w-10">
                   <input
                     type="checkbox"
@@ -655,7 +655,7 @@ ${items.map((item: any) => {
             </thead>
             <tbody className="divide-y divide-border-dark/40">
               {purchases.map((purchase) => (
-                <tr key={purchase.id} className={`hover:bg-white/[0.02] transition-colors ${selectedIds.has(purchase.id) ? 'bg-primary/5' : ''}`}>
+                <tr key={purchase.id} className={`hover:bg-primary/[0.04] transition-colors ${selectedIds.has(purchase.id) ? 'bg-primary/[0.06]' : ''}`}>
                   <td className="px-4 py-4">
                     <input
                       type="checkbox"
@@ -665,15 +665,15 @@ ${items.map((item: any) => {
                     />
                   </td>
                   <td className="px-4 py-4 text-sm font-mono text-primary">{purchase.purchaseOrderNumber}</td>
-                  <td className="px-4 py-4 text-sm text-white">{purchase.fulfillmentRef || '—'}</td>
-                  <td className="px-4 py-4 text-sm font-semibold text-white">{purchase.supplier?.name || "Unknown"}</td>
+                  <td className="px-4 py-4 text-sm text-on-surface">{purchase.fulfillmentRef || '—'}</td>
+                  <td className="px-4 py-4 text-sm font-semibold text-on-surface">{purchase.supplier?.name || "Unknown"}</td>
                   <td className="px-4 py-4 text-sm text-text-muted">{new Date(purchase.orderDate).toLocaleDateString()}</td>
                   <td className="px-4 py-4">
                     <span className="px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest bg-[#f59e0b]/10 text-[#f59e0b]">
                       {purchase.purchaseStatus}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-sm font-bold text-white">€{Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</td>
+                  <td className="px-4 py-4 text-sm font-bold text-on-surface">€{Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</td>
                   <td className="px-4 py-4 text-sm font-mono">
                     {purchase.trackingNumber
                       ? <span className="text-emerald-400">{purchase.trackingNumber}</span>
@@ -684,7 +684,7 @@ ${items.map((item: any) => {
                     <div className="flex items-center gap-2 relative">
                       <button
                         onClick={() => handleEditPurchase(purchase)}
-                        className="text-text-muted hover:text-white transition-colors"
+                        className="text-text-muted hover:text-on-surface transition-colors"
                         title="Edit"
                       >
                         <span className="material-symbols-outlined text-sm">edit</span>
@@ -707,17 +707,17 @@ ${items.map((item: any) => {
                           <span className="material-symbols-outlined text-sm">download</span>
                         </button>
                         {exportOpenId === purchase.id && (
-                          <div className="absolute right-0 top-8 z-50 bg-card-dark border border-border-dark rounded-xl shadow-2xl overflow-hidden min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="absolute right-0 top-8 z-50 bg-surface-lowest border border-border-dark rounded-xl shadow-2xl overflow-hidden min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
                             <button
                               onClick={() => exportInternalInvoice(purchase)}
-                              className="w-full px-4 py-3 text-left text-sm text-white hover:bg-primary/10 flex items-center gap-2 transition-colors"
+                              className="w-full px-4 py-3 text-left text-sm text-on-surface hover:bg-primary/10 flex items-center gap-2 transition-colors"
                             >
                               <span className="material-symbols-outlined text-sm text-blue-400">table_chart</span>
                               Internal Invoice (Excel)
                             </button>
                             <button
                               onClick={() => exportSupplierInvoice(purchase)}
-                              className="w-full px-4 py-3 text-left text-sm text-white hover:bg-primary/10 flex items-center gap-2 transition-colors border-t border-border-dark"
+                              className="w-full px-4 py-3 text-left text-sm text-on-surface hover:bg-primary/10 flex items-center gap-2 transition-colors border-t border-border-dark"
                             >
                               <span className="material-symbols-outlined text-sm text-amber-400">description</span>
                               Supplier Invoice (PDF)
@@ -740,11 +740,11 @@ ${items.map((item: any) => {
       {/* Add/Edit Purchase Drawer */}
       {showDrawer && (
         <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
-          <div className="side-drawer relative w-[1100px] h-full bg-card-dark border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="px-8 py-6 border-b border-border-dark flex items-center justify-between bg-[#14202c]">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
+          <div className="side-drawer relative w-[1100px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="px-8 py-6 border-b border-border-dark flex items-center justify-between bg-surface-low">
               <div>
-                <h2 className="text-2xl font-black text-white flex items-center gap-2 tracking-tight">
+                <h2 className="text-2xl font-black text-on-surface flex items-center gap-2 tracking-tight">
                   {editingId ? 'Edit Purchase' : 'Add Purchase'}
                 </h2>
                 <p className="text-xs text-text-muted mt-1 uppercase font-bold tracking-widest">
@@ -762,7 +762,7 @@ ${items.map((item: any) => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Supplier <span className="text-red-500">*</span></label>
                   <select
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                    className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                     value={formData.supplierId}
                     onChange={e => setFormData({ ...formData, supplierId: e.target.value })}
                   >
@@ -774,7 +774,7 @@ ${items.map((item: any) => {
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Date</label>
                   <input
                     type="date"
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                    className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                     value={formData.orderDate}
                     onChange={e => setFormData({ ...formData, orderDate: e.target.value })}
                   />
@@ -786,7 +786,7 @@ ${items.map((item: any) => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Fulfillment Ref #</label>
                   <input
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                    className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                     value={formData.fulfillmentRef}
                     onChange={e => setFormData({ ...formData, fulfillmentRef: e.target.value })}
                     placeholder="Fulfillment reference number"
@@ -795,7 +795,7 @@ ${items.map((item: any) => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Tracking Number</label>
                   <input
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                    className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                     value={formData.trackingNumber}
                     onChange={e => setFormData({ ...formData, trackingNumber: e.target.value })}
                     placeholder="Enter tracking number"
@@ -803,7 +803,7 @@ ${items.map((item: any) => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Logistic Companies</label>
-                  <div className="bg-[#1c2d3d] border border-[#2d445a] rounded-xl p-3 max-h-[120px] overflow-y-auto custom-scrollbar">
+                  <div className="bg-surface-high border border-outline-variant rounded-xl p-3 max-h-[120px] overflow-y-auto custom-scrollbar">
                     {logisticCompanies.map(lc => (
                       <label key={lc.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-white/5 rounded px-1">
                         <input
@@ -817,7 +817,7 @@ ${items.map((item: any) => {
                           }}
                           className="accent-primary"
                         />
-                        <span className="text-white text-xs">{lc.name}</span>
+                        <span className="text-on-surface text-xs">{lc.name}</span>
                       </label>
                     ))}
                     {logisticCompanies.length === 0 && (
@@ -828,7 +828,7 @@ ${items.map((item: any) => {
               </div>
 
               {/* VND → EUR Converter */}
-              <div className="bg-[#14202c] rounded-xl border border-border-dark p-4">
+              <div className="bg-surface-low rounded-xl border border-border-dark p-4">
                 <label className="text-[10px] font-black text-amber-400 uppercase tracking-[0.15em] flex items-center gap-1 mb-3">
                   <span className="material-symbols-outlined text-sm">currency_exchange</span>
                   VND → EUR Converter
@@ -837,14 +837,14 @@ ${items.map((item: any) => {
                   <div className="flex-1">
                     <input
                       type="number"
-                      className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-10 px-4"
+                      className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-10 px-4"
                       value={vndInput}
                       onChange={e => setVndInput(e.target.value)}
                       placeholder="Enter VND amount"
                     />
                   </div>
                   <span className="material-symbols-outlined text-text-muted">arrow_forward</span>
-                  <div className="flex-1 bg-[#1c2d3d] border border-[#2d445a] rounded-xl h-10 flex items-center px-4">
+                  <div className="flex-1 bg-surface-high border border-outline-variant rounded-xl h-10 flex items-center px-4">
                     <span className="text-sm font-bold text-emerald-400">
                       {convertedEur ? `€${convertedEur}` : '—'}
                     </span>
@@ -869,11 +869,11 @@ ${items.map((item: any) => {
                 </div>
                 <ProductSearch onSelect={handleProductSelect} />
 
-                <div className="bg-[#111a22] rounded-2xl border border-border-dark overflow-hidden mt-6">
+                <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden mt-6">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[1200px]">
                       <thead>
-                        <tr className="bg-[#17232f]/80 border-b border-border-dark">
+                        <tr className="bg-surface-container/80 border-b border-border-dark">
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Product</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-40">Warehouse</th>
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-28">Partner SKU</th>
@@ -890,14 +890,14 @@ ${items.map((item: any) => {
                       </thead>
                       <tbody className="divide-y divide-border-dark/40">
                         {formData.items.map((item, index) => (
-                          <tr key={item.id || index} className="group hover:bg-[#1c2d3d]/50">
+                          <tr key={item.id || index} className="group hover:bg-surface-high/50">
                             <td className="px-3 py-3">
-                              <p className="text-sm font-bold text-white">{item.productName}</p>
+                              <p className="text-sm font-bold text-on-surface">{item.productName}</p>
                               <p className="text-xs text-text-muted">{item.sku}</p>
                             </td>
                             <td className="px-3 py-2">
                               <select
-                                className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                                className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.warehouseId || ''}
                                 onChange={e => {
                                   const whId = e.target.value;
@@ -916,7 +916,7 @@ ${items.map((item: any) => {
                               </select>
                             </td>
                             <td className="px-3 py-2">
-                              <input type="text" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="text" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 placeholder="Child SKU"
                                 value={item.partnerSku || ''}
                                 onChange={e => {
@@ -928,29 +928,29 @@ ${items.map((item: any) => {
                                 }} />
                             </td>
                             <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="number" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.qty} onChange={e => updateItem(index, 'qty', parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="number" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.purchasePrice} onChange={e => updateItem(index, 'purchasePrice', parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="number" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.discount} onChange={e => updateItem(index, 'discount', parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="number" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.domesticShippingFeeCny || 0}
                                 onChange={e => updateItem(index, 'domesticShippingFeeCny' as any, parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="number" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.internationalShippingFeeVnd || 0}
                                 onChange={e => updateItem(index, 'internationalShippingFeeVnd' as any, parseFloat(e.target.value) || 0)} />
                             </td>
                             <td className="px-3 py-2">
-                              <input type="number" className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1 text-white text-xs"
+                              <input type="number" className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1 text-on-surface text-xs"
                                 value={item.parcelKg || 0}
                                 onChange={e => updateItemField(index, 'parcelKg', parseFloat(e.target.value) || 0)} />
                             </td>
@@ -977,7 +977,7 @@ ${items.map((item: any) => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Status</label>
                   <select
-                    className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+                    className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                     value={formData.purchaseStatus}
                     onChange={e => setFormData({ ...formData, purchaseStatus: e.target.value })}
                   >
@@ -991,7 +991,7 @@ ${items.map((item: any) => {
                     <span className="material-symbols-outlined text-sm">currency_exchange</span>
                     VND → EUR Rate
                   </label>
-                  <div className="bg-[#1c2d3d] border border-[#2d445a] rounded-xl h-12 flex items-center px-4">
+                  <div className="bg-surface-high border border-outline-variant rounded-xl h-12 flex items-center px-4">
                     <span className="text-sm font-bold text-emerald-400">
                       {latestVndToEur ? `1 VND = ${latestVndToEur} EUR` : 'No rate set'}
                     </span>
@@ -1002,7 +1002,7 @@ ${items.map((item: any) => {
               <div className="flex justify-end gap-12 text-right pt-4 border-t border-border-dark/50">
                 <div>
                   <p className="text-xs text-text-muted uppercase font-bold">Items Subtotal (₫)</p>
-                  <p className="text-xl font-bold text-white">₫{totals.subtotalVnd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                  <p className="text-xl font-bold text-on-surface">₫{totals.subtotalVnd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
                 <div>
                   <p className="text-xs text-text-muted uppercase font-bold">Grand Total (€)</p>
@@ -1012,17 +1012,17 @@ ${items.map((item: any) => {
             </div>
 
             {/* Actions */}
-            <div className="p-8 bg-[#17232f] border-t border-border-dark flex gap-4 sticky bottom-0 z-[110] shadow-2xl">
+            <div className="p-8 bg-surface-container border-t border-border-dark flex gap-4 sticky bottom-0 z-[110] shadow-2xl">
               <button
                 onClick={() => setShowDrawer(false)}
-                className="flex-1 h-14 bg-[#111a22] hover:bg-[#1c2d3d] text-white text-sm font-black uppercase tracking-widest rounded-xl transition-all border border-border-dark"
+                className="flex-1 h-14 bg-surface-lowest hover:bg-surface-high text-on-surface text-sm font-black uppercase tracking-widest rounded-xl transition-all border border-border-dark"
               >
                 Discard
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-white text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
+                className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-on-surface text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : (editingId ? 'Update Purchase' : 'Save Purchase')}
               </button>
@@ -1044,17 +1044,17 @@ ${items.map((item: any) => {
       {/* Receive Goods Modal */}
       {showReceiveModal && receivePurchase && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowReceiveModal(false)}></div>
-          <div className="relative bg-card-dark border border-border-dark rounded-2xl shadow-2xl w-[900px] max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-8 py-5 border-b border-border-dark flex items-center justify-between bg-[#14202c] rounded-t-2xl">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowReceiveModal(false)}></div>
+          <div className="relative bg-surface-lowest border border-border-dark rounded-2xl shadow-2xl w-[900px] max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-8 py-5 border-b border-border-dark flex items-center justify-between bg-surface-low rounded-t-2xl">
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2">
+                <h2 className="text-xl font-black text-on-surface flex items-center gap-2">
                   <span className="material-symbols-outlined text-emerald-400">inventory_2</span>
                   Receive Goods
                 </h2>
                 <p className="text-xs text-text-muted mt-1 font-mono">{receivePurchase.purchaseOrderNumber}</p>
               </div>
-              <button onClick={() => setShowReceiveModal(false)} className="size-8 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+              <button onClick={() => setShowReceiveModal(false)} className="size-8 flex items-center justify-center rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-on-surface transition-all">
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
             </div>
@@ -1063,7 +1063,7 @@ ${items.map((item: any) => {
               <p className="text-xs text-text-muted mb-4">Confirm received quantities and enter the <strong className="text-amber-400">Partner SKU (Child SKU)</strong> for each item. This will update inventory levels.</p>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#17232f]/80 border-b border-border-dark">
+                  <tr className="bg-surface-container/80 border-b border-border-dark">
                     <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Product</th>
                     <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-40">Warehouse</th>
                     <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase w-32">Partner SKU</th>
@@ -1074,14 +1074,14 @@ ${items.map((item: any) => {
                 </thead>
                 <tbody className="divide-y divide-border-dark/40">
                   {receiveItems.map((item, idx) => (
-                    <tr key={item.purchaseItemId} className="hover:bg-[#1c2d3d]/30">
+                    <tr key={item.purchaseItemId} className="hover:bg-surface-high/30">
                       <td className="px-3 py-3">
-                        <p className="text-sm font-bold text-white">{item.productName}</p>
+                        <p className="text-sm font-bold text-on-surface">{item.productName}</p>
                         <p className="text-xs text-text-muted">{item.sku}</p>
                       </td>
                       <td className="px-3 py-2">
                         <select
-                          className="w-full bg-[#1c2d3d] border border-[#2d445a] rounded px-2 py-1.5 text-white text-xs"
+                          className="w-full bg-surface-high border border-outline-variant rounded px-2 py-1.5 text-on-surface text-xs"
                           value={item.warehouseId}
                           onChange={e => {
                             const newItems = [...receiveItems];
@@ -1099,7 +1099,7 @@ ${items.map((item: any) => {
                       <td className="px-3 py-2">
                         <input
                           type="text"
-                          className="w-full bg-[#1c2d3d] border border-amber-500/40 rounded px-2 py-1.5 text-amber-400 text-xs font-mono"
+                          className="w-full bg-surface-high border border-amber-500/40 rounded px-2 py-1.5 text-amber-400 text-xs font-mono"
                           placeholder="WH-SKU-001"
                           value={item.partnerSku}
                           onChange={e => {
@@ -1109,7 +1109,7 @@ ${items.map((item: any) => {
                           }}
                         />
                       </td>
-                      <td className="px-3 py-3 text-sm text-center text-white font-bold">{item.orderedQty}</td>
+                      <td className="px-3 py-3 text-sm text-center text-on-surface font-bold">{item.orderedQty}</td>
                       <td className="px-3 py-3 text-sm text-center">
                         <span className={item.alreadyReceived > 0 ? 'text-emerald-400 font-bold' : 'text-text-muted'}>{item.alreadyReceived}</span>
                       </td>
@@ -1118,7 +1118,7 @@ ${items.map((item: any) => {
                           type="number"
                           min={0}
                           max={item.orderedQty - item.alreadyReceived}
-                          className="w-full bg-[#1c2d3d] border border-emerald-500/40 rounded px-2 py-1.5 text-emerald-400 text-xs font-bold text-center"
+                          className="w-full bg-surface-high border border-emerald-500/40 rounded px-2 py-1.5 text-emerald-400 text-xs font-bold text-center"
                           value={item.receiveQty}
                           onChange={e => {
                             const newItems = [...receiveItems];
@@ -1133,21 +1133,21 @@ ${items.map((item: any) => {
               </table>
             </div>
 
-            <div className="p-6 bg-[#17232f] border-t border-border-dark flex items-center justify-between rounded-b-2xl">
+            <div className="p-6 bg-surface-container border-t border-border-dark flex items-center justify-between rounded-b-2xl">
               <p className="text-xs text-text-muted">
                 Total receiving: <strong className="text-emerald-400">{receiveItems.reduce((s, i) => s + i.receiveQty, 0)}</strong> units
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowReceiveModal(false)}
-                  className="px-6 py-3 bg-[#111a22] hover:bg-[#1c2d3d] text-white text-sm font-bold rounded-xl transition-all border border-border-dark"
+                  className="px-6 py-3 bg-surface-lowest hover:bg-surface-high text-on-surface text-sm font-bold rounded-xl transition-all border border-border-dark"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReceiveGoods}
                   disabled={isReceiving || receiveItems.every(i => i.receiveQty === 0)}
-                  className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+                  className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-on-surface text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-sm">check_circle</span>
                   {isReceiving ? 'Processing...' : 'Confirm Receipt'}
@@ -1159,8 +1159,8 @@ ${items.map((item: any) => {
       )}
       {/* Floating bulk-delete bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#14202c] border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4">
-          <span className="text-sm text-white font-bold">{selectedIds.size} selected</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-low border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4">
+          <span className="text-sm text-on-surface font-bold">{selectedIds.size} selected</span>
           <button
             onClick={handleBulkDelete}
             className="flex items-center gap-2 px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors"
@@ -1170,7 +1170,7 @@ ${items.map((item: any) => {
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="text-text-muted hover:text-white text-sm transition-colors"
+            className="text-text-muted hover:text-on-surface text-sm transition-colors"
           >
             Cancel
           </button>

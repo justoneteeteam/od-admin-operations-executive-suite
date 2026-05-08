@@ -1,35 +1,77 @@
 
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>JOT COD Operations</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <script>
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#137fec",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#101922",
-                        "card-dark": "#111a22",
-                        "border-dark": "#233648",
-                        "text-muted": "#92adc9",
+                        /* ── Design System Colors ── */
+                        "primary":            "#004ac6",
+                        "primary-btn":        "#2563eb",
+                        "on-primary":         "#ffffff",
+                        "primary-container":  "#2563eb",
+                        "on-primary-container": "#eeefff",
+                        "inverse-primary":    "#b4c5ff",
+
+                        "secondary":          "#505f76",
+                        "on-secondary":       "#ffffff",
+                        "secondary-container":"#d0e1fb",
+                        "on-secondary-container": "#54647a",
+
+                        "tertiary":           "#943700",
+                        "on-tertiary":        "#ffffff",
+                        "tertiary-container": "#bc4800",
+                        "on-tertiary-container": "#ffede6",
+
+                        "surface":            "#faf8ff",
+                        "surface-dim":        "#d9d9e5",
+                        "surface-bright":     "#faf8ff",
+                        "surface-lowest":     "#ffffff",
+                        "surface-low":        "#f3f3fe",
+                        "surface-container":  "#ededf9",
+                        "surface-high":       "#e7e7f3",
+                        "surface-highest":    "#e1e2ed",
+                        "on-surface":         "#191b23",
+                        "on-surface-variant": "#434655",
+                        "inverse-surface":    "#2e3039",
+                        "inverse-on-surface": "#f0f0fb",
+
+                        "outline":            "#737686",
+                        "outline-variant":    "#c3c6d7",
+                        "surface-tint":       "#0053db",
+                        "surface-variant":    "#e1e2ed",
+
+                        "error":              "#ba1a1a",
+                        "on-error":           "#ffffff",
+                        "error-container":    "#ffdad6",
+                        "on-error-container": "#93000a",
+
+                        /* ── Semantic aliases for existing Tailwind usage ── */
+                        "background-light":   "#faf8ff",
+                        "background-dark":    "#faf8ff",
+                        "card-dark":          "#ffffff",
+                        "border-dark":        "#c3c6d7",
+                        "text-muted":         "#737686",
                     },
                     fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
+                        "display": ["Inter", "sans-serif"]
                     },
                     borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "2xl": "1rem",
+                        "DEFAULT": "0.5rem",
+                        "sm":  "0.25rem",
+                        "md":  "0.75rem",
+                        "lg":  "1rem",
+                        "xl":  "1.5rem",
+                        "2xl": "1.5rem",
                         "full": "9999px"
                     },
                 },
@@ -39,30 +81,83 @@
     <style type="text/tailwindcss">
         @layer base {
             body { 
-                @apply bg-background-dark text-white font-display; 
+                @apply bg-surface font-display text-on-surface;
+                font-family: 'Inter', sans-serif;
             }
+            * { box-sizing: border-box; }
         }
+
+        /* ── Scrollbar ── */
         .custom-scrollbar::-webkit-scrollbar {
-            height: 8px;
-            width: 8px;
+            height: 6px;
+            width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #111a22;
+            background: #ededf9;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #233648;
+            background: #c3c6d7;
             border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #137fec;
+            background: #004ac6;
         }
+
+        /* ── Page background ── */
         .bg-pattern {
-            background-color: #101922;
-            background-image: radial-gradient(at 0% 0%, hsla(210, 85%, 15%, 1) 0, transparent 50%), 
-                              radial-gradient(at 100% 100%, hsla(210, 85%, 10%, 1) 0, transparent 50%);
+            background-color: #f3f3fe;
+            background-image:
+                radial-gradient(at 0% 0%, hsla(230, 100%, 96%, 0.7) 0, transparent 55%),
+                radial-gradient(at 100% 100%, hsla(217, 91%, 95%, 0.5) 0, transparent 55%);
         }
+
+        /* ── Side drawer shadow ── */
         .side-drawer {
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            box-shadow: 10px 0 32px rgba(0, 0, 0, 0.10);
+        }
+
+        /* ── Focus ring for inputs ── */
+        .input-focus:focus {
+            outline: none;
+            border-color: #004ac6;
+            box-shadow: 0 0 0 3px rgba(0, 74, 198, 0.15);
+        }
+
+        /* ── Table row hover ── */
+        .table-row-hover:hover {
+            background-color: #eff6ff;
+        }
+        .table-row-selected {
+            border-left: 2px solid #2563eb;
+            background-color: #eff6ff;
+        }
+
+        /* ── Filter chips ── */
+        .chip-active {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+        }
+        .chip-inactive {
+            background-color: #ffffff;
+            color: #434655;
+            border: 1px solid #c3c6d7;
+        }
+        .chip-inactive:hover {
+            background-color: #f3f3fe;
+            border-color: #737686;
+        }
+
+        /* ── Elevation shadows ── */
+        .elevation-1 {
+            border: 1px solid #c3c6d7;
+            box-shadow: none;
+        }
+        .elevation-2 {
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .elevation-3 {
+            box-shadow: 0px 10px 32px rgba(0, 0, 0, 0.10);
         }
     </style>
 <script type="importmap">

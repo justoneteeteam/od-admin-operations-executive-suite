@@ -179,6 +179,57 @@ export const financialService = {
         return response.data;
     },
 
+    // ─── Distribution Geo Report ──────────────────────────────
+    async getDistributionReport(filters: {
+        type: 'test' | 'actual';
+        month?: string;
+        startDate?: string;
+        endDate?: string;
+    }): Promise<{
+        type: string;
+        kpis: {
+            allOrders: number;
+            cancelOrders: number;
+            confirmedQty: number;
+            revenue: number;
+            returnRate: number;
+        };
+        countries: Array<{
+            country: string;
+            allOrders: number;
+            cancelOrders: number;
+            confirmedQty: number;
+            revenue: number;
+            returnRate: number;
+            cities: Array<{
+                city: string;
+                allOrders: number;
+                cancelOrders: number;
+                confirmedQty: number;
+                revenue: number;
+                returnRate: number;
+                isIsland: boolean;
+            }>;
+        }>;
+        islands: Array<{
+            country: string;
+            city: string;
+            allOrders: number;
+            cancelOrders: number;
+            confirmedQty: number;
+            revenue: number;
+            returnRate: number;
+        }>;
+    }> {
+        const params = new URLSearchParams();
+        params.set('type', filters.type);
+        if (filters.month) params.set('month', filters.month);
+        if (filters.startDate) params.set('startDate', filters.startDate);
+        if (filters.endDate) params.set('endDate', filters.endDate);
+        const response = await apiClient.get(`/financial/distribution-report?${params.toString()}`);
+        return response.data;
+    },
+
     // ─── Invoice Upload & Import ─────────────────────────────────
     async uploadInvoice(
         file: File,

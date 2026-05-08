@@ -184,7 +184,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
             )}
 
             {/* Sub-tabs */}
-            <div className="flex gap-1 p-1 bg-card-dark rounded-xl border border-border-dark w-fit">
+            <div className="flex gap-1 p-1 bg-surface-lowest rounded-xl border border-border-dark w-fit">
                 {([
                     { key: 'per_order' as const, label: '📦 Per-order Invoice' },
                     { key: 'monthly' as const, label: '📋 Monthly Invoice' },
@@ -194,7 +194,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         onClick={() => { setSubTab(t.key); handleClear(); }}
                         className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${subTab === t.key
                             ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                            : 'text-text-muted hover:text-white hover:bg-white/5'
+                            : 'text-text-muted hover:text-on-surface hover:bg-white/5'
                             }`}
                     >
                         {t.label}
@@ -204,7 +204,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
 
             {/* ─── Upload Zone ─────────────────────────────────── */}
             {!uploadResult && (
-                <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
+                <div className="bg-surface-lowest rounded-2xl border border-border-dark p-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-5">
                         {subTab === 'per_order' ? '📦 Upload Beeping Per-order Invoice' : '📋 Upload Monthly Invoice (XLSX or FFEU PDF)'}
                     </h3>
@@ -234,7 +234,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                 <span className="material-symbols-outlined text-[40px] text-emerald-400">
                                     {selectedFile.name.endsWith('.pdf') ? 'picture_as_pdf' : 'description'}
                                 </span>
-                                <p className="text-white font-bold text-sm">{selectedFile.name}</p>
+                                <p className="text-on-surface font-bold text-sm">{selectedFile.name}</p>
                                 <p className="text-text-muted text-xs">{(selectedFile.size / 1024).toFixed(1)} KB</p>
                                 {selectedFile.name.endsWith('.pdf') && (
                                     <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">
@@ -262,7 +262,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                             <select
                                 value={fulfillmentCenterId}
                                 onChange={(e) => setFulfillmentCenterId(e.target.value)}
-                                className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer"
+                                className="bg-surface-high border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm appearance-none cursor-pointer"
                             >
                                 {fulfillmentCenters.map((fc) => (
                                     <option key={fc.id} value={fc.id}>{fc.name}</option>
@@ -275,14 +275,14 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                 type="month"
                                 value={periodMonth}
                                 onChange={(e) => setPeriodMonth(e.target.value)}
-                                className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm"
+                                className="bg-surface-high border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm"
                             />
                         </div>
                         <div className="flex items-end">
                             <button
                                 onClick={handleUpload}
                                 disabled={!selectedFile || !fulfillmentCenterId || uploading}
-                                className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                                className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/80 text-on-surface rounded-lg text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
                             >
                                 {uploading ? (
                                     <>
@@ -312,7 +312,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                     <span className="material-symbols-outlined text-violet-400" style={{ fontSize: '20px' }}>receipt_long</span>
                                 </div>
                                 <div>
-                                    <p className="text-white font-black text-lg">INVOICE #{uploadResult.header.invoiceNumber || '—'}</p>
+                                    <p className="text-on-surface font-black text-lg">INVOICE #{uploadResult.header.invoiceNumber || '—'}</p>
                                     <p className="text-text-muted text-xs">
                                         {uploadResult.header.dateFrom} → {uploadResult.header.dateTo}
                                     </p>
@@ -332,19 +332,19 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Bank</p>
-                                <p className="text-white font-medium">{uploadResult.header.bankName || '—'}</p>
+                                <p className="text-on-surface font-medium">{uploadResult.header.bankName || '—'}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Bank Number</p>
-                                <p className="text-white font-mono text-xs">{uploadResult.header.bankNumber || '—'}</p>
+                                <p className="text-on-surface font-mono text-xs">{uploadResult.header.bankNumber || '—'}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Country</p>
-                                <p className="text-white font-medium">{uploadResult.header.country || '—'}</p>
+                                <p className="text-on-surface font-medium">{uploadResult.header.country || '—'}</p>
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Tax Number</p>
-                                <p className="text-white font-mono text-xs">{uploadResult.header.taxNumber || '—'}</p>
+                                <p className="text-on-surface font-mono text-xs">{uploadResult.header.taxNumber || '—'}</p>
                             </div>
                         </div>
                     </div>
@@ -356,16 +356,16 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                             const icon = SECTION_ICON[category] || 'receipt';
                             const sectionTotal = catRows.reduce((sum, r) => sum + r.amountEur, 0);
                             return (
-                                <div key={category} className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+                                <div key={category} className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
                                     {/* Section header */}
-                                    <div className="flex items-center justify-between px-5 py-3 bg-[#17232f] border-b border-border-dark">
+                                    <div className="flex items-center justify-between px-5 py-3 bg-surface-container border-b border-border-dark">
                                         <div className="flex items-center gap-2">
                                             <span className={`material-symbols-outlined text-[16px] ${colorClass.split(' ')[0]}`}>{icon}</span>
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${colorClass}`}>
                                                 {category}
                                             </span>
                                         </div>
-                                        <span className="text-sm font-black text-white">{formatEur(sectionTotal)}</span>
+                                        <span className="text-sm font-black text-on-surface">{formatEur(sectionTotal)}</span>
                                     </div>
                                     {/* Rows */}
                                     <table className="w-full text-left border-collapse">
@@ -379,12 +379,12 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                         <tbody className="divide-y divide-border-dark/40">
                                             {catRows.map((row: any, idx: number) => (
                                                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                                                    <td className="px-5 py-2.5 text-xs text-white font-medium">{row.item}</td>
+                                                    <td className="px-5 py-2.5 text-xs text-on-surface font-medium">{row.item}</td>
                                                     <td className="px-5 py-2.5 text-xs text-text-muted text-center">
                                                         {row.total !== null ? row.total : '—'}
                                                     </td>
                                                     <td className="px-5 py-2.5 text-xs font-black text-right">
-                                                        <span className={row.amountEur > 0 ? 'text-white' : 'text-text-muted'}>
+                                                        <span className={row.amountEur > 0 ? 'text-on-surface' : 'text-text-muted'}>
                                                             {formatEur(row.amountEur)}
                                                         </span>
                                                     </td>
@@ -398,16 +398,16 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                     </div>
 
                     {/* FFEU Summary totals */}
-                    <div className="bg-card-dark rounded-2xl border border-border-dark p-5">
+                    <div className="bg-surface-lowest rounded-2xl border border-border-dark p-5">
                         <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-4">Invoice Summary</h4>
                         <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-text-muted">Subtotal Fees</span>
-                                <span className="text-white font-bold">{formatEur(uploadResult.header.subtotalFees)}</span>
+                                <span className="text-on-surface font-bold">{formatEur(uploadResult.header.subtotalFees)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm">
                                 <span className="text-text-muted">VAT (0%)</span>
-                                <span className="text-white font-bold">{formatEur(uploadResult.header.vat)}</span>
+                                <span className="text-on-surface font-bold">{formatEur(uploadResult.header.vat)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm border-t border-border-dark pt-2 mt-1">
                                 <span className="text-text-muted font-bold">Total Fees</span>
@@ -418,7 +418,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                 <span className="text-amber-400 font-bold">{formatEur(uploadResult.header.totalOrders)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm border-t border-border-dark pt-2 mt-1">
-                                <span className="text-white font-black text-base">Total Payment Due</span>
+                                <span className="text-on-surface font-black text-base">Total Payment Due</span>
                                 <span className="text-emerald-400 font-black text-base">{formatEur(uploadResult.header.totalDue)}</span>
                             </div>
                         </div>
@@ -432,7 +432,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         <button
                             onClick={handleImport}
                             disabled={importing || importDone}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-40 shadow-lg shadow-primary/20"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/80 text-on-surface rounded-lg text-sm font-bold transition-all disabled:opacity-40 shadow-lg shadow-primary/20"
                         >
                             {importing ? (
                                 <>
@@ -453,7 +453,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         </button>
                         <button
                             onClick={handleClear}
-                            className="px-4 py-2.5 text-text-muted hover:text-white border border-border-dark rounded-lg text-sm font-bold transition-all"
+                            className="px-4 py-2.5 text-text-muted hover:text-on-surface border border-border-dark rounded-lg text-sm font-bold transition-all"
                         >
                             Clear
                         </button>
@@ -477,14 +477,14 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                     </div>
 
                     {/* Summary bar */}
-                    <div className="bg-card-dark rounded-xl border border-border-dark p-4 flex flex-wrap gap-6">
+                    <div className="bg-surface-lowest rounded-xl border border-border-dark p-4 flex flex-wrap gap-6">
                         <div>
                             <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">File</p>
-                            <p className="text-white text-sm font-bold mt-1">{selectedFile?.name}</p>
+                            <p className="text-on-surface text-sm font-bold mt-1">{selectedFile?.name}</p>
                         </div>
                         <div>
                             <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Total Lines</p>
-                            <p className="text-white text-sm font-bold mt-1">{uploadResult.summary.total}</p>
+                            <p className="text-on-surface text-sm font-bold mt-1">{uploadResult.summary.total}</p>
                         </div>
                         {subTab === 'per_order' && (
                             <>
@@ -505,11 +505,11 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                     </div>
 
                     {/* Data table */}
-                    <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+                    <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
                         <div className="overflow-x-auto custom-scrollbar">
                             <table className="w-full text-left border-collapse min-w-[900px]">
                                 <thead>
-                                    <tr className="bg-[#17232f]">
+                                    <tr className="bg-surface-container">
                                         {subTab === 'per_order' ? (
                                             <>
                                                 <th className="px-4 py-2.5 text-text-muted font-black text-[10px] uppercase tracking-widest">Order#</th>
@@ -536,10 +536,10 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                             {subTab === 'per_order' ? (
                                                 <>
                                                     <td className="px-4 py-2.5 text-xs text-primary font-mono font-bold">{row.orderNumber}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-white">{row.store}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-white">{row.concept}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-white text-right">{formatEur(row.shippingEur)}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-white text-right">{formatEur(row.fulfillmentEur)}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-on-surface">{row.store}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-on-surface">{row.concept}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-on-surface text-right">{formatEur(row.shippingEur)}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-on-surface text-right">{formatEur(row.fulfillmentEur)}</td>
                                                     <td className="px-4 py-2.5 text-xs text-text-muted text-right">{formatEur(row.codEur)}</td>
                                                     <td className="px-4 py-2.5 text-xs text-blue-400 font-black text-right">{formatEur(row.expenseEur)}</td>
                                                     <td className="px-4 py-2.5">
@@ -556,8 +556,8 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                                 </>
                                             ) : (
                                                 <>
-                                                    <td className="px-4 py-2.5 text-xs text-white">{row.shop}</td>
-                                                    <td className="px-4 py-2.5 text-xs text-white text-right">{row.orders}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-on-surface">{row.shop}</td>
+                                                    <td className="px-4 py-2.5 text-xs text-on-surface text-right">{row.orders}</td>
                                                     <td className="px-4 py-2.5 text-xs text-blue-400 font-black text-right">{formatEur(row.expenseEur)}</td>
                                                 </>
                                             )}
@@ -566,7 +566,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                                 </tbody>
                                 {/* Footer */}
                                 <tfoot>
-                                    <tr className="bg-[#14202c] border-t border-border-dark">
+                                    <tr className="bg-surface-low border-t border-border-dark">
                                         {subTab === 'per_order' ? (
                                             <>
                                                 <td colSpan={6} className="px-4 py-3 text-xs font-black text-text-muted uppercase text-right">Total Expense:</td>
@@ -590,7 +590,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         <button
                             onClick={handleImport}
                             disabled={importing || importDone}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/80 text-white rounded-lg text-sm font-bold transition-all disabled:opacity-40 shadow-lg shadow-primary/20"
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-primary/80 text-on-surface rounded-lg text-sm font-bold transition-all disabled:opacity-40 shadow-lg shadow-primary/20"
                         >
                             {importing ? (
                                 <>
@@ -611,7 +611,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
                         </button>
                         <button
                             onClick={handleClear}
-                            className="px-4 py-2.5 text-text-muted hover:text-white border border-border-dark rounded-lg text-sm font-bold transition-all"
+                            className="px-4 py-2.5 text-text-muted hover:text-on-surface border border-border-dark rounded-lg text-sm font-bold transition-all"
                         >
                             Clear
                         </button>

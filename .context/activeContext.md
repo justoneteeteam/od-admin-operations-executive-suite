@@ -9,6 +9,10 @@
 - **Maintenance**: Monitoring Production Deployment on Railway, Analytics improvements (Ads Hierarchy, POC Product Dashboard).
 
 ## Recent Accomplishments
+- **UI Architecture & Theme**: Completed migration to a collapsible, hierarchical sidebar navigation and a modern, corporate light-themed design system. Standardized Tailwind design tokens replaced legacy dark-mode classes across key operational pages.
+- **Reporting & Analytics**: Implemented Geo Distribution Reports with country/city data aggregation, island-detection logic, and key metrics visualized via a new interactive tabbed interface.
+- **Order Deletion & Backend Hardening**: Improved backend error handling for order deletion by gracefully resolving foreign key constraint violations through cascading removal of dependent records.
+- **Module Maintenance**: Fixed persistent rendering issues in product history tabs and decommissioned the Incidents module from the sidebar/UI to streamline the operational suite.
 - **Inventory Module**: Implemented an 8-state stock machine tracking inventory across the supply chain, updated database schema with inventory float columns and purchase order tables, and built a frontend dashboard for product details and D+7 projections.
 - **Tracking 17Track v2.2**: Upgraded to 17Track v2.2 with a hybrid push-pull architecture for real-time tracking.
 - **Twilio Call Optimization**: Switched to synchronous AMD (Answering Machine Detection) to prevent scripts from playing on voicemails and hanging up immediately.
@@ -17,9 +21,9 @@
 - **Purchase Order Costing**: Fixed purchase order product costing to automatically recalculate weighted average `unitCost` upon PO creation and receiving.
 - **Risk Scoring System**: Implemented two-layer scoring — base scoring (blocked status, item count, order value, frequency, history, address regex) + Loqate address verification refinement. Risk levels (LOW/MEDIUM/HIGH/BLOCKED) trigger automated actions (twilio_short, twilio_long, call_center, auto_reject).
 - **Loqate Address Verification**: Integrated Loqate API for postal code + house number validation with in-memory caching. Added `LoqateRetryService` cron (every 6h) to retry `local_fallback` orders and daily cache purge.
-- **Incident/Ticket System**: Full CRUD tickets module with auto-creation from 17Track delivery failures (`IncidentAutoService`), SLA deadline calculation (72 business-hours, skipping weekends), SLA breach checker (every 15 min), resolution workflows (return_to_warehouse, reshipment, resolved, cancelled), PIC assignment, and timeline events.
+- **Incident/Ticket System (Backend)**: Full CRUD tickets module with auto-creation from 17Track delivery failures (`IncidentAutoService`), SLA deadline calculation (72 business-hours, skipping weekends), SLA breach checker (every 15 min), resolution workflows (return_to_warehouse, reshipment, resolved, cancelled), PIC assignment, and timeline events. (Note: UI currently decommissioned).
 - **Incident Google Sheets Sync**: `IncidentSheetsService` syncs open/resolved tickets to Google Sheets for external visibility.
-- **Canned Response Templates**: Added pre-written SMS/WhatsApp/Email/Voice templates with token replacement (`{{name}}`, `{{order}}`, `{{phone}}`) in the ticket reply compose bar.
+- **Canned Response Templates**: Added pre-written SMS/WhatsApp/Email/Voice templates with token replacement (`{{name}}`, `{{order}}`, `{{phone}}`).
 - **Twilio Call Scheduler**: Cron-based service to batch-process eligible orders for confirmation calls.
 - **Shopify Webhooks**: `ShopifyController` processes incoming Shopify order webhooks for automatic store sync.
 - **SMS/WhatsApp Delivery Notifications**: `SmsWhatsappDeliveryService` sends template-based messages via Twilio with GSM-7 encoding, status callbacks, and `CustomerResponse` logging.

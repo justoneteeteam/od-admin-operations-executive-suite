@@ -22,6 +22,8 @@ Current structure places source files directly in the root or specifically:
 - **Service-Repository Pattern (Backend)**: NestJS separation of logic (Services) from data access (Prisma Service).
 - **Global Auth Guard Pattern**: Global `JwtAuthGuard` protecting all routes by default, with `@Public()` toggle.
 - **Layered Scoring Pattern**: Risk scoring uses a two-layer approach — deterministic base scoring (Layer 1) with optional API-based refinement (Layer 2: Loqate), gracefully degrading on failure.
+- **Corporate Light Theme**: Standardized Tailwind design tokens replace hardcoded utility classes to ensure a consistent, accessible corporate light mode.
+- **Hierarchical Navigation**: Collapsible sidebar architecture organizes the operational suite into intuitive modules.
 
 ## Integration Patterns
 
@@ -31,6 +33,7 @@ Current structure places source files directly in the root or specifically:
   - **Backend**: Prisma `include` clauses (e.g., `include: { fulfillmentCenter: true }`) return related entity data in the same response.
   - **Frontend**: API Services define nested Typescript interfaces (e.g., `Order` has `fulfillmentCenter` object) to consume this data directly without extra round-trips.
   - **Validation**: Frontend selects send IDs (`supplierId`), Backend validates existence via Foreign Key constraints.
+  - **Deletion Strategy**: Strict foreign key relationships require cascading dependency resolution (e.g., removing tracking, logs, collections) prior to deleting parent order records to prevent constraint violations.
   - **Inventory**: Orders link to a robust 8-state Stock Machine (e.g., Warehouse → Pending → Shipped → Delivered → Return Transfer) to accurately reflect product availability.
   - **Parent-Child SKU Architecture**: Master product definitions decouple from warehouse-specific variants, allowing synchronized but distinct SKU mappings inside fulfillment flows.
 

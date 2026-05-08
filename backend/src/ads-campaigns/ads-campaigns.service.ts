@@ -610,7 +610,7 @@ export class AdsCampaignsService {
         }
 
         // 6. Enrich and group by campaign name
-        const campaignGroups = new Map<string, { spendEur: number; leads: number; confirmedLeads: number; sku: string; country: string; productName: string }>();
+        const campaignGroups = new Map<string, { spendEur: number; leads: number; confirmedLeads: number; sku: string; country: string; productName: string; orderIdsMatched: boolean }>();
 
         for (const c of campaigns) {
             const dateStr = c.date.toISOString().split('T')[0];
@@ -619,6 +619,7 @@ export class AdsCampaignsService {
 
             let leads = 0;
             let confirmedLeads = 0;
+            let usedExactMatch = false;
 
             if (c.orderIds) {
                 const nums = c.orderIds.split(';').map(s => s.trim()).filter(Boolean);
@@ -629,21 +630,33 @@ export class AdsCampaignsService {
                         if (order.confirmationStatus === 'Confirmed') confirmedLeads++;
                     }
                 }
-            } else if (c.sku) {
-                leads = skuLeads[c.sku] || 0;
-                confirmedLeads = skuConfirmedLeads[c.sku] || 0;
+                usedExactMatch = true;
             }
 
             const key = c.campaign;
             const resolvedName = c.sku ? (productNameMap.get(c.sku) || c.campaign) : c.campaign;
-            const existing = campaignGroups.get(key) || { spendEur: 0, leads: 0, confirmedLeads: 0, sku: c.sku || '', country: c.country || '', productName: resolvedName };
+            const existing = campaignGroups.get(key) || { spendEur: 0, leads: 0, confirmedLeads: 0, sku: c.sku || '', country: c.country || '', productName: resolvedName, orderIdsMatched: false };
+            
             existing.spendEur += spendEur;
-            existing.leads += leads;
-            existing.confirmedLeads += confirmedLeads;
+            if (usedExactMatch) {
+                existing.leads += leads;
+                existing.confirmedLeads += confirmedLeads;
+                existing.orderIdsMatched = true;
+            }
+            
             if (!existing.sku && c.sku) existing.sku = c.sku;
             if (!existing.country && c.country) existing.country = c.country;
             if (existing.productName === key && resolvedName !== key) existing.productName = resolvedName;
+            
             campaignGroups.set(key, existing);
+        }
+
+        // Apply SKU fallback for groups that didn't use orderIds (done once per group to avoid double counting)
+        for (const data of campaignGroups.values()) {
+            if (!data.orderIdsMatched && data.sku) {
+                data.leads = skuLeads[data.sku] || 0;
+                data.confirmedLeads = skuConfirmedLeads[data.sku] || 0;
+            }
         }
 
         // 7. Build detail rows with qualification

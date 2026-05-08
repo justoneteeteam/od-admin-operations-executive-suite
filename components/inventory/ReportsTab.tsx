@@ -87,7 +87,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
     const KpiCard = ({ icon, label, value, color, subtext }: {
         icon: string; label: string; value: string; color: string; subtext?: string;
     }) => (
-        <div className="bg-card-dark p-5 rounded-xl shadow-sm border border-border-dark flex flex-col items-center justify-center gap-1 min-h-[140px]">
+        <div className="bg-surface-lowest p-5 rounded-xl shadow-sm border border-border-dark flex flex-col items-center justify-center gap-1 min-h-[140px]">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-1 ${color.includes('emerald') ? 'bg-emerald-500/10 border border-emerald-500/20' : color.includes('blue') ? 'bg-blue-500/10 border border-blue-500/20' : color.includes('amber') ? 'bg-amber-500/10 border border-amber-500/20' : color.includes('red') ? 'bg-red-500/10 border border-red-500/20' : color.includes('violet') ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-primary/10 border border-primary/20'}`}>
                 <span className={`material-symbols-outlined ${color}`} style={{ fontSize: '20px' }}>{icon}</span>
             </div>
@@ -106,7 +106,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                         <span className="material-symbols-outlined text-violet-400" style={{ fontSize: '20px' }}>assessment</span>
                     </div>
                     <div>
-                        <h2 className="text-white text-lg font-black tracking-tight">Fulfillment Center Report</h2>
+                        <h2 className="text-on-surface text-lg font-black tracking-tight">Fulfillment Center Report</h2>
                         <p className="text-text-muted text-xs">
                             {selectedMonth ? formatMonthLabel(selectedMonth) : 'Current Month'}
                         </p>
@@ -120,7 +120,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                             type="month"
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="bg-[#1c2d3d] border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer hover:border-primary/40 transition-colors"
+                            className="bg-surface-high border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm appearance-none cursor-pointer hover:border-primary/40 transition-colors"
                         />
                     </div>
                     <div className="flex items-end">
@@ -201,7 +201,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
 
                     {/* Empty state */}
                     {report.centers.length === 0 && (
-                        <div className="bg-card-dark rounded-2xl border border-border-dark p-12 flex flex-col items-center gap-3">
+                        <div className="bg-surface-lowest rounded-2xl border border-border-dark p-12 flex flex-col items-center gap-3">
                             <span className="material-symbols-outlined text-[48px] text-text-muted/20">warehouse</span>
                             <p className="text-text-muted text-sm font-bold">No fulfillment centers found</p>
                             <p className="text-text-muted/50 text-xs">Create fulfillment centers to see report data.</p>
@@ -210,8 +210,8 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
 
                     {/* Fulfillment Centers Table */}
                     {report.centers.length > 0 && (
-                        <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-                            <div className="flex items-center justify-between px-5 py-3 bg-[#17232f] border-b border-border-dark">
+                        <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
+                            <div className="flex items-center justify-between px-5 py-3 bg-surface-container border-b border-border-dark">
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-violet-400" style={{ fontSize: '16px' }}>warehouse</span>
                                     <span className="text-[10px] font-black uppercase tracking-widest text-violet-400 px-2 py-0.5 rounded-full border bg-violet-500/10 border-violet-500/20">
@@ -247,13 +247,13 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                             return (
                                                 <tr key={fc.fulfillmentCenterId} className="transition-colors hover:bg-primary/[0.03]">
                                                     {/* FC Name */}
-                                                    <td className="px-4 py-3 sticky left-0 bg-card-dark z-10">
+                                                    <td className="px-4 py-3 sticky left-0 bg-surface-lowest z-10">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/20 to-blue-500/10 border border-violet-500/20 flex items-center justify-center flex-shrink-0">
                                                                 <span className="text-[9px] font-black text-violet-400">{fc.fulfillmentCenterCode?.slice(0, 2) || 'FC'}</span>
                                                             </div>
                                                             <div>
-                                                                <p className="text-white text-xs font-bold truncate max-w-[140px]">{fc.fulfillmentCenterName}</p>
+                                                                <p className="text-on-surface text-xs font-bold truncate max-w-[140px]">{fc.fulfillmentCenterName}</p>
                                                                 <p className="text-text-muted text-[10px]">{fc.country}</p>
                                                             </div>
                                                         </div>
@@ -261,7 +261,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
 
                                                     {/* Order Sent */}
                                                     <td className="px-4 py-3 text-center">
-                                                        <span className="text-xs text-white font-bold">{fc.ordersSent}</span>
+                                                        <span className="text-xs text-on-surface font-bold">{fc.ordersSent}</span>
                                                     </td>
 
                                                     {/* Delivered */}
@@ -315,7 +315,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
 
                                                     {/* Cost per Order */}
                                                     <td className="px-4 py-3 text-right">
-                                                        <span className="text-xs text-white font-bold">{formatEur(fc.costPerOrder)}</span>
+                                                        <span className="text-xs text-on-surface font-bold">{formatEur(fc.costPerOrder)}</span>
                                                     </td>
 
                                                     {/* Reshipment Cost */}
@@ -361,25 +361,25 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
 
                                     {/* Footer Totals */}
                                     <tfoot>
-                                        <tr className="bg-[#14202c] border-t-2 border-border-dark">
-                                            <td className="px-4 py-3 sticky left-0 bg-[#14202c] z-10">
-                                                <span className="text-xs font-black text-white uppercase">Total</span>
+                                        <tr className="bg-surface-low border-t-2 border-border-dark">
+                                            <td className="px-4 py-3 sticky left-0 bg-surface-low z-10">
+                                                <span className="text-xs font-black text-on-surface uppercase">Total</span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="text-xs text-white font-black">{report.totals.ordersSent}</span>
+                                                <span className="text-xs text-on-surface font-black">{report.totals.ordersSent}</span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className="text-xs text-emerald-400 font-black">{report.totals.ordersDelivered}</span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="text-xs text-white font-black">
+                                                <span className="text-xs text-on-surface font-black">
                                                     {report.totals.ordersSent > 0
                                                         ? formatPct((report.totals.ordersDelivered / report.totals.ordersSent) * 100)
                                                         : '—'}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="text-xs text-white font-black">
+                                                <span className="text-xs text-on-surface font-black">
                                                     {report.totals.ordersSent > 0
                                                         ? formatPct((report.totals.ordersReturned / report.totals.ordersSent) * 100)
                                                         : '—'}
@@ -389,14 +389,14 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                 <span className="text-xs text-orange-400 font-black">{report.totals.ordersCancelled}</span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="text-xs text-white font-black">
+                                                <span className="text-xs text-on-surface font-black">
                                                     {report.totals.totalOrders > 0
                                                         ? formatPct((report.totals.ordersCancelled / report.totals.totalOrders) * 100)
                                                         : '—'}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-right">
-                                                <span className="text-xs text-white font-black">
+                                                <span className="text-xs text-on-surface font-black">
                                                     {report.totals.totalOrders > 0
                                                         ? formatEur(report.totals.fulfillmentCost / report.totals.totalOrders)
                                                         : '—'}
@@ -416,7 +416,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                 <span className="text-xs text-emerald-400 font-black">{formatEur(report.totals.revenue)}</span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="text-xs text-white font-black">
+                                                <span className="text-xs text-on-surface font-black">
                                                     {report.totals.revenue > 0
                                                         ? formatPct((report.totals.fulfillmentCost / report.totals.revenue) * 100)
                                                         : '—'}
@@ -440,15 +440,15 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                             {report.centers
                                 .filter(c => c.totalOrders > 0)
                                 .map((fc) => (
-                                    <div key={fc.fulfillmentCenterId} className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+                                    <div key={fc.fulfillmentCenterId} className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
                                         {/* Card Header */}
-                                        <div className="flex items-center justify-between px-5 py-3 bg-[#17232f] border-b border-border-dark">
+                                        <div className="flex items-center justify-between px-5 py-3 bg-surface-container border-b border-border-dark">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-blue-500/10 border border-violet-500/20 flex items-center justify-center">
                                                     <span className="text-[10px] font-black text-violet-400">{fc.fulfillmentCenterCode?.slice(0, 3) || 'FC'}</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-white text-sm font-black">{fc.fulfillmentCenterName}</p>
+                                                    <p className="text-on-surface text-sm font-black">{fc.fulfillmentCenterName}</p>
                                                     <p className="text-text-muted text-[10px]">{fc.country} · {fc.totalOrders} total orders</p>
                                                 </div>
                                             </div>
@@ -463,7 +463,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                             <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[#141e29] border border-border-dark/40">
                                                 <span className="material-symbols-outlined text-blue-400" style={{ fontSize: '18px' }}>local_shipping</span>
                                                 <span className="text-[10px] text-text-muted font-bold uppercase">Sent</span>
-                                                <span className="text-lg font-black text-white">{fc.ordersSent}</span>
+                                                <span className="text-lg font-black text-on-surface">{fc.ordersSent}</span>
                                             </div>
                                             <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[#141e29] border border-border-dark/40">
                                                 <span className="material-symbols-outlined text-emerald-400" style={{ fontSize: '18px' }}>check_circle</span>
@@ -503,7 +503,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs border-b border-border-dark/30 pb-1.5">
                                                     <span className="text-text-muted font-bold">Cost / Order</span>
-                                                    <span className="text-white font-black">{formatEur(fc.costPerOrder)}</span>
+                                                    <span className="text-on-surface font-black">{formatEur(fc.costPerOrder)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs border-b border-border-dark/30 pb-1.5">
                                                     <span className="text-text-muted font-bold">Reshipment Cost</span>
@@ -524,7 +524,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ selectedWarehouse }) => {
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs pt-1">
-                                                    <span className="text-white font-black">Profit</span>
+                                                    <span className="text-on-surface font-black">Profit</span>
                                                     <span className={`font-black text-sm ${fc.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                                         {formatEur(fc.profit)}
                                                     </span>

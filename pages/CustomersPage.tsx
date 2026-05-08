@@ -192,11 +192,11 @@ const CustomersPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <span className="text-text-muted text-sm font-medium">Home</span>
           <span className="text-text-muted text-sm">/</span>
-          <span className="text-white text-sm font-medium">Customer Intelligence</span>
+          <span className="text-on-surface text-sm font-medium">Customer Intelligence</span>
         </div>
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4 mt-2">
           <div className="flex flex-col gap-1 w-full lg:w-auto">
-            <h1 className="text-white text-3xl sm:text-4xl font-black tracking-tight">Customers</h1>
+            <h1 className="text-on-surface text-3xl sm:text-4xl font-black tracking-tight">Customers</h1>
             <p className="text-text-muted text-sm max-w-xl leading-relaxed">
               Monitor buyer history and manage blocklists for COD fulfillment.
             </p>
@@ -207,7 +207,7 @@ const CustomersPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search customers..."
-                className="bg-[#111a22] border border-border-dark text-white text-sm rounded-xl h-12 pl-10 pr-4 focus:ring-primary/40 focus:border-primary transition-all w-full sm:w-64"
+                className="bg-surface-lowest border border-border-dark text-on-surface text-sm rounded-xl h-12 pl-10 pr-4 focus:ring-primary/40 focus:border-primary transition-all w-full sm:w-64"
                 value={searchTerm}
                 onChange={handleSearch}
               />
@@ -231,7 +231,7 @@ const CustomersPage: React.FC = () => {
       </div>
 
       {/* Database View */}
-      <div className="bg-[#111a22] rounded-2xl border border-border-dark overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden flex flex-col shadow-2xl">
         {isLoading ? (
           <div className="p-10 text-center text-text-muted animate-pulse">Loading users...</div>
         ) : error ? (
@@ -240,7 +240,7 @@ const CustomersPage: React.FC = () => {
           <div className="overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
-                <tr className="bg-[#17232f]/50 border-b border-border-dark">
+                <tr className="bg-surface-container/50 border-b border-border-dark">
                   <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] w-[35%]">Customer Profile</th>
                   <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-center">Contact</th>
                   <th className="px-8 py-5 text-text-muted font-black text-[10px] uppercase tracking-[0.15em] text-center">Stats</th>
@@ -256,7 +256,7 @@ const CustomersPage: React.FC = () => {
                   filteredCustomers.map((customer) => (
                     <tr
                       key={customer.id}
-                      className={`transition-all duration-200 hover:bg-white/[0.02] cursor-pointer ${customer.status === 'Blocked' ? 'bg-red-500/[0.03] border-l-2 border-l-red-500' : 'border-l-2 border-l-transparent'
+                      className={`transition-all duration-200 hover:bg-primary/[0.04] cursor-pointer ${customer.status === 'Blocked' ? 'bg-red-500/[0.03] border-l-2 border-l-red-500' : 'border-l-2 border-l-transparent'
                         }`}
                       onClick={() => openDetailDrawer(customer)}
                     >
@@ -265,12 +265,12 @@ const CustomersPage: React.FC = () => {
                         <div className="flex items-center gap-4">
                           <div className={`size-11 rounded-xl flex items-center justify-center text-sm font-bold border transition-colors ${customer.status === 'Blocked'
                             ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                            : 'bg-[#1c2d3d] text-white border-[#2d445a]'
+                            : 'bg-surface-high text-on-surface border-outline-variant'
                             }`}>
                             {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                           </div>
                           <div className="flex flex-col gap-0.5">
-                            <p className={`text-base font-bold transition-colors ${customer.status === 'Blocked' ? 'text-red-400' : 'text-white'}`}>
+                            <p className={`text-base font-bold transition-colors ${customer.status === 'Blocked' ? 'text-red-400' : 'text-on-surface'}`}>
                               {customer.name}
                             </p>
                             <p className="text-xs text-text-muted opacity-70 flex items-center gap-1">
@@ -284,7 +284,7 @@ const CustomersPage: React.FC = () => {
                       {/* Contact Column */}
                       <td className="px-8 py-6 text-center">
                         <div className="flex flex-col items-center gap-1">
-                          <span className="text-sm font-medium text-white">{customer.email || 'No Email'}</span>
+                          <span className="text-sm font-medium text-on-surface">{customer.email || 'No Email'}</span>
                           <span className="text-xs text-text-muted">{customer.phone}</span>
                           <span className="text-[10px] text-text-muted uppercase mt-1">{customer.country}</span>
                         </div>
@@ -292,7 +292,7 @@ const CustomersPage: React.FC = () => {
 
                       <td className="px-8 py-6 text-center">
                         <div className="flex flex-col items-center">
-                          <p className="text-base font-black text-white">{customer.ordersCount || 0} Orders</p>
+                          <p className="text-base font-black text-on-surface">{customer.ordersCount || 0} Orders</p>
                           <p className="text-[10px] text-text-muted font-medium mt-1">
                             ${(customer.totalSpent || 0).toLocaleString()} Spent
                           </p>
@@ -310,7 +310,7 @@ const CustomersPage: React.FC = () => {
                         <div className="flex justify-center items-center gap-3">
                           <button
                             onClick={() => toggleBlock(customer)}
-                            className={`p-2 rounded-lg transition-all ${customer.status === 'Blocked' ? 'bg-red-500/20 text-red-400' : 'bg-[#1c2d3d] text-text-muted hover:text-white'}`}
+                            className={`p-2 rounded-lg transition-all ${customer.status === 'Blocked' ? 'bg-red-500/20 text-red-400' : 'bg-surface-high text-text-muted hover:text-on-surface'}`}
                             title={customer.status === 'Blocked' ? "Unblock Customer" : "Block Customer"}
                           >
                             <span className="material-symbols-outlined text-[20px]">{customer.status === 'Blocked' ? 'block' : 'check_circle'}</span>
@@ -341,7 +341,7 @@ const CustomersPage: React.FC = () => {
         )}
 
         {/* Footer Info */}
-        <div className="bg-[#17232f]/80 px-8 py-4 border-t border-border-dark flex items-center justify-between">
+        <div className="bg-surface-container/80 px-8 py-4 border-t border-border-dark flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="size-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">
@@ -362,12 +362,12 @@ const CustomersPage: React.FC = () => {
       {/* ======================== CUSTOMER DETAIL DRAWER ======================== */}
       {showDetailDrawer && (
         <div className="fixed inset-0 z-[200] flex justify-end">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowDetailDrawer(false)}></div>
-          <div className="relative w-full sm:w-[580px] h-full bg-[#111a22] border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDetailDrawer(false)}></div>
+          <div className="relative w-full sm:w-[580px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="px-6 sm:px-8 py-6 border-b border-border-dark flex items-center justify-between bg-[#14202c]">
+            <div className="px-6 sm:px-8 py-6 border-b border-border-dark flex items-center justify-between bg-surface-low">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-3 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-on-surface flex items-center gap-3 tracking-tight">
                   Customer Detail
                 </h2>
                 <p className="text-[10px] text-text-muted mt-1 uppercase tracking-widest font-bold">
@@ -387,15 +387,15 @@ const CustomersPage: React.FC = () => {
               ) : detailCustomer ? (
                 <>
                   {/* Customer Info Card */}
-                  <div className="bg-[#14202c] rounded-2xl border border-border-dark p-6 space-y-4">
+                  <div className="bg-surface-low rounded-2xl border border-border-dark p-6 space-y-4">
                     <div className="flex items-center gap-4">
                       <div className={`size-14 rounded-xl flex items-center justify-center text-lg font-bold border ${detailCustomer.status === 'Blocked'
                         ? 'bg-red-500/10 text-red-400 border-red-500/20'
-                        : 'bg-[#1c2d3d] text-white border-[#2d445a]'}`}>
+                        : 'bg-surface-high text-on-surface border-outline-variant'}`}>
                         {detailCustomer.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white">{detailCustomer.name}</h3>
+                        <h3 className="text-lg font-bold text-on-surface">{detailCustomer.name}</h3>
                         <span className={`inline-flex items-center gap-1.5 text-xs font-bold border rounded-full px-3 py-0.5 mt-1 ${getStatusBadge(detailCustomer.status)}`}>
                           <span className={`size-1.5 rounded-full ${detailCustomer.status === 'Blocked' ? 'bg-red-400' : 'bg-emerald-400'}`}></span>
                           {detailCustomer.status || 'Standard'}
@@ -405,19 +405,19 @@ const CustomersPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                       <div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Phone</p>
-                        <p className="text-sm text-white font-medium">{detailCustomer.phone || '—'}</p>
+                        <p className="text-sm text-on-surface font-medium">{detailCustomer.phone || '—'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Email</p>
-                        <p className="text-sm text-white font-medium">{detailCustomer.email || '—'}</p>
+                        <p className="text-sm text-on-surface font-medium">{detailCustomer.email || '—'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Country</p>
-                        <p className="text-sm text-white font-medium">{detailCustomer.country || '—'}</p>
+                        <p className="text-sm text-on-surface font-medium">{detailCustomer.country || '—'}</p>
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">City</p>
-                        <p className="text-sm text-white font-medium">{detailCustomer.city || '—'}</p>
+                        <p className="text-sm text-on-surface font-medium">{detailCustomer.city || '—'}</p>
                       </div>
                     </div>
                   </div>
@@ -429,22 +429,22 @@ const CustomersPage: React.FC = () => {
                         <span className="material-symbols-outlined text-sm">receipt_long</span>
                         Order History
                       </h3>
-                      <span className="text-[10px] font-bold text-text-muted bg-[#1c2d3d] px-2 py-1 rounded-lg">
+                      <span className="text-[10px] font-bold text-text-muted bg-surface-high px-2 py-1 rounded-lg">
                         {detailCustomer.orders?.length || 0} orders
                       </span>
                     </div>
 
                     {(!detailCustomer.orders || detailCustomer.orders.length === 0) ? (
-                      <div className="bg-[#14202c] rounded-xl border border-border-dark p-8 text-center">
+                      <div className="bg-surface-low rounded-xl border border-border-dark p-8 text-center">
                         <span className="material-symbols-outlined text-3xl text-text-muted/40 mb-2">shopping_cart</span>
                         <p className="text-sm text-text-muted">No orders found for this customer.</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {detailCustomer.orders.map((order: any) => (
-                          <div key={order.id} className="bg-[#14202c] rounded-xl border border-border-dark p-4 hover:border-primary/20 transition-all">
+                          <div key={order.id} className="bg-surface-low rounded-xl border border-border-dark p-4 hover:border-primary/20 transition-all">
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-bold text-white flex items-center gap-2">
+                              <span className="text-sm font-bold text-on-surface flex items-center gap-2">
                                 #{order.orderNumber}
                                 {order.riskLevel && (
                                   <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${order.riskLevel === 'LOW' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
@@ -464,7 +464,7 @@ const CustomersPage: React.FC = () => {
                               <span className="text-xs text-text-muted">
                                 {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                               </span>
-                              <span className="text-sm font-bold text-white">
+                              <span className="text-sm font-bold text-on-surface">
                                 ${Number(order.totalAmount || 0).toLocaleString()}
                               </span>
                             </div>
@@ -499,12 +499,12 @@ const CustomersPage: React.FC = () => {
       {/* ======================== EDIT DRAWER ======================== */}
       {showDrawer && (
         <div className="fixed inset-0 z-[200] flex justify-end">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
-          <div className="side-drawer relative w-full sm:w-[500px] h-full bg-[#111a22] border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
+          <div className="side-drawer relative w-full sm:w-[500px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="px-6 sm:px-8 py-6 border-b border-border-dark flex items-center justify-between bg-[#14202c]">
+            <div className="px-6 sm:px-8 py-6 border-b border-border-dark flex items-center justify-between bg-surface-low">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-3 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-on-surface flex items-center gap-3 tracking-tight">
                   {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
                 </h2>
                 <p className="text-[10px] text-text-muted mt-1 uppercase tracking-widest font-bold">
@@ -527,7 +527,7 @@ const CustomersPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-text-muted uppercase ml-1">Full Name</label>
                     <input
-                      className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                      className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                       value={formData.name || ''}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="John Doe"
@@ -536,7 +536,7 @@ const CustomersPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-text-muted uppercase ml-1">Email Address</label>
                     <input
-                      className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                      className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                       value={formData.email || ''}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="john@example.com"
@@ -545,7 +545,7 @@ const CustomersPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-text-muted uppercase ml-1">Phone Number</label>
                     <input
-                      className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                      className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                       value={formData.phone || ''}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
                       placeholder="+1 234 567 890"
@@ -564,7 +564,7 @@ const CustomersPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-text-muted uppercase ml-1">Street Address</label>
                     <input
-                      className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                      className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                       value={formData.addressLine1 || ''}
                       onChange={(e) => handleInputChange('addressLine1', e.target.value)}
                       placeholder="123 Main St"
@@ -574,7 +574,7 @@ const CustomersPage: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">City</label>
                       <input
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                         value={formData.city || ''}
                         onChange={(e) => handleInputChange('city', e.target.value)}
                       />
@@ -582,7 +582,7 @@ const CustomersPage: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">Country</label>
                       <select
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                         value={formData.country || ''}
                         onChange={(e) => handleInputChange('country', e.target.value)}
                       >
@@ -595,7 +595,7 @@ const CustomersPage: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">Province / State</label>
                       <input
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                         value={formData.province || ''}
                         onChange={(e) => handleInputChange('province', e.target.value)}
                         placeholder="e.g. California"
@@ -604,7 +604,7 @@ const CustomersPage: React.FC = () => {
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-text-muted uppercase ml-1">Zipcode / Postal Code</label>
                       <input
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary transition-all"
                         value={formData.postalCode || ''}
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
                         placeholder="e.g. 90210"
@@ -616,10 +616,10 @@ const CustomersPage: React.FC = () => {
             </div>
 
             {/* Footer Actions */}
-            <div className="p-6 border-t border-border-dark bg-[#14202c] flex justify-end gap-3">
+            <div className="p-6 border-t border-border-dark bg-surface-low flex justify-end gap-3">
               <button
                 onClick={() => setShowDrawer(false)}
-                className="px-6 py-3 rounded-xl bg-[#1c2d3d] text-text-muted font-bold text-sm hover:bg-[#233648] transition-all"
+                className="px-6 py-3 rounded-xl bg-surface-high text-text-muted font-bold text-sm hover:bg-surface-container transition-all"
               >
                 Cancel
               </button>
@@ -639,12 +639,12 @@ const CustomersPage: React.FC = () => {
       {/* ======================== BULK BLOCK MODAL ======================== */}
       {showBlockModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowBlockModal(false)}></div>
-          <div className="relative bg-[#111a22] border border-border-dark rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-in zoom-in-95 duration-200">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowBlockModal(false)}></div>
+          <div className="relative bg-surface-lowest border border-border-dark rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-border-dark flex items-center justify-between bg-[#14202c] rounded-t-2xl">
+            <div className="px-8 py-6 border-b border-border-dark flex items-center justify-between bg-surface-low rounded-t-2xl">
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-3 tracking-tight">
+                <h2 className="text-xl font-black text-on-surface flex items-center gap-3 tracking-tight">
                   <span className="material-symbols-outlined text-red-400">block</span>
                   Bulk Block Customers
                 </h2>
@@ -665,7 +665,7 @@ const CustomersPage: React.FC = () => {
                   Emails to Block
                 </label>
                 <textarea
-                  className="bg-[#1c2d3d] border border-[#2d445a] text-white text-sm rounded-xl w-full h-56 px-4 py-3 focus:ring-red-500/40 focus:border-red-500/40 transition-all resize-none font-mono"
+                  className="bg-surface-high border border-outline-variant text-on-surface text-sm rounded-xl w-full h-56 px-4 py-3 focus:ring-red-500/40 focus:border-red-500/40 transition-all resize-none font-mono"
                   placeholder={"example1@gmail.com\nexample2@gmail.com\n..."}
                   value={blockEmails}
                   onChange={(e) => setBlockEmails(e.target.value)}
@@ -680,7 +680,7 @@ const CustomersPage: React.FC = () => {
                   Phone Numbers to Block
                 </label>
                 <textarea
-                  className="bg-[#1c2d3d] border border-[#2d445a] text-white text-sm rounded-xl w-full h-56 px-4 py-3 focus:ring-red-500/40 focus:border-red-500/40 transition-all resize-none font-mono"
+                  className="bg-surface-high border border-outline-variant text-on-surface text-sm rounded-xl w-full h-56 px-4 py-3 focus:ring-red-500/40 focus:border-red-500/40 transition-all resize-none font-mono"
                   placeholder={"618220163\n656371848\n641342783\n..."}
                   value={blockPhones}
                   onChange={(e) => setBlockPhones(e.target.value)}
@@ -692,14 +692,14 @@ const CustomersPage: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-8 py-5 border-t border-border-dark bg-[#14202c] rounded-b-2xl flex items-center justify-between">
+            <div className="px-8 py-5 border-t border-border-dark bg-surface-low rounded-b-2xl flex items-center justify-between">
               <p className="text-xs text-text-muted">
                 Matching customers will be set to <span className="text-red-400 font-bold">Blocked</span> status.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowBlockModal(false)}
-                  className="px-6 py-3 rounded-xl bg-[#1c2d3d] text-text-muted font-bold text-sm hover:bg-[#233648] transition-all"
+                  className="px-6 py-3 rounded-xl bg-surface-high text-text-muted font-bold text-sm hover:bg-surface-container transition-all"
                 >
                   Cancel
                 </button>

@@ -189,7 +189,7 @@ const ProductsPage: React.FC = () => {
   if (loading && !isModalOpen) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-white">Loading products...</div>
+        <div className="text-on-surface">Loading products...</div>
       </div>
     );
   }
@@ -223,11 +223,11 @@ const ProductsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <span className="text-text-muted text-sm font-medium">Home</span>
           <span className="text-text-muted text-sm">/</span>
-          <span className="text-white text-sm font-medium">Inventory & Cost</span>
+          <span className="text-on-surface text-sm font-medium">Inventory & Cost</span>
         </div>
         <div className="flex flex-wrap justify-between items-end gap-4 mt-2">
           <div className="flex flex-col gap-1">
-            <h1 className="text-white text-3xl font-black tracking-tight">Product Inventory & Cost</h1>
+            <h1 className="text-on-surface text-3xl font-black tracking-tight">Product Inventory & Cost</h1>
             <p className="text-text-muted text-sm">Review stock levels, unit costs, and SKU performance metrics.</p>
           </div>
           <div className="flex gap-3 items-center">
@@ -237,7 +237,7 @@ const ProductsPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search by name or SKU..."
-                className="bg-[#111a22] border border-border-dark text-white text-sm rounded-lg pl-9 pr-4 py-2 w-64 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                className="bg-surface-lowest border border-border-dark text-on-surface text-sm rounded-lg pl-9 pr-4 py-2 w-64 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -254,11 +254,11 @@ const ProductsPage: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-[#111a22] rounded-xl border border-border-dark overflow-hidden flex flex-col">
+      <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden flex flex-col">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
-              <tr className="bg-[#17232f] border-b border-[#233648]">
+              <tr className="bg-surface-container border-b border-outline-variant">
                 <th className="px-4 py-3 w-10">
                   <input
                     type="checkbox"
@@ -280,7 +280,7 @@ const ProductsPage: React.FC = () => {
                 <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#233648]">
+            <tbody className="divide-y divide-outline-variant">
               {filteredProducts.map((product) => {
                 const stock = stockMap.get(product.id);
                 const onHand = stock ? stock.currentStock : (product.stockLevel || 0);
@@ -294,7 +294,7 @@ const ProductsPage: React.FC = () => {
                 return (
                   <tr 
                     key={product.id} 
-                    className={`hover:bg-[#1c2d3d] transition-colors group cursor-pointer ${selectedIds.has(product.id) ? 'bg-primary/5' : ''}`}
+                    className={`hover:bg-surface-high transition-colors group cursor-pointer ${selectedIds.has(product.id) ? 'bg-primary/[0.06]' : ''}`}
                     onClick={() => openDetailDrawer(product)}
                   >
                     <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
@@ -306,7 +306,7 @@ const ProductsPage: React.FC = () => {
                       />
                     </td>
                     <td className="px-3 py-2.5">
-                      <div className="size-10 rounded border border-border-dark bg-center bg-cover overflow-hidden bg-gray-800 flex items-center justify-center">
+                      <div className="size-10 rounded border border-border-dark bg-center bg-cover overflow-hidden bg-surface-high flex items-center justify-center">
                         {imgUrl ? (
                           <img src={imgUrl} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
@@ -315,7 +315,7 @@ const ProductsPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
-                      <p className="text-sm font-bold text-white leading-tight">{product.name}</p>
+                      <p className="text-sm font-bold text-on-surface leading-tight">{product.name}</p>
                       <p className="text-[10px] font-mono text-text-muted mt-0.5 uppercase">{product.sku}</p>
                       {stock?.warehouseBreakdown?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -334,10 +334,10 @@ const ProductsPage: React.FC = () => {
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="text-sm font-bold text-white">€{Number(product.unitCost || 0).toFixed(2)}</span>
+                      <span className="text-sm font-bold text-on-surface">€{Number(product.unitCost || 0).toFixed(2)}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center">
-                      <span className="text-sm font-bold text-white">{onHand.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-on-surface">{onHand.toLocaleString()}</span>
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       <span className={`text-sm font-bold ${committed > 0 ? 'text-orange-400' : 'text-text-muted'}`}>
@@ -376,14 +376,14 @@ const ProductsPage: React.FC = () => {
                       <div className="flex items-center justify-end gap-0.5">
                         <button
                           onClick={() => openEditModal(product)}
-                          className="p-1.5 hover:bg-[#233648] rounded text-text-muted hover:text-blue-400 transition-colors"
+                          className="p-1.5 hover:bg-surface-container rounded text-text-muted hover:text-blue-400 transition-colors"
                           title="Edit product"
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(product.id)}
-                          className="p-1.5 hover:bg-[#233648] rounded text-text-muted hover:text-red-400 transition-colors"
+                          className="p-1.5 hover:bg-surface-container rounded text-text-muted hover:text-red-400 transition-colors"
                           title="Delete product"
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
@@ -401,9 +401,9 @@ const ProductsPage: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="bg-[#17232f] px-6 py-3 border-t border-border-dark flex items-center justify-between">
+        <div className="bg-surface-container px-6 py-3 border-t border-border-dark flex items-center justify-between">
           <p className="text-xs text-[#92adc9]">
-            Showing <span className="text-white font-bold">{filteredProducts.length}</span>
+            Showing <span className="text-on-surface font-bold">{filteredProducts.length}</span>
             {searchTerm && ` of ${products.length}`} products
           </p>
         </div>
@@ -411,8 +411,8 @@ const ProductsPage: React.FC = () => {
 
       {/* Floating bulk-delete bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#14202c] border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4 animate-in slide-in-from-bottom-4 duration-200">
-          <span className="text-sm text-white font-bold">{selectedIds.size} selected</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-low border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4 animate-in slide-in-from-bottom-4 duration-200">
+          <span className="text-sm text-on-surface font-bold">{selectedIds.size} selected</span>
           <button
             onClick={handleBulkDelete}
             className="flex items-center gap-2 px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors"
@@ -422,7 +422,7 @@ const ProductsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="text-text-muted hover:text-white text-sm transition-colors"
+            className="text-text-muted hover:text-on-surface text-sm transition-colors"
           >
             Cancel
           </button>

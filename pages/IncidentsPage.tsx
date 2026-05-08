@@ -189,12 +189,12 @@ const IncidentsPage: React.FC = () => {
                 { label: 'Resolved This Week', value: stats?.resolvedThisWeek || 0, color: '#14b8a6', icon: 'trending_up' },
                 { label: 'Auto Active', value: stats?.autoActive || 0, color: '#a855f7', icon: 'smart_toy' },
             ].map(kpi => (
-                <div key={kpi.label} className="bg-card-dark rounded-xl border border-border-dark p-4 flex flex-col gap-1">
+                <div key={kpi.label} className="bg-surface-lowest rounded-xl border border-border-dark p-4 flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <span className="material-symbols-outlined" style={{ fontSize: 16, color: kpi.color }}>{kpi.icon}</span>
                         <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">{kpi.label}</span>
                     </div>
-                    <span className="text-2xl font-black text-white">{kpi.value}</span>
+                    <span className="text-2xl font-black text-on-surface">{kpi.value}</span>
                 </div>
             ))}
         </div>
@@ -207,7 +207,7 @@ const IncidentsPage: React.FC = () => {
             <div
                 key={ticket.id}
                 onClick={() => openDetail(ticket.id)}
-                className="bg-card-dark rounded-xl border border-border-dark p-4 cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group"
+                className="bg-surface-lowest rounded-xl border border-border-dark p-4 cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group"
             >
                 <div className="flex items-start justify-between mb-2">
                     <span className="text-[10px] font-bold text-text-muted">{ticket.ticketNumber}</span>
@@ -218,7 +218,7 @@ const IncidentsPage: React.FC = () => {
                         {ticket.priority.toUpperCase()}
                     </span>
                 </div>
-                <p className="text-sm font-bold text-white mb-1 truncate group-hover:text-primary transition-colors">{ticket.title}</p>
+                <p className="text-sm font-bold text-on-surface mb-1 truncate group-hover:text-primary transition-colors">{ticket.title}</p>
                 <div className="flex items-center gap-2 mb-3">
                     <span className="material-symbols-outlined" style={{ fontSize: 14, color: caseColor(ticket.caseType) }}>{caseIcon(ticket.caseType)}</span>
                     <span className="text-[10px] text-text-muted font-bold">{caseLabel(ticket.caseType)}</span>
@@ -251,7 +251,7 @@ const IncidentsPage: React.FC = () => {
                     <div className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
                             <div className="size-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-                            <span className="text-xs font-black uppercase tracking-wider text-white">{col.label}</span>
+                            <span className="text-xs font-black uppercase tracking-wider text-on-surface">{col.label}</span>
                         </div>
                         <span className="text-xs font-bold text-text-muted bg-border-dark px-2 py-0.5 rounded-full">
                             {(columns[col.value] || []).length}
@@ -270,7 +270,7 @@ const IncidentsPage: React.FC = () => {
 
     // ─── RENDER: LIST VIEW ───────────────────────────────────────────
     const renderList = () => (
-        <div className="bg-card-dark rounded-xl border border-border-dark overflow-hidden">
+        <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden">
             <table className="w-full text-sm">
                 <thead>
                     <tr className="border-b border-border-dark bg-[#0f1923]">
@@ -286,7 +286,7 @@ const IncidentsPage: React.FC = () => {
                             <tr key={t.id} onClick={() => openDetail(t.id)} className="border-b border-border-dark/50 hover:bg-[#1a2332] cursor-pointer transition-colors">
                                 <td className="px-4 py-3 text-xs font-mono text-text-muted">{t.ticketNumber}</td>
                                 <td className="px-4 py-3">
-                                    <p className="text-xs font-bold text-white truncate max-w-[200px]">{t.title}</p>
+                                    <p className="text-xs font-bold text-on-surface truncate max-w-[200px]">{t.title}</p>
                                 </td>
                                 <td className="px-4 py-3">
                                     <span className="flex items-center gap-1 text-xs" style={{ color: caseColor(t.caseType) }}>
@@ -381,12 +381,12 @@ const IncidentsPage: React.FC = () => {
                         <div
                             key={wf.id}
                             onClick={() => setEditingWorkflow(JSON.parse(JSON.stringify(wf)))}
-                            className="bg-card-dark rounded-xl border border-border-dark p-5 flex flex-col gap-3 cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group"
+                            className="bg-surface-lowest rounded-xl border border-border-dark p-5 flex flex-col gap-3 cursor-pointer hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all group"
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined" style={{ fontSize: 18, color: opt?.color || '#6b7280' }}>{opt?.icon || 'help'}</span>
-                                    <span className="text-sm font-bold text-white group-hover:text-primary transition-colors">{wf.title}</span>
+                                    <span className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{wf.title}</span>
                                 </div>
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${wf.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                                     {wf.isActive ? 'Active' : 'Inactive'}
@@ -406,7 +406,7 @@ const IncidentsPage: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-text-muted font-bold">Steps:</span>
-                                <span className="text-xs text-white font-bold">{(wf.steps || []).length} configured</span>
+                                <span className="text-xs text-on-surface font-bold">{(wf.steps || []).length} configured</span>
                             </div>
                         </div>
                     );
@@ -415,8 +415,8 @@ const IncidentsPage: React.FC = () => {
 
             {/* Workflow Edit Modal */}
             {editingWorkflow && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditingWorkflow(null)}>
-                    <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditingWorkflow(null)}>
+                    <div className="bg-surface-lowest border border-border-dark rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar" onClick={e => e.stopPropagation()}>
                         {/* Header */}
                         <div className="p-6 border-b border-border-dark flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -424,11 +424,11 @@ const IncidentsPage: React.FC = () => {
                                     {CASE_TYPE_OPTIONS.find(c => c.value === editingWorkflow.caseType)?.icon || 'help'}
                                 </span>
                                 <div>
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Edit Workflow</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-on-surface">Edit Workflow</h3>
                                     <p className="text-xs text-text-muted">{caseLabel(editingWorkflow.caseType)}</p>
                                 </div>
                             </div>
-                            <button onClick={() => setEditingWorkflow(null)} className="text-text-muted hover:text-white">
+                            <button onClick={() => setEditingWorkflow(null)} className="text-text-muted hover:text-on-surface">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
@@ -441,7 +441,7 @@ const IncidentsPage: React.FC = () => {
                                     <input
                                         value={editingWorkflow.title}
                                         onChange={e => setEditingWorkflow({ ...editingWorkflow, title: e.target.value })}
-                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                                     />
                                 </div>
                                 <div>
@@ -449,7 +449,7 @@ const IncidentsPage: React.FC = () => {
                                     <input
                                         value={editingWorkflow.description || ''}
                                         onChange={e => setEditingWorkflow({ ...editingWorkflow, description: e.target.value })}
-                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                                     />
                                 </div>
                             </div>
@@ -465,7 +465,7 @@ const IncidentsPage: React.FC = () => {
                                     />
                                     <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
                                 </label>
-                                <span className="text-xs text-white font-bold">Workflow Active</span>
+                                <span className="text-xs text-on-surface font-bold">Workflow Active</span>
                             </div>
 
                             {/* Channel Order */}
@@ -484,7 +484,7 @@ const IncidentsPage: React.FC = () => {
                                                 }}
                                                 className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${
                                                     isSelected
-                                                        ? 'border-primary/40 bg-primary/10 text-white'
+                                                        ? 'border-primary/40 bg-primary/10 text-on-surface'
                                                         : 'border-border-dark bg-[#1a2332] text-text-muted hover:border-border-dark/80'
                                                 }`}
                                             >
@@ -529,7 +529,7 @@ const IncidentsPage: React.FC = () => {
                                                         <select
                                                             value={step.channel}
                                                             onChange={e => updateStep(idx, 'channel', e.target.value)}
-                                                            className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                            className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none"
                                                         >
                                                             {CHANNEL_OPTIONS.map(ch => (
                                                                 <option key={ch.value} value={ch.value}>{ch.label}</option>
@@ -541,7 +541,7 @@ const IncidentsPage: React.FC = () => {
                                                         <select
                                                             value={step.trigger || 'auto'}
                                                             onChange={e => updateStep(idx, 'trigger', e.target.value)}
-                                                            className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                            className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none"
                                                         >
                                                             <option value="auto">Auto (Timer)</option>
                                                             <option value="manual">Manual</option>
@@ -554,7 +554,7 @@ const IncidentsPage: React.FC = () => {
                                                             type="number"
                                                             value={step.delayMinutes || 0}
                                                             onChange={e => updateStep(idx, 'delayMinutes', parseInt(e.target.value) || 0)}
-                                                            className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none"
+                                                            className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none"
                                                             min={0}
                                                         />
                                                     </div>
@@ -565,7 +565,7 @@ const IncidentsPage: React.FC = () => {
                                                         value={step.content || ''}
                                                         onChange={e => updateStep(idx, 'content', e.target.value)}
                                                         rows={2}
-                                                        className="w-full bg-card-dark border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none resize-none"
+                                                        className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none resize-none"
                                                         placeholder={`Message template for ${chOpt?.label || 'channel'}...`}
                                                     />
                                                 </div>
@@ -583,7 +583,7 @@ const IncidentsPage: React.FC = () => {
 
                         {/* Footer */}
                         <div className="p-6 pt-0 flex justify-end gap-3">
-                            <button onClick={() => setEditingWorkflow(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                            <button onClick={() => setEditingWorkflow(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-on-surface transition-colors">Cancel</button>
                             <button
                                 onClick={handleSaveWorkflow}
                                 disabled={wfSaving}
@@ -738,8 +738,8 @@ const IncidentsPage: React.FC = () => {
         const callLogs: any[] = t.order?.callLogs || [];
 
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setSelectedTicket(null); setComposeChannel(null); }}>
-                <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setSelectedTicket(null); setComposeChannel(null); }}>
+                <div className="bg-surface-lowest border border-border-dark rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
                     {/* Header */}
                     <div className="flex items-center justify-between p-5 border-b border-border-dark shrink-0">
                         <div className="flex items-center gap-4">
@@ -747,7 +747,7 @@ const IncidentsPage: React.FC = () => {
                             <div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-mono text-text-muted">{t.ticketNumber}</span>
-                                    <span className="text-sm font-black text-white">— {t.customer?.name || 'Unknown'}</span>
+                                    <span className="text-sm font-black text-on-surface">— {t.customer?.name || 'Unknown'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: statusColor(t.status), backgroundColor: statusColor(t.status) + '10' }}>
@@ -768,7 +768,7 @@ const IncidentsPage: React.FC = () => {
                                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span> Resolve
                                 </button>
                             )}
-                            <button onClick={() => { setSelectedTicket(null); setComposeChannel(null); }} className="text-text-muted hover:text-white">
+                            <button onClick={() => { setSelectedTicket(null); setComposeChannel(null); }} className="text-text-muted hover:text-on-surface">
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
@@ -779,7 +779,7 @@ const IncidentsPage: React.FC = () => {
                         {/* Left: Info Panel */}
                         <div className="lg:col-span-1 p-5 border-r border-border-dark/50 overflow-y-auto custom-scrollbar space-y-4">
                             {/* Title */}
-                            <p className="text-sm font-black text-white leading-tight">{t.title}</p>
+                            <p className="text-sm font-black text-on-surface leading-tight">{t.title}</p>
                             {t.description && <p className="text-xs text-text-muted leading-relaxed">{t.description}</p>}
 
                             {/* Info Grid */}
@@ -794,7 +794,7 @@ const IncidentsPage: React.FC = () => {
                                 ].map(info => (
                                     <div key={info.label} className="bg-[#1a2332] rounded-lg p-3 border border-border-dark">
                                         <p className="text-[9px] text-text-muted font-bold uppercase tracking-wider">{info.label}</p>
-                                        <p className="text-xs text-white font-bold mt-0.5 truncate">{info.value}</p>
+                                        <p className="text-xs text-on-surface font-bold mt-0.5 truncate">{info.value}</p>
                                     </div>
                                 ))}
                             </div>
@@ -806,7 +806,7 @@ const IncidentsPage: React.FC = () => {
                                     <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-black">
                                         {(t.picName || t.pic?.fullName || 'U').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
                                     </div>
-                                    <span className="text-xs text-white font-bold">{t.picName || t.pic?.fullName || 'Unassigned'}</span>
+                                    <span className="text-xs text-on-surface font-bold">{t.picName || t.pic?.fullName || 'Unassigned'}</span>
                                 </div>
                             </div>
 
@@ -823,7 +823,7 @@ const IncidentsPage: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-2">
                                         {RESOLUTION_OPTIONS.map(r => (
                                             <button key={r.value} onClick={() => handleResolve(t.id, r.value)}
-                                                className="flex items-center gap-1.5 px-3 py-2 bg-[#0f1923] text-white text-[10px] font-bold rounded-lg border border-border-dark hover:border-primary/30 hover:bg-primary/5 transition-all">
+                                                className="flex items-center gap-1.5 px-3 py-2 bg-[#0f1923] text-on-surface text-[10px] font-bold rounded-lg border border-border-dark hover:border-primary/30 hover:bg-primary/5 transition-all">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{r.icon}</span>
                                                 {r.label}
                                             </button>
@@ -853,7 +853,7 @@ const IncidentsPage: React.FC = () => {
                                     <button
                                         key={tab.key}
                                         onClick={() => setDetailTab(tab.key as any)}
-                                        className={`px-4 py-3 text-xs font-bold transition-all relative flex items-center gap-2 ${detailTab === tab.key ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+                                        className={`px-4 py-3 text-xs font-bold transition-all relative flex items-center gap-2 ${detailTab === tab.key ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
                                     >
                                         <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{tab.icon}</span>
                                         {tab.label}
@@ -882,7 +882,7 @@ const IncidentsPage: React.FC = () => {
                                                         <div className="w-px flex-1 bg-border-dark/30 mt-1" />
                                                     </div>
                                                     <div className="pb-3 flex-1 min-w-0">
-                                                        <p className="text-sm text-white font-bold leading-snug">{ev.content || '—'}</p>
+                                                        <p className="text-sm text-on-surface font-bold leading-snug">{ev.content || '—'}</p>
                                                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                                             <span className="text-[10px] font-bold" style={{ color: style.color }}>{ev.actorName || ev.channel || 'system'}</span>
                                                             <span className="text-[10px] text-text-muted">· {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -931,13 +931,13 @@ const IncidentsPage: React.FC = () => {
                                                                 </span>
                                                             </div>
                                                             <div className="text-left">
-                                                                <p className="text-sm text-white font-bold">{statusLabel}</p>
+                                                                <p className="text-sm text-on-surface font-bold">{statusLabel}</p>
                                                                 <p className="text-[10px] text-text-muted font-mono">{log.callSid?.substring(0, 8)}...{log.callSid?.slice(-4)}</p>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-4">
                                                             <div className="text-right">
-                                                                <p className="text-xs text-white font-bold">{duration}</p>
+                                                                <p className="text-xs text-on-surface font-bold">{duration}</p>
                                                                 <p className="text-[10px] text-text-muted">{callTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {callTime.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</p>
                                                             </div>
                                                             {log.dtmfInput && (
@@ -955,7 +955,7 @@ const IncidentsPage: React.FC = () => {
                                                                 <div>
                                                                     <div className="flex items-center gap-3 mb-3">
                                                                         <span className="material-symbols-outlined text-primary" style={{ fontSize: 16 }}>transcribe</span>
-                                                                        <span className="text-[10px] font-black uppercase tracking-wider text-white">Call Transcript</span>
+                                                                        <span className="text-[10px] font-black uppercase tracking-wider text-on-surface">Call Transcript</span>
                                                                         {log.scriptLanguage && (
                                                                             <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">{log.scriptLanguage.toUpperCase()}</span>
                                                                         )}
@@ -965,7 +965,7 @@ const IncidentsPage: React.FC = () => {
                                                                             </span>
                                                                         )}
                                                                     </div>
-                                                                    <div className="bg-card-dark rounded-lg border border-border-dark p-4">
+                                                                    <div className="bg-surface-lowest rounded-lg border border-border-dark p-4">
                                                                         <p className="text-xs text-text-muted leading-relaxed whitespace-pre-wrap">{log.speechResult}</p>
                                                                     </div>
                                                                 </div>
@@ -973,17 +973,17 @@ const IncidentsPage: React.FC = () => {
 
                                                             {/* Intent & DTMF */}
                                                             <div className="grid grid-cols-3 gap-3">
-                                                                <div className="bg-card-dark rounded-lg border border-border-dark p-3">
+                                                                <div className="bg-surface-lowest rounded-lg border border-border-dark p-3">
                                                                     <p className="text-[9px] text-text-muted font-bold uppercase">Script Type</p>
-                                                                    <p className="text-xs text-white font-bold">{log.scriptType || '—'}</p>
+                                                                    <p className="text-xs text-on-surface font-bold">{log.scriptType || '—'}</p>
                                                                 </div>
-                                                                <div className="bg-card-dark rounded-lg border border-border-dark p-3">
+                                                                <div className="bg-surface-lowest rounded-lg border border-border-dark p-3">
                                                                     <p className="text-[9px] text-text-muted font-bold uppercase">Intent</p>
-                                                                    <p className="text-xs text-white font-bold">{log.intentDetected || '—'}</p>
+                                                                    <p className="text-xs text-on-surface font-bold">{log.intentDetected || '—'}</p>
                                                                 </div>
-                                                                <div className="bg-card-dark rounded-lg border border-border-dark p-3">
+                                                                <div className="bg-surface-lowest rounded-lg border border-border-dark p-3">
                                                                     <p className="text-[9px] text-text-muted font-bold uppercase">DTMF Input</p>
-                                                                    <p className="text-xs text-white font-bold">{log.dtmfInput || 'None'}</p>
+                                                                    <p className="text-xs text-on-surface font-bold">{log.dtmfInput || 'None'}</p>
                                                                 </div>
                                                             </div>
 
@@ -1016,7 +1016,7 @@ const IncidentsPage: React.FC = () => {
                                             <button
                                                 key={ch.key}
                                                 onClick={() => setComposeChannel(ch.key as any)}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-dark bg-[#1a2332] text-[10px] font-bold text-white hover:border-primary/30 hover:bg-primary/5 transition-all"
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-dark bg-[#1a2332] text-[10px] font-bold text-on-surface hover:border-primary/30 hover:bg-primary/5 transition-all"
                                             >
                                                 <span className="material-symbols-outlined" style={{ fontSize: 14, color: ch.color }}>{ch.icon}</span>
                                                 {ch.label}
@@ -1030,18 +1030,18 @@ const IncidentsPage: React.FC = () => {
                                                 <span className="material-symbols-outlined" style={{ fontSize: 16, color: composeChannel === 'email' ? '#f97316' : composeChannel === 'whatsapp' ? '#22c55e' : composeChannel === 'sms' ? '#3b82f6' : '#a855f7' }}>
                                                     {composeChannel === 'email' ? 'mail' : composeChannel === 'whatsapp' ? 'chat' : composeChannel === 'sms' ? 'sms' : 'call'}
                                                 </span>
-                                                <span className="text-xs font-bold text-white">{composeChannel === 'call' ? 'Call Script' : composeChannel.charAt(0).toUpperCase() + composeChannel.slice(1)}</span>
+                                                <span className="text-xs font-bold text-on-surface">{composeChannel === 'call' ? 'Call Script' : composeChannel.charAt(0).toUpperCase() + composeChannel.slice(1)}</span>
                                                 <span className="text-[10px] text-text-muted">→ {t.customer?.phone || t.customer?.name || 'Customer'}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => setShowCannedPicker(!showCannedPicker)}
-                                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${showCannedPicker ? 'bg-primary/10 text-primary border-primary/30' : 'bg-[#1a2332] text-text-muted border-border-dark hover:text-white hover:border-primary/20'}`}
+                                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${showCannedPicker ? 'bg-primary/10 text-primary border-primary/30' : 'bg-[#1a2332] text-text-muted border-border-dark hover:text-on-surface hover:border-primary/20'}`}
                                                 >
                                                     <span className="material-symbols-outlined" style={{ fontSize: 13 }}>auto_awesome</span>
                                                     Templates
                                                 </button>
-                                                <button onClick={() => { setComposeChannel(null); setComposeBody(''); setComposeSubject(''); setShowCannedPicker(false); }} className="text-text-muted hover:text-white">
+                                                <button onClick={() => { setComposeChannel(null); setComposeBody(''); setComposeSubject(''); setShowCannedPicker(false); }} className="text-text-muted hover:text-on-surface">
                                                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>close</span>
                                                 </button>
                                             </div>
@@ -1056,7 +1056,7 @@ const IncidentsPage: React.FC = () => {
                                                             onClick={() => applyCannedTemplate(tpl)}
                                                             className="flex-1 flex items-start gap-2.5 px-3 py-2.5 text-left"
                                                         >
-                                                            <span className="text-[11px] font-bold text-white leading-tight">{tpl.label}</span>
+                                                            <span className="text-[11px] font-bold text-on-surface leading-tight">{tpl.label}</span>
                                                             <span className="text-[10px] text-text-muted leading-tight line-clamp-1 flex-1 ml-auto">{tpl.body.substring(0, 60)}...</span>
                                                         </button>
                                                         <button
@@ -1076,7 +1076,7 @@ const IncidentsPage: React.FC = () => {
                                                 value={composeSubject}
                                                 onChange={e => setComposeSubject(e.target.value)}
                                                 placeholder="Subject line..."
-                                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-1.5 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none"
+                                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-1.5 text-xs text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
                                             />
                                         )}
                                         <div className="flex gap-2">
@@ -1085,7 +1085,7 @@ const IncidentsPage: React.FC = () => {
                                                 onChange={e => setComposeBody(e.target.value)}
                                                 rows={composeBody.includes('\n') ? 5 : 2}
                                                 placeholder={composeChannel === 'call' ? 'Write call script here...' : `Type ${composeChannel} message...`}
-                                                className={`flex-1 bg-[#1a2332] border rounded-lg px-3 py-2 text-xs text-white placeholder-text-muted/50 focus:border-primary outline-none resize-none ${composeChannel === 'sms' && composeBody.length > 160 ? 'border-red-500/50' : 'border-border-dark'}`}
+                                                className={`flex-1 bg-[#1a2332] border rounded-lg px-3 py-2 text-xs text-on-surface placeholder-text-muted/50 focus:border-primary outline-none resize-none ${composeChannel === 'sms' && composeBody.length > 160 ? 'border-red-500/50' : 'border-border-dark'}`}
                                             />
                                             <button
                                                 onClick={handleComposeSend}
@@ -1119,15 +1119,15 @@ const IncidentsPage: React.FC = () => {
 
                 {/* Edit Template Modal */}
                 {editingTemplate && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditingTemplate(null)}>
-                        <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setEditingTemplate(null)}>
+                        <div className="bg-surface-lowest border border-border-dark rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
                             <div className="p-5 border-b border-border-dark flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>edit_note</span>
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Edit Template</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-on-surface">Edit Template</h3>
                                     <span className="text-[9px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">{editingTemplate.channel.toUpperCase()}</span>
                                 </div>
-                                <button onClick={() => setEditingTemplate(null)} className="text-text-muted hover:text-white">
+                                <button onClick={() => setEditingTemplate(null)} className="text-text-muted hover:text-on-surface">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
                             </div>
@@ -1137,7 +1137,7 @@ const IncidentsPage: React.FC = () => {
                                     <input
                                         value={editingTemplate.label}
                                         onChange={e => setEditingTemplate({ ...editingTemplate, label: e.target.value })}
-                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                        className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                                     />
                                 </div>
                                 {editingTemplate.channel === 'email' && (
@@ -1146,7 +1146,7 @@ const IncidentsPage: React.FC = () => {
                                         <input
                                             value={editingTemplate.subject}
                                             onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })}
-                                            className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                            className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                                             placeholder="Email subject..."
                                         />
                                     </div>
@@ -1160,7 +1160,7 @@ const IncidentsPage: React.FC = () => {
                                         value={editingTemplate.body}
                                         onChange={e => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
                                         rows={8}
-                                        className={`w-full bg-[#1a2332] border rounded-lg px-3 py-2 text-xs text-white focus:border-primary outline-none resize-none ${editingTemplate.channel === 'sms' && editingTemplate.body.length > 160 ? 'border-red-500/50' : 'border-border-dark'}`}
+                                        className={`w-full bg-[#1a2332] border rounded-lg px-3 py-2 text-xs text-on-surface focus:border-primary outline-none resize-none ${editingTemplate.channel === 'sms' && editingTemplate.body.length > 160 ? 'border-red-500/50' : 'border-border-dark'}`}
                                     />
                                     {editingTemplate.channel === 'sms' && (
                                         <div className="flex items-center justify-between mt-1">
@@ -1178,7 +1178,7 @@ const IncidentsPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="p-5 pt-0 flex justify-end gap-3">
-                                <button onClick={() => setEditingTemplate(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                                <button onClick={() => setEditingTemplate(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-on-surface transition-colors">Cancel</button>
                                 <button
                                     onClick={handleSaveTemplate}
                                     className="px-6 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
@@ -1197,11 +1197,11 @@ const IncidentsPage: React.FC = () => {
     const renderNewModal = () => {
         if (!showNewModal) return null;
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewModal(false)}>
-                <div className="bg-card-dark border border-border-dark rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowNewModal(false)}>
+                <div className="bg-surface-lowest border border-border-dark rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
                     <div className="p-6 border-b border-border-dark flex items-center justify-between">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-white">New Incident Ticket</h3>
-                        <button onClick={() => setShowNewModal(false)} className="text-text-muted hover:text-white">
+                        <h3 className="text-sm font-black uppercase tracking-widest text-on-surface">New Incident Ticket</h3>
+                        <button onClick={() => setShowNewModal(false)} className="text-text-muted hover:text-on-surface">
                             <span className="material-symbols-outlined">close</span>
                         </button>
                     </div>
@@ -1211,7 +1211,7 @@ const IncidentsPage: React.FC = () => {
                             <input
                                 value={newTicket.title}
                                 onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
-                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none"
+                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none"
                                 placeholder="Brief description of the incident"
                             />
                         </div>
@@ -1221,7 +1221,7 @@ const IncidentsPage: React.FC = () => {
                                 value={newTicket.description}
                                 onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
                                 rows={3}
-                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none resize-none"
+                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none resize-none"
                                 placeholder="Detailed description..."
                             />
                         </div>
@@ -1231,7 +1231,7 @@ const IncidentsPage: React.FC = () => {
                                 <select
                                     value={newTicket.caseType}
                                     onChange={e => setNewTicket({ ...newTicket, caseType: e.target.value })}
-                                    className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                    className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                                 >
                                     {CASE_TYPE_OPTIONS.map(ct => (
                                         <option key={ct.value} value={ct.value}>{ct.label}</option>
@@ -1243,7 +1243,7 @@ const IncidentsPage: React.FC = () => {
                                 <select
                                     value={newTicket.priority}
                                     onChange={e => setNewTicket({ ...newTicket, priority: e.target.value })}
-                                    className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+                                    className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
                                 >
                                     {PRIORITY_OPTIONS.map(p => (
                                         <option key={p.value} value={p.value}>{p.label}</option>
@@ -1256,13 +1256,13 @@ const IncidentsPage: React.FC = () => {
                             <input
                                 value={newTicket.orderId}
                                 onChange={e => setNewTicket({ ...newTicket, orderId: e.target.value })}
-                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none font-mono"
+                                className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none font-mono"
                                 placeholder="UUID of the order"
                             />
                         </div>
                     </div>
                     <div className="p-6 pt-0 flex justify-end gap-3">
-                        <button onClick={() => setShowNewModal(false)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                        <button onClick={() => setShowNewModal(false)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-on-surface transition-colors">Cancel</button>
                         <button
                             onClick={handleCreate}
                             disabled={creating || !newTicket.title}
@@ -1282,8 +1282,8 @@ const IncidentsPage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-white text-3xl font-black tracking-tight">Incidents</h1>
-                    <span className="bg-card-dark text-text-muted text-xs px-2.5 py-1 rounded-full font-bold border border-border-dark">{tickets.length} Ticket{tickets.length !== 1 ? 's' : ''}</span>
+                    <h1 className="text-on-surface text-3xl font-black tracking-tight">Incidents</h1>
+                    <span className="bg-surface-lowest text-text-muted text-xs px-2.5 py-1 rounded-full font-bold border border-border-dark">{tickets.length} Ticket{tickets.length !== 1 ? 's' : ''}</span>
                 </div>
                 <button
                     onClick={() => setShowNewModal(true)}
@@ -1317,7 +1317,7 @@ const IncidentsPage: React.FC = () => {
                         <button
                             key={tab.key}
                             onClick={() => setActiveView(tab.key as any)}
-                            className={`px-4 py-3 text-sm font-bold transition-all relative flex items-center gap-2 ${activeView === tab.key ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+                            className={`px-4 py-3 text-sm font-bold transition-all relative flex items-center gap-2 ${activeView === tab.key ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
                         >
                             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{tab.icon}</span>
                             {tab.label}
@@ -1328,19 +1328,19 @@ const IncidentsPage: React.FC = () => {
 
                 {/* Filters */}
                 <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 bg-card-dark rounded-lg border border-border-dark px-3 py-1.5">
+                    <div className="flex items-center gap-1 bg-surface-lowest rounded-lg border border-border-dark px-3 py-1.5">
                         <span className="material-symbols-outlined text-text-muted" style={{ fontSize: 16 }}>search</span>
                         <input
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="bg-transparent text-xs text-white placeholder-text-muted/50 outline-none w-32"
+                            className="bg-transparent text-xs text-on-surface placeholder-text-muted/50 outline-none w-32"
                             placeholder="Search..."
                         />
                     </div>
                     <select
                         value={filterPriority}
                         onChange={e => setFilterPriority(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-1.5 text-xs text-white focus:border-primary outline-none"
+                        className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-1.5 text-xs text-on-surface focus:border-primary outline-none"
                     >
                         <option value="">All Priorities</option>
                         {PRIORITY_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
@@ -1348,7 +1348,7 @@ const IncidentsPage: React.FC = () => {
                     <select
                         value={filterCaseType}
                         onChange={e => setFilterCaseType(e.target.value)}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-1.5 text-xs text-white focus:border-primary outline-none"
+                        className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-1.5 text-xs text-on-surface focus:border-primary outline-none"
                     >
                         <option value="">All Categories</option>
                         {CASE_TYPE_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}

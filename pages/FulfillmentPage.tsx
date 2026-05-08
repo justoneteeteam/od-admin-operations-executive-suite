@@ -170,11 +170,11 @@ const FulfillmentPage: React.FC = () => {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           {activeTab === 'detail' && (
-            <button onClick={() => setActiveTab('overview')} className="p-2 rounded-full hover:bg-white/10 text-white transition-all">
+            <button onClick={() => setActiveTab('overview')} className="p-2 rounded-full hover:bg-white/10 text-on-surface transition-all">
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
           )}
-          <h1 className="text-3xl font-black text-white tracking-tight">
+          <h1 className="text-3xl font-black text-on-surface tracking-tight">
             {activeTab === 'detail' && selectedCenter ? selectedCenter.name : 'Fulfillment Center'}
           </h1>
         </div>
@@ -183,14 +183,14 @@ const FulfillmentPage: React.FC = () => {
         <div className="flex border-b border-border-dark gap-8">
           <button
             onClick={() => { setActiveTab('overview'); setEditingId(null); setSelectedCenter(null); }}
-            className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'overview' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+            className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'overview' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
           >
             Fulfillment Overview
             {activeTab === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50"></div>}
           </button>
           <button
             onClick={() => { setActiveTab('create'); setEditingId(null); setFormData({ name: '', country: '', city: '', addressLine1: '', personInCharge: '', contactEmail: '', contactPhone: '', status: 'Active', notes: '' }); }}
-            className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'create' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+            className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'create' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
           >
             {editingId ? 'Edit Fulfillment Center' : 'Create Fulfillment Center'}
             {activeTab === 'create' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-lg shadow-primary/50"></div>}
@@ -209,15 +209,15 @@ const FulfillmentPage: React.FC = () => {
       {activeTab === 'overview' ? (
         <div className="space-y-6">
           {/* Table Area */}
-          <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-2xl">
+          <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-2xl">
             {/* ... Search & Add logic ... */}
-            <div className="p-4 border-b border-border-dark flex flex-wrap justify-between items-center gap-4 bg-[#14202c]">
+            <div className="p-4 border-b border-border-dark flex flex-wrap justify-between items-center gap-4 bg-surface-low">
               <div className="flex h-10 items-center rounded-lg bg-background-dark border border-border-dark w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
                 <div className="text-text-muted flex items-center justify-center pl-4">
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>search</span>
                 </div>
                 <input
-                  className="w-full border-none bg-transparent text-white focus:ring-0 placeholder:text-text-muted pl-2 text-sm"
+                  className="w-full border-none bg-transparent text-on-surface focus:ring-0 placeholder:text-text-muted pl-2 text-sm"
                   placeholder="Search Fulfillment Centers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -237,7 +237,7 @@ const FulfillmentPage: React.FC = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
-                  <tr className="bg-[#17232f]/50 border-b border-border-dark">
+                  <tr className="bg-surface-container/50 border-b border-border-dark">
                     <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">Name</th>
                     <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">Country</th>
                     <th className="px-6 py-4 text-text-muted font-bold text-[10px] uppercase tracking-wider">City</th>
@@ -267,7 +267,7 @@ const FulfillmentPage: React.FC = () => {
                             <span className="material-symbols-outlined text-xl">warehouse</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white group-hover:text-primary transition-colors">{center.name}</p>
+                            <p className="text-sm font-bold text-on-surface group-hover:text-primary transition-colors">{center.name}</p>
                             <p className="text-[10px] text-text-muted font-mono">{center.code}</p>
                           </div>
                         </div>
@@ -275,12 +275,12 @@ const FulfillmentPage: React.FC = () => {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-sm text-text-muted">flag</span>
-                          <span className="text-sm text-white">{center.country}</span>
+                          <span className="text-sm text-on-surface">{center.country}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-5 text-sm text-white">{center.city}</td>
+                      <td className="px-6 py-5 text-sm text-on-surface">{center.city}</td>
                       <td className="px-6 py-5 text-sm text-text-muted">{center.personInCharge}</td>
-                      <td className="px-6 py-5 text-sm text-white font-bold">{center._count?.orders ?? 0}</td>
+                      <td className="px-6 py-5 text-sm text-on-surface font-bold">{center._count?.orders ?? 0}</td>
                       <td className="px-6 py-5">
                         <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${center.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                           }`}>
@@ -299,51 +299,51 @@ const FulfillmentPage: React.FC = () => {
               </table>
             </div>
 
-            <div className="bg-[#17232f] px-6 py-4 border-t border-border-dark flex items-center justify-between">
-              <p className="text-xs text-[#92adc9]">Showing <span className="text-white font-bold">{filteredCenters.length}</span> of <span className="text-white font-bold">{centers.length}</span> centers</p>
+            <div className="bg-surface-container px-6 py-4 border-t border-border-dark flex items-center justify-between">
+              <p className="text-xs text-[#92adc9]">Showing <span className="text-on-surface font-bold">{filteredCenters.length}</span> of <span className="text-on-surface font-bold">{centers.length}</span> centers</p>
             </div>
           </div>
         </div>
       ) : activeTab === 'detail' && selectedCenter ? (
         <div className="flex flex-col gap-6">
           {/* Context Header */}
-          <div className="bg-card-dark rounded-2xl border border-border-dark p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-surface-lowest rounded-2xl border border-border-dark p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
               <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Status</p>
               <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${selectedCenter.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{selectedCenter.status}</span>
             </div>
             <div>
               <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Person In Charge</p>
-              <p className="text-sm font-bold text-white">{selectedCenter.personInCharge}</p>
+              <p className="text-sm font-bold text-on-surface">{selectedCenter.personInCharge}</p>
               <p className="text-xs text-text-muted">{selectedCenter.contactEmail}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Location</p>
-              <p className="text-sm font-bold text-white">{selectedCenter.city}, {selectedCenter.country}</p>
+              <p className="text-sm font-bold text-on-surface">{selectedCenter.city}, {selectedCenter.country}</p>
               <p className="text-xs text-text-muted">{selectedCenter.addressLine1}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest mb-1">Capacity</p>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                <div className="flex-1 h-2 bg-surface-high rounded-full overflow-hidden">
                   <div className="bg-primary h-full" style={{ width: `${selectedCenter.utilizationPercent || 0}%` }}></div>
                 </div>
-                <span className="text-xs font-bold text-white">{selectedCenter.utilizationPercent || 0}%</span>
+                <span className="text-xs font-bold text-on-surface">{selectedCenter.utilizationPercent || 0}%</span>
               </div>
             </div>
           </div>
 
           {/* Warehouses Section */}
-          <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
+          <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
             <div className="p-6 border-b border-border-dark flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">Warehouses</h3>
+              <h3 className="text-lg font-bold text-on-surface">Warehouses</h3>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {selectedCenter.warehouses?.map(warehouse => (
-                  <div key={warehouse.id} className="bg-[#1c2d3d] border border-[#2d445a] p-4 rounded-xl flex items-center justify-between">
+                  <div key={warehouse.id} className="bg-surface-high border border-outline-variant p-4 rounded-xl flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-white">{warehouse.name}</h4>
+                      <h4 className="font-bold text-on-surface">{warehouse.name}</h4>
                       <p className="text-xs text-text-muted">{warehouse.location || 'No location specified'}</p>
                     </div>
                     <div className="size-8 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-400">
@@ -357,13 +357,13 @@ const FulfillmentPage: React.FC = () => {
               </div>
 
               {/* Create Warehouse Form */}
-              <div className="bg-[#17232f] rounded-xl p-5 border border-border-dark">
-                <h4 className="text-sm font-bold text-white mb-4">Create New Warehouse</h4>
+              <div className="bg-surface-container rounded-xl p-5 border border-border-dark">
+                <h4 className="text-sm font-bold text-on-surface mb-4">Create New Warehouse</h4>
                 <div className="flex gap-4 items-end">
                   <div className="space-y-1 flex-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Warehouse Name</label>
                     <input
-                      className="bg-[#1c2d3d] border border-[#2d445a] text-white text-sm rounded-lg px-3 py-2 w-full focus:ring-primary focus:border-primary"
+                      className="bg-surface-high border border-outline-variant text-on-surface text-sm rounded-lg px-3 py-2 w-full focus:ring-primary focus:border-primary"
                       placeholder="e.g. Main Floor"
                       value={warehouseForm.name}
                       onChange={e => setWarehouseForm({ ...warehouseForm, name: e.target.value })}
@@ -372,7 +372,7 @@ const FulfillmentPage: React.FC = () => {
                   <div className="space-y-1 flex-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Location / Zone</label>
                     <input
-                      className="bg-[#1c2d3d] border border-[#2d445a] text-white text-sm rounded-lg px-3 py-2 w-full focus:ring-primary focus:border-primary"
+                      className="bg-surface-high border border-outline-variant text-on-surface text-sm rounded-lg px-3 py-2 w-full focus:ring-primary focus:border-primary"
                       placeholder="e.g. Zone A"
                       value={warehouseForm.location}
                       onChange={e => setWarehouseForm({ ...warehouseForm, location: e.target.value })}
@@ -391,16 +391,16 @@ const FulfillmentPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto bg-card-dark rounded-2xl border border-border-dark p-8 shadow-2xl space-y-8">
+        <div className="max-w-4xl mx-auto bg-surface-lowest rounded-2xl border border-border-dark p-8 shadow-2xl space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Fulfillment Center Name <span className="text-red-500">*</span></label>
-              <input type="text" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="e.g. Dubai Logistics Hub"
+              <input type="text" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="e.g. Dubai Logistics Hub"
                 value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Country <span className="text-red-500">*</span></label>
-              <input type="text" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="e.g. UAE"
+              <input type="text" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="e.g. UAE"
                 value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value })} />
             </div>
           </div>
@@ -408,12 +408,12 @@ const FulfillmentPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">City <span className="text-red-500">*</span></label>
-              <input type="text" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="e.g. Dubai"
+              <input type="text" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="e.g. Dubai"
                 value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Address <span className="text-red-500">*</span></label>
-              <input type="text" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="Full street address"
+              <input type="text" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary" placeholder="Full street address"
                 value={formData.addressLine1} onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })} />
             </div>
           </div>
@@ -421,17 +421,17 @@ const FulfillmentPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Person In Charge (PIC) <span className="text-red-500">*</span></label>
-              <input type="text" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4" placeholder="Manager Full Name"
+              <input type="text" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4" placeholder="Manager Full Name"
                 value={formData.personInCharge} onChange={(e) => setFormData({ ...formData, personInCharge: e.target.value })} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Contact Email</label>
-              <input type="email" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4" placeholder="email@center.com"
+              <input type="email" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4" placeholder="email@center.com"
                 value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Contact Phone</label>
-              <input type="tel" className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4" placeholder="+971 4 000 0000"
+              <input type="tel" className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4" placeholder="+971 4 000 0000"
                 value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} />
             </div>
           </div>
@@ -441,12 +441,12 @@ const FulfillmentPage: React.FC = () => {
             {!editingId && (
               <div className="col-span-full">
                 <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1 mb-2 block">Initial Warehouses (Optional)</label>
-                <div className="bg-[#14202c] p-4 rounded-xl border border-dashed border-border-dark space-y-4">
+                <div className="bg-surface-low p-4 rounded-xl border border-dashed border-border-dark space-y-4">
                   <div className="flex gap-4 items-end">
                     <div className="flex-1 space-y-1">
                       <label className="text-[10px] font-bold text-text-muted">Warehouse Name</label>
                       <input
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-lg w-full h-10 px-3"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-lg w-full h-10 px-3"
                         placeholder="e.g. Main Stock Room"
                         value={newWarehouseName}
                         onChange={e => setNewWarehouseName(e.target.value)}
@@ -455,7 +455,7 @@ const FulfillmentPage: React.FC = () => {
                     <div className="flex-1 space-y-1">
                       <label className="text-[10px] font-bold text-text-muted">Location / Zone</label>
                       <input
-                        className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-lg w-full h-10 px-3"
+                        className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-lg w-full h-10 px-3"
                         placeholder="e.g. Zone A"
                         value={newWarehouseLocation}
                         onChange={e => setNewWarehouseLocation(e.target.value)}
@@ -472,9 +472,9 @@ const FulfillmentPage: React.FC = () => {
                   {initialWarehouses.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {initialWarehouses.map((w, idx) => (
-                        <div key={idx} className="bg-[#1c2d3d] px-3 py-2 rounded-lg border border-border-dark flex items-center justify-between">
+                        <div key={idx} className="bg-surface-high px-3 py-2 rounded-lg border border-border-dark flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-bold text-white">{w.name}</p>
+                            <p className="text-sm font-bold text-on-surface">{w.name}</p>
                             <p className="text-xs text-text-muted">{w.location}</p>
                           </div>
                           <button onClick={() => removeInitialWarehouse(idx)} className="text-red-400 hover:text-red-300">
@@ -501,7 +501,7 @@ const FulfillmentPage: React.FC = () => {
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Status</label>
-              <select className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4"
+              <select className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4"
                 value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
                 <option>Active</option>
                 <option>Inactive</option>
@@ -511,12 +511,12 @@ const FulfillmentPage: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Center Notes / Instructions</label>
-            <textarea className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-32 px-4 py-3 focus:ring-primary/40 focus:border-primary" placeholder="Enter operational details, warehouse capacity, or contact notes..."
+            <textarea className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-32 px-4 py-3 focus:ring-primary/40 focus:border-primary" placeholder="Enter operational details, warehouse capacity, or contact notes..."
               value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })}></textarea>
           </div>
 
           <div className="flex gap-4 pt-4 border-t border-border-dark">
-            <button onClick={() => { setActiveTab('overview'); setEditingId(null); }} className="flex-1 h-12 bg-background-dark border border-border-dark text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-border-dark transition-all">Cancel</button>
+            <button onClick={() => { setActiveTab('overview'); setEditingId(null); }} className="flex-1 h-12 bg-background-dark border border-border-dark text-on-surface text-xs font-black uppercase tracking-widest rounded-xl hover:bg-border-dark transition-all">Cancel</button>
             <button onClick={handleSave} disabled={isSaving} className="flex-[2] h-12 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50">
               {isSaving ? 'Saving...' : (editingId ? 'Update Fulfillment Center' : 'Confirm Creation')}
             </button>

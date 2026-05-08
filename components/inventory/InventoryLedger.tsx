@@ -28,18 +28,18 @@ const InventoryLedger: React.FC<InventoryLedgerProps> = ({ selectedWarehouse }) 
     }, [selectedWarehouse]);
 
     if (loading) {
-        return <div className="text-white p-4">Loading ledger...</div>;
+        return <div className="text-on-surface p-4">Loading ledger...</div>;
     }
 
     return (
-        <div className="bg-card-dark rounded-lg border border-border-dark overflow-hidden">
-            <div className="p-4 border-b border-border-dark bg-[#1c2d3d]">
-                <h3 className="text-lg font-semibold text-white">Inventory Ledger</h3>
+        <div className="bg-surface-lowest rounded-lg border border-border-dark overflow-hidden">
+            <div className="p-4 border-b border-border-dark bg-surface-high">
+                <h3 className="text-lg font-semibold text-on-surface">Inventory Ledger</h3>
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-gray-400">
-                    <thead className="bg-[#1c2d3d] text-xs uppercase font-bold text-gray-300">
+                <table className="w-full text-left text-sm text-on-surface-variant">
+                    <thead className="bg-surface-high text-xs uppercase font-bold text-on-surface-variant">
                         <tr>
                             <th className="px-6 py-3">Date</th>
                             <th className="px-6 py-3">Type</th>
@@ -51,36 +51,36 @@ const InventoryLedger: React.FC<InventoryLedgerProps> = ({ selectedWarehouse }) 
                     </thead>
                     <tbody>
                         {transactions.map((tx) => (
-                            <tr key={tx.id} className="border-b border-border-dark hover:bg-[#2d445a]/30 transition-colors">
+                            <tr key={tx.id} className="border-b border-border-dark hover:bg-surface-container/30 transition-colors">
                                 <td className="px-6 py-4">{new Date(tx.createdAt).toLocaleString()}</td>
                                 <td className="px-6 py-4">
                                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${tx.type === 'purchase_in' || tx.type === 'return_restock' ? 'bg-green-900/50 text-green-200' :
                                         tx.type === 'order_out' || tx.type.endsWith('_out') ? 'bg-blue-900/50 text-blue-200' :
                                         tx.type === 'write_off' ? 'bg-red-900/50 text-red-200' :
-                                            'bg-gray-700 text-gray-300'
+                                            'bg-surface-high text-on-surface-variant'
                                         }`}>
                                         {tx.type.replace('_', ' ').toUpperCase()}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-white font-medium">
+                                <td className="px-6 py-4 text-on-surface font-medium">
                                     {/* @ts-ignore: joined fields */}
                                     {tx.product?.name || 'Unknown Product'}
-                                    <div className="text-xs text-gray-500">{/* @ts-ignore */}
+                                    <div className="text-xs text-on-surface-variant">{/* @ts-ignore */}
                                         {tx.product?.sku}</div>
                                 </td>
-                                <td className="px-6 py-4 text-gray-300">
+                                <td className="px-6 py-4 text-on-surface-variant">
                                     {/* @ts-ignore: joined fields */}
                                     {tx.warehouse?.name || 'Unknown'}
                                 </td>
                                 <td className={`px-6 py-4 text-right font-bold ${tx.quantity > 0 ? 'text-green-400' : 'text-red-400'}`}>
                                     {tx.quantity > 0 ? '+' : ''}{tx.quantity}
                                 </td>
-                                <td className="px-6 py-4 text-gray-500">{tx.referenceId || '-'}</td>
+                                <td className="px-6 py-4 text-on-surface-variant">{tx.referenceId || '-'}</td>
                             </tr>
                         ))}
                         {transactions.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                <td colSpan={6} className="px-6 py-8 text-center text-on-surface-variant">
                                     No transactions found.
                                 </td>
                             </tr>

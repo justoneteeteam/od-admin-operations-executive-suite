@@ -382,35 +382,35 @@ const CommunicationPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <span className="text-text-muted text-xs font-medium">Home</span>
                     <span className="text-text-muted text-xs">/</span>
-                    <span className="text-white text-xs font-medium">Communication Hub</span>
+                    <span className="text-on-surface text-xs font-medium">Communication Hub</span>
                 </div>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mt-2">
                     <div>
-                        <h1 className="text-white text-2xl sm:text-3xl font-black tracking-tight">Communication Hub</h1>
+                        <h1 className="text-on-surface text-2xl sm:text-3xl font-black tracking-tight">Communication Hub</h1>
                         <p className="text-text-muted text-sm mt-1">Manage message templates and automated communication sequences.</p>
                     </div>
                 </div>
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex gap-1 bg-card-dark rounded-xl p-1 border border-border-dark w-fit">
+            <div className="flex gap-1 bg-surface-lowest rounded-xl p-1 border border-border-dark w-fit">
                 <button
                     onClick={() => setActiveTab('templates')}
-                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'templates' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'}`}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'templates' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-on-surface hover:bg-surface-high'}`}
                 >
                     <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>description</span>
                     Templates
                 </button>
                 <button
                     onClick={() => setActiveTab('sequences')}
-                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'sequences' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'}`}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'sequences' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-on-surface hover:bg-surface-high'}`}
                 >
                     <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>bolt</span>
                     Sequences
                 </button>
                 <button
                     onClick={() => setActiveTab('call_records')}
-                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'call_records' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-white hover:bg-[#1c2d3d]'}`}
+                    className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'call_records' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-text-muted hover:text-on-surface hover:bg-surface-high'}`}
                 >
                     <span className="material-symbols-outlined mr-2 align-middle" style={{ fontSize: '18px' }}>call_log</span>
                     Call Records
@@ -426,13 +426,13 @@ const CommunicationPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-3">
                             <div className="relative flex-1 min-w-[200px]">
                                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-[20px]">search</span>
-                                <input type="text" placeholder="Search templates..." className="w-full pl-10 pr-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" value={tplSearch} onChange={e => setTplSearch(e.target.value)} />
+                                <input type="text" placeholder="Search templates..." className="w-full pl-10 pr-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm" value={tplSearch} onChange={e => setTplSearch(e.target.value)} />
                             </div>
-                            <select className="px-3 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={tplChannelFilter} onChange={e => setTplChannelFilter(e.target.value)}>
+                            <select className="px-3 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={tplChannelFilter} onChange={e => setTplChannelFilter(e.target.value)}>
                                 <option value="">All Channels</option>
                                 {CHANNEL_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                             </select>
-                            <select className="px-3 py-2.5 bg-card-dark border border-border-dark rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={tplLangFilter} onChange={e => setTplLangFilter(e.target.value)}>
+                            <select className="px-3 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-on-surface text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={tplLangFilter} onChange={e => setTplLangFilter(e.target.value)}>
                                 <option value="">All Languages</option>
                                 <option value="en">🇬🇧 EN</option>
                                 <option value="es">🇪🇸 ES</option>
@@ -449,17 +449,17 @@ const CommunicationPage: React.FC = () => {
                         </div>
 
                         {/* Table */}
-                        <div className="bg-[#111a22] rounded-xl border border-border-dark overflow-hidden">
+                        <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="bg-[#17232f] border-b border-[#233648]">
+                                    <tr className="bg-surface-container border-b border-outline-variant">
                                         <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Name</th>
                                         <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Channel</th>
                                         <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">Language</th>
                                         <th className="px-4 py-4 text-text-muted font-bold text-[10px] uppercase tracking-widest text-right">Uses</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-[#233648]">
+                                <tbody className="divide-y divide-outline-variant">
                                     {tplLoading ? (
                                         <tr><td colSpan={4} className="px-4 py-12 text-center text-text-muted"><div className="animate-spin size-6 border-2 border-primary border-t-transparent rounded-full mx-auto"></div></td></tr>
                                     ) : templates.length === 0 ? (
@@ -467,9 +467,9 @@ const CommunicationPage: React.FC = () => {
                                     ) : templates.map(t => {
                                         const ch = getChannelMeta(t.channel || t.templateType);
                                         return (
-                                            <tr key={t.id} className={`hover:bg-[#1c2d3d] cursor-pointer transition-colors ${selectedTemplate?.id === t.id ? 'bg-[#1c2d3d]' : ''}`} onClick={() => handleSelectTemplate(t)}>
+                                            <tr key={t.id} className={`hover:bg-surface-high cursor-pointer transition-colors ${selectedTemplate?.id === t.id ? 'bg-surface-high' : ''}`} onClick={() => handleSelectTemplate(t)}>
                                                 <td className="px-4 py-4">
-                                                    <p className="text-white text-sm font-bold">{t.templateName}</p>
+                                                    <p className="text-on-surface text-sm font-bold">{t.templateName}</p>
                                                     {t.shortDescription && <p className="text-text-muted text-xs mt-0.5 truncate max-w-[250px]">{t.shortDescription}</p>}
                                                 </td>
                                                 <td className="px-4 py-4">
@@ -492,10 +492,10 @@ const CommunicationPage: React.FC = () => {
 
                     {/* Right: Editor Panel */}
                     {editingTemplate && (
-                        <div className="w-[420px] shrink-0 bg-[#111a22] rounded-xl border border-border-dark p-5 flex flex-col gap-4 sticky top-6 self-start" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                        <div className="w-[420px] shrink-0 bg-surface-lowest rounded-xl border border-border-dark p-5 flex flex-col gap-4 sticky top-6 self-start" style={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
                             <div className="flex items-center justify-between">
-                                <h3 className="text-white text-lg font-bold">{isNewTemplate ? '✨ New Template' : '✏️ Edit Template'}</h3>
-                                <button onClick={() => { setEditingTemplate(null); setSelectedTemplate(null); setIsNewTemplate(false); }} className="p-1.5 hover:bg-[#1c2d3d] rounded-lg text-text-muted hover:text-white transition-all">
+                                <h3 className="text-on-surface text-lg font-bold">{isNewTemplate ? '✨ New Template' : '✏️ Edit Template'}</h3>
+                                <button onClick={() => { setEditingTemplate(null); setSelectedTemplate(null); setIsNewTemplate(false); }} className="p-1.5 hover:bg-surface-high rounded-lg text-text-muted hover:text-on-surface transition-all">
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
                                 </button>
                             </div>
@@ -503,20 +503,20 @@ const CommunicationPage: React.FC = () => {
                             {/* Name */}
                             <div>
                                 <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Template Name</label>
-                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.templateName || ''} onChange={e => setEditingTemplate({ ...editingTemplate, templateName: e.target.value })} placeholder="e.g. confirmation_call_es" />
+                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.templateName || ''} onChange={e => setEditingTemplate({ ...editingTemplate, templateName: e.target.value })} placeholder="e.g. confirmation_call_es" />
                             </div>
 
                             {/* Channel + Language row */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Channel</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.channel || 'sms'} onChange={e => setEditingTemplate({ ...editingTemplate, channel: e.target.value, templateType: e.target.value })}>
+                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.channel || 'sms'} onChange={e => setEditingTemplate({ ...editingTemplate, channel: e.target.value, templateType: e.target.value })}>
                                         {CHANNEL_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Language</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.language || 'en'} onChange={e => setEditingTemplate({ ...editingTemplate, language: e.target.value })}>
+                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.language || 'en'} onChange={e => setEditingTemplate({ ...editingTemplate, language: e.target.value })}>
                                         <option value="en">🇬🇧 English</option>
                                         <option value="es">🇪🇸 Spanish</option>
                                         <option value="it">🇮🇹 Italian</option>
@@ -531,24 +531,24 @@ const CommunicationPage: React.FC = () => {
                             {editingTemplate.channel === 'email' && (
                                 <div>
                                     <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Subject</label>
-                                    <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.subject || ''} onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })} placeholder="Email subject line..." />
+                                    <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.subject || ''} onChange={e => setEditingTemplate({ ...editingTemplate, subject: e.target.value })} placeholder="Email subject line..." />
                                 </div>
                             )}
 
                             {/* Short Description */}
                             <div>
                                 <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Short Description</label>
-                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.shortDescription || ''} onChange={e => setEditingTemplate({ ...editingTemplate, shortDescription: e.target.value })} placeholder="Brief description..." maxLength={200} />
+                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.shortDescription || ''} onChange={e => setEditingTemplate({ ...editingTemplate, shortDescription: e.target.value })} placeholder="Brief description..." maxLength={200} />
                             </div>
 
                             {/* Content */}
                             <div>
                                 <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Content</label>
-                                <textarea ref={contentRef} rows={8} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.bodyTemplate || ''} onChange={e => setEditingTemplate({ ...editingTemplate, bodyTemplate: e.target.value })} placeholder="Template content..." />
+                                <textarea ref={contentRef} rows={8} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={editingTemplate.bodyTemplate || ''} onChange={e => setEditingTemplate({ ...editingTemplate, bodyTemplate: e.target.value })} placeholder="Template content..." />
                                 {/* SMS char bar */}
                                 {(editingTemplate.channel === 'sms') && (
                                     <div className="flex items-center justify-between mt-1.5">
-                                        <div className="flex-1 h-1.5 bg-[#1c2d3d] rounded-full overflow-hidden mr-3">
+                                        <div className="flex-1 h-1.5 bg-surface-high rounded-full overflow-hidden mr-3">
                                             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (charCount / 160) * 100)}%`, background: charCount > 160 ? '#f5a623' : charCount > 320 ? '#f05252' : '#5b8def' }} />
                                         </div>
                                         <span className={`text-xs font-mono ${charCount > 160 ? 'text-amber-400' : 'text-text-muted'}`}>{charCount}/160 · {smsSegments} seg</span>
@@ -561,7 +561,7 @@ const CommunicationPage: React.FC = () => {
                                 <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Variables</label>
                                 <div className="flex flex-wrap gap-1.5">
                                     {VARIABLES.map(v => (
-                                        <button key={v} onClick={() => insertVariable(v)} className="px-2.5 py-1 bg-[#1c2d3d] hover:bg-primary/20 text-text-muted hover:text-primary text-xs font-mono rounded-lg border border-border-dark hover:border-primary/50 transition-all">{v}</button>
+                                        <button key={v} onClick={() => insertVariable(v)} className="px-2.5 py-1 bg-surface-high hover:bg-primary/20 text-text-muted hover:text-primary text-xs font-mono rounded-lg border border-border-dark hover:border-primary/50 transition-all">{v}</button>
                                     ))}
                                 </div>
                             </div>
@@ -598,12 +598,12 @@ const CommunicationPage: React.FC = () => {
                             ) : sequences.map(seq => {
                                 const catMeta = getCategoryMeta(seq.category);
                                 return (
-                                    <div key={seq.id} onClick={() => fetchSequenceDetail(seq.id)} className={`p-4 rounded-xl border cursor-pointer transition-all group ${selectedSequence?.id === seq.id ? 'bg-[#1c2d3d] border-primary/40' : 'bg-[#111a22] border-border-dark hover:border-primary/20 hover:bg-[#151e28]'}`}>
+                                    <div key={seq.id} onClick={() => fetchSequenceDetail(seq.id)} className={`p-4 rounded-xl border cursor-pointer transition-all group ${selectedSequence?.id === seq.id ? 'bg-surface-high border-primary/40' : 'bg-surface-lowest border-border-dark hover:border-primary/20 hover:bg-[#151e28]'}`}>
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1.5">
                                                     <span className={`size-2 rounded-full ${seq.isActive ? 'bg-emerald-400' : 'bg-text-muted/40'}`}></span>
-                                                    <span className="text-white text-sm font-bold truncate">{seq.name}</span>
+                                                    <span className="text-on-surface text-sm font-bold truncate">{seq.name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider" style={{ background: `${catMeta.color}15`, color: catMeta.color }}>
@@ -615,7 +615,7 @@ const CommunicationPage: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={e => { e.stopPropagation(); handleToggleSequenceActive(seq); }} className="p-1 rounded hover:bg-[#233648]" title={seq.isActive ? 'Deactivate' : 'Activate'}>
+                                                <button onClick={e => { e.stopPropagation(); handleToggleSequenceActive(seq); }} className="p-1 rounded hover:bg-surface-container" title={seq.isActive ? 'Deactivate' : 'Activate'}>
                                                     <span className="material-symbols-outlined text-text-muted" style={{ fontSize: '16px' }}>{seq.isActive ? 'pause' : 'play_arrow'}</span>
                                                 </button>
                                                 <button onClick={e => { e.stopPropagation(); handleDeleteSequence(seq.id); }} className="p-1 rounded hover:bg-red-500/10">
@@ -638,11 +638,11 @@ const CommunicationPage: React.FC = () => {
 
                                 {/* Store Selector */}
                                 {allStores.length > 1 && (
-                                    <div className="flex items-center gap-3 bg-[#111a22] rounded-xl border border-border-dark p-3">
+                                    <div className="flex items-center gap-3 bg-surface-lowest rounded-xl border border-border-dark p-3">
                                         <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>store</span>
                                         <span className="text-xs text-text-muted font-bold uppercase tracking-wider">Store:</span>
                                         <select
-                                            className="flex-1 px-3 py-2 bg-[#0a1018] border border-border-dark rounded-lg text-white text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                            className="flex-1 px-3 py-2 bg-[#0a1018] border border-border-dark rounded-lg text-on-surface text-sm appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
                                             value={selectedStoreId || ''}
                                             onChange={e => setSelectedStoreId(e.target.value)}
                                         >
@@ -662,11 +662,11 @@ const CommunicationPage: React.FC = () => {
 
                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                     {/* Confirmation Call + Pre-SMS Card */}
-                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${twilioEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
+                                    <div className={`bg-surface-lowest rounded-xl border p-5 flex flex-col gap-3 transition-all ${twilioEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#f5a623' }}>call</span>
-                                                <span className="text-sm font-bold text-white">Confirmation Call + Pre-SMS</span>
+                                                <span className="text-sm font-bold text-on-surface">Confirmation Call + Pre-SMS</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <label className="relative inline-flex items-center cursor-pointer">
@@ -691,7 +691,7 @@ const CommunicationPage: React.FC = () => {
                                                     <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#5b8def' }}>sms</span>
                                                     <span className="text-[10px] text-text-muted">SMS</span>
                                                 </div>
-                                                <p className="text-[10px] text-text-muted">Pre-call SMS warning (by country: ES/IT/EN). Template: <span className="text-white font-mono">{'sms_pre_call_{{country}}'}</span></p>
+                                                <p className="text-[10px] text-text-muted">Pre-call SMS warning (by country: ES/IT/EN). Template: <span className="text-on-surface font-mono">{'sms_pre_call_{{country}}'}</span></p>
                                             </div>
                                             <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
                                                 <div className="flex items-center gap-2 mb-1">
@@ -706,7 +706,7 @@ const CommunicationPage: React.FC = () => {
                                         {/* Script Preview Toggle */}
                                         <button
                                             onClick={() => setShowScriptPreview(!showScriptPreview)}
-                                            className="w-full flex items-center justify-between px-3 py-2 bg-[#0d1520] rounded-xl border border-[#1c2d3d] hover:border-primary/30 transition-all group"
+                                            className="w-full flex items-center justify-between px-3 py-2 bg-surface-lowest rounded-xl border border-[#1c2d3d] hover:border-primary/30 transition-all group"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined text-amber-400" style={{ fontSize: 14 }}>code</span>
@@ -718,7 +718,7 @@ const CommunicationPage: React.FC = () => {
                                         {showScriptPreview && (
                                             <div className="space-y-3 animate-in fade-in">
                                                 {/* ── SHORT SCRIPT ── */}
-                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                <div className="bg-surface-lowest rounded-xl border border-[#1c2d3d] p-4 space-y-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">SHORT SCRIPT</span>
                                                         <span className="text-[9px] text-text-muted">(Low Risk)</span>
@@ -728,10 +728,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇪🇸</span>
-                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Spanish</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
@@ -751,10 +751,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇮🇹</span>
-                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Italian</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
@@ -772,7 +772,7 @@ const CommunicationPage: React.FC = () => {
                                                 </div>
 
                                                 {/* ── LONG SCRIPT ── */}
-                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                <div className="bg-surface-lowest rounded-xl border border-[#1c2d3d] p-4 space-y-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">LONG SCRIPT</span>
                                                         <span className="text-[9px] text-text-muted">(Medium Risk)</span>
@@ -782,10 +782,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇪🇸</span>
-                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Spanish</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Tiene <span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
@@ -809,10 +809,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇮🇹</span>
-                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Italian</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Ha <span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
@@ -834,7 +834,7 @@ const CommunicationPage: React.FC = () => {
                                                 </div>
 
                                                 {/* ── RESPONSE HANDLING ── */}
-                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-2">
+                                                <div className="bg-surface-lowest rounded-xl border border-[#1c2d3d] p-4 space-y-2">
                                                     <div className="flex items-center gap-2">
                                                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">RESPONSE HANDLING</span>
                                                     </div>
@@ -842,7 +842,7 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-emerald-400 text-[10px] mt-0.5">✅</span>
                                                             <div>
-                                                                <p className="text-[10px] text-white font-bold">Confirmed (DTMF 1 / Speech "Sí")</p>
+                                                                <p className="text-[10px] text-on-surface font-bold">Confirmed (DTMF 1 / Speech "Sí")</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "Perfecto. Su pedido está confirmado. Recibirá la entrega pronto. Gracias."</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Perfetto. Il suo ordine è confermato. Riceverà la consegna a breve. Grazie."</p>
                                                             </div>
@@ -850,7 +850,7 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-red-400 text-[10px] mt-0.5">❌</span>
                                                             <div>
-                                                                <p className="text-[10px] text-white font-bold">Cancelled (DTMF 2 / Speech "No")</p>
+                                                                <p className="text-[10px] text-on-surface font-bold">Cancelled (DTMF 2 / Speech "No")</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "De acuerdo. Su pedido ha sido cancelado. Gracias por avisar."</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Va bene. Il suo ordine è stato annullato. Grazie per aver avvisato."</p>
                                                             </div>
@@ -858,7 +858,7 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-amber-400 text-[10px] mt-0.5">⚠️</span>
                                                             <div>
-                                                                <p className="text-[10px] text-white font-bold">Unclear → Forward to Call Center</p>
+                                                                <p className="text-[10px] text-on-surface font-bold">Unclear → Forward to Call Center</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "No hemos entendido su respuesta. Un agente le contactará pronto. Gracias."</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Non abbiamo compreso la sua risposta. Un agente la contatterà a breve. Grazie."</p>
                                                             </div>
@@ -868,24 +868,24 @@ const CommunicationPage: React.FC = () => {
                                             </div>
                                         )}
                                         {/* Read-only config summary */}
-                                        <div className="mt-1 p-3 bg-[#0d1520] rounded-xl border border-[#1c2d3d] space-y-2">
+                                        <div className="mt-1 p-3 bg-surface-lowest rounded-xl border border-[#1c2d3d] space-y-2">
                                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">⚙ Configuration (managed in backend)</p>
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Pre-call Delay</span>
-                                                    <span className="text-[10px] text-white font-mono">8s</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">8s</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Max Attempts</span>
-                                                    <span className="text-[10px] text-white font-mono">1</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">1</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Scheduler</span>
-                                                    <span className="text-[10px] text-white font-mono">Every 5 min</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">Every 5 min</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Script</span>
-                                                    <span className="text-[10px] text-white font-mono">Auto (risk-based)</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">Auto (risk-based)</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 pt-1 border-t border-[#1c2d3d]">
@@ -909,11 +909,11 @@ const CommunicationPage: React.FC = () => {
                                     </div>
 
                                     {/* Out of Delivery Notification Card */}
-                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${outOfDeliveryEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
+                                    <div className={`bg-surface-lowest rounded-xl border p-5 flex flex-col gap-3 transition-all ${outOfDeliveryEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#22d4e6' }}>local_shipping</span>
-                                                <span className="text-sm font-bold text-white">Out of Delivery Notification</span>
+                                                <span className="text-sm font-bold text-on-surface">Out of Delivery Notification</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <label className="relative inline-flex items-center cursor-pointer">
@@ -950,16 +950,16 @@ const CommunicationPage: React.FC = () => {
                                             </div>
                                         </div>
                                         {/* Read-only config summary */}
-                                        <div className="mt-1 p-3 bg-[#0d1520] rounded-xl border border-[#1c2d3d] space-y-2">
+                                        <div className="mt-1 p-3 bg-surface-lowest rounded-xl border border-[#1c2d3d] space-y-2">
                                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">⚙ Configuration (managed in backend)</p>
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">SMS Template</span>
-                                                    <span className="text-[10px] text-white font-mono">sms_out_for_delivery</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">sms_out_for_delivery</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">WA Template</span>
-                                                    <span className="text-[10px] text-white font-mono">wa_out_for_delivery</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">wa_out_for_delivery</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 pt-1 border-t border-[#1c2d3d]">
@@ -974,16 +974,16 @@ const CommunicationPage: React.FC = () => {
                                     </div>
 
                                     {/* Fix Confirmation — SKU Products Card */}
-                                    <div className={`bg-[#111a22] rounded-xl border p-5 flex flex-col gap-3 transition-all ${skuConfirmEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
+                                    <div className={`bg-surface-lowest rounded-xl border p-5 flex flex-col gap-3 transition-all ${skuConfirmEnabled ? 'border-border-dark' : 'border-border-dark opacity-60'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#a78bfa' }}>repeat</span>
-                                                <span className="text-sm font-bold text-white">Fix Confirmation — SKU Products</span>
+                                                <span className="text-sm font-bold text-on-surface">Fix Confirmation — SKU Products</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <label className="relative inline-flex items-center cursor-pointer">
                                                     <input type="checkbox" checked={skuConfirmEnabled} onChange={handleToggleSkuConfirm} disabled={skuConfirmToggling || !storeSettingsId} className="sr-only peer" />
-                                                    <div className="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:bg-purple-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                                                    <div className="w-8 h-4 bg-surface-high peer-focus:outline-none rounded-full peer peer-checked:bg-purple-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
                                                 </label>
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${skuConfirmEnabled ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                                     {skuConfirmToggling ? '...' : skuConfirmEnabled ? 'Active' : 'Inactive'}
@@ -1003,7 +1003,7 @@ const CommunicationPage: React.FC = () => {
                                                     <span className="material-symbols-outlined" style={{ fontSize: 12, color: '#5b8def' }}>sms</span>
                                                     <span className="text-[10px] text-text-muted">SMS · 1st call only</span>
                                                 </div>
-                                                <p className="text-[10px] text-text-muted">Pre-call SMS warning (by country: ES/IT). Template: <span className="text-white font-mono">{'sms_pre_call_{{country}}'}</span></p>
+                                                <p className="text-[10px] text-text-muted">Pre-call SMS warning (by country: ES/IT). Template: <span className="text-on-surface font-mono">{'sms_pre_call_{{country}}'}</span></p>
                                             </div>
                                             <div className="bg-[#1a2332] rounded-lg border border-border-dark p-3">
                                                 <div className="flex items-center gap-2 mb-1">
@@ -1043,7 +1043,7 @@ const CommunicationPage: React.FC = () => {
                                         {/* Script Preview Toggle */}
                                         <button
                                             onClick={() => setShowSkuScriptPreview(!showSkuScriptPreview)}
-                                            className="w-full flex items-center justify-between px-3 py-2 bg-[#0d1520] rounded-xl border border-[#1c2d3d] hover:border-primary/30 transition-all group"
+                                            className="w-full flex items-center justify-between px-3 py-2 bg-surface-lowest rounded-xl border border-[#1c2d3d] hover:border-primary/30 transition-all group"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined text-purple-400" style={{ fontSize: 14 }}>code</span>
@@ -1055,7 +1055,7 @@ const CommunicationPage: React.FC = () => {
                                         {showSkuScriptPreview && (
                                             <div className="space-y-3 animate-in fade-in">
                                                 {/* ── SHORT SCRIPT ── */}
-                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                <div className="bg-surface-lowest rounded-xl border border-[#1c2d3d] p-4 space-y-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">SHORT SCRIPT</span>
                                                         <span className="text-[9px] text-text-muted">(Low Risk)</span>
@@ -1065,10 +1065,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇪🇸</span>
-                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Spanish</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
@@ -1088,10 +1088,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇮🇹</span>
-                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Italian</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"<span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
@@ -1109,7 +1109,7 @@ const CommunicationPage: React.FC = () => {
                                                 </div>
 
                                                 {/* ── LONG SCRIPT ── */}
-                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-3">
+                                                <div className="bg-surface-lowest rounded-xl border border-[#1c2d3d] p-4 space-y-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">LONG SCRIPT</span>
                                                         <span className="text-[9px] text-text-muted">(Medium Risk)</span>
@@ -1119,10 +1119,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇪🇸</span>
-                                                            <span className="text-[10px] text-white font-bold">Spanish</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Spanish</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Lucia · es-ES</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Hola, llamamos de <span className="text-amber-300">{'{StoreName}'}</span> para confirmar su pedido número <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Tiene <span className="text-amber-300">{'{Items}'}</span> por <span className="text-amber-300">{'{Amount}'}</span> euros, entrega contra reembolso."</p>
@@ -1146,10 +1146,10 @@ const CommunicationPage: React.FC = () => {
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-[10px]">🇮🇹</span>
-                                                            <span className="text-[10px] text-white font-bold">Italian</span>
+                                                            <span className="text-[10px] text-on-surface font-bold">Italian</span>
                                                             <span className="text-[9px] text-text-muted font-mono">Voice: Polly.Bianca · it-IT</span>
                                                         </div>
-                                                        <div className="bg-[#111a22] rounded-lg p-2.5 border border-border-dark space-y-1">
+                                                        <div className="bg-surface-lowest rounded-lg p-2.5 border border-border-dark space-y-1">
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Buongiorno, chiamiamo da <span className="text-amber-300">{'{StoreName}'}</span> per confermare il suo ordine numero <span className="text-amber-300">{'{OrderNumber}'}</span>."</p>
                                                             <p className="text-[9px] text-text-muted italic">⏸ 1s pause</p>
                                                             <p className="text-[10px] text-cyan-300 font-mono leading-relaxed">"Ha <span className="text-amber-300">{'{Items}'}</span> per <span className="text-amber-300">{'{Amount}'}</span> euro, consegna in contrassegno."</p>
@@ -1171,7 +1171,7 @@ const CommunicationPage: React.FC = () => {
                                                 </div>
 
                                                 {/* ── RESPONSE HANDLING ── */}
-                                                <div className="bg-[#0d1520] rounded-xl border border-[#1c2d3d] p-4 space-y-2">
+                                                <div className="bg-surface-lowest rounded-xl border border-[#1c2d3d] p-4 space-y-2">
                                                     <div className="flex items-center gap-2">
                                                         <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">RESPONSE HANDLING</span>
                                                     </div>
@@ -1179,7 +1179,7 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-emerald-400 text-[10px] mt-0.5">✅</span>
                                                             <div>
-                                                                <p className="text-[10px] text-white font-bold">Confirmed (DTMF 1 / Speech "Sí")</p>
+                                                                <p className="text-[10px] text-on-surface font-bold">Confirmed (DTMF 1 / Speech "Sí")</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "Perfecto. Su pedido está confirmado. Recibirá la entrega pronto. Gracias."</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Perfetto. Il suo ordine è confermato. Riceverà la consegna a breve. Grazie."</p>
                                                             </div>
@@ -1187,7 +1187,7 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-red-400 text-[10px] mt-0.5">❌</span>
                                                             <div>
-                                                                <p className="text-[10px] text-white font-bold">Cancelled (DTMF 2 / Speech "No")</p>
+                                                                <p className="text-[10px] text-on-surface font-bold">Cancelled (DTMF 2 / Speech "No")</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "De acuerdo. Su pedido ha sido cancelado. Gracias por avisar."</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Va bene. Il suo ordine è stato annullato. Grazie per aver avvisato."</p>
                                                             </div>
@@ -1195,7 +1195,7 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="flex items-start gap-2">
                                                             <span className="text-amber-400 text-[10px] mt-0.5">⚠️</span>
                                                             <div>
-                                                                <p className="text-[10px] text-white font-bold">Unclear → Forward to Call Center</p>
+                                                                <p className="text-[10px] text-on-surface font-bold">Unclear → Forward to Call Center</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇪🇸 "No hemos entendido su respuesta. Un agente le contactará pronto. Gracias."</p>
                                                                 <p className="text-[10px] text-cyan-300 font-mono">🇮🇹 "Non abbiamo compreso la sua risposta. Un agente la contatterà a breve. Grazie."</p>
                                                             </div>
@@ -1206,32 +1206,32 @@ const CommunicationPage: React.FC = () => {
                                         )}
 
                                         {/* Config summary */}
-                                        <div className="mt-1 p-3 bg-[#0d1520] rounded-xl border border-[#1c2d3d] space-y-2">
+                                        <div className="mt-1 p-3 bg-surface-lowest rounded-xl border border-[#1c2d3d] space-y-2">
                                             <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">⚙ Configuration (managed in backend)</p>
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Pre-call Delay</span>
-                                                    <span className="text-[10px] text-white font-mono">5 min</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">5 min</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Max Attempts</span>
-                                                    <span className="text-[10px] text-white font-mono">8</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">8</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Per Day</span>
-                                                    <span className="text-[10px] text-white font-mono">4 calls/day</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">4 calls/day</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Min Gap</span>
-                                                    <span className="text-[10px] text-white font-mono">2 hours</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">2 hours</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Scheduler</span>
-                                                    <span className="text-[10px] text-white font-mono">Every 5 min</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">Every 5 min</span>
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] text-text-muted">Script</span>
-                                                    <span className="text-[10px] text-white font-mono">Auto (risk-based)</span>
+                                                    <span className="text-[10px] text-on-surface font-mono">Auto (risk-based)</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3 pt-1 border-t border-[#1c2d3d]">
@@ -1267,17 +1267,17 @@ const CommunicationPage: React.FC = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-[#111a22] border border-border-dark rounded-2xl overflow-hidden" style={{ maxHeight: 'calc(100vh - 290px)', overflowY: 'auto' }}>
+                            <div className="bg-surface-lowest border border-border-dark rounded-2xl overflow-hidden" style={{ maxHeight: 'calc(100vh - 290px)', overflowY: 'auto' }}>
                                 {/* Header */}
                                 <div className="p-5 border-b border-border-dark flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <span className="material-symbols-outlined" style={{ fontSize: 22, color: getCategoryMeta(selectedSequence.category).color }}>{getCategoryMeta(selectedSequence.category).icon}</span>
                                         <div>
-                                            <h3 className="text-sm font-black uppercase tracking-widest text-white">Edit Sequence</h3>
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface">Edit Sequence</h3>
                                             <p className="text-xs text-text-muted">{selectedSequence.name}</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => setSelectedSequence(null)} className="text-text-muted hover:text-white">
+                                    <button onClick={() => setSelectedSequence(null)} className="text-text-muted hover:text-on-surface">
                                         <span className="material-symbols-outlined">close</span>
                                     </button>
                                 </div>
@@ -1287,11 +1287,11 @@ const CommunicationPage: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Title</label>
-                                            <input value={selectedSequence.name} onChange={e => setSelectedSequence({ ...selectedSequence, name: e.target.value })} className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none" />
+                                            <input value={selectedSequence.name} onChange={e => setSelectedSequence({ ...selectedSequence, name: e.target.value })} className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none" />
                                         </div>
                                         <div>
                                             <label className="text-[10px] text-text-muted font-bold uppercase block mb-1">Description</label>
-                                            <input value={selectedSequence.description || ''} onChange={e => setSelectedSequence({ ...selectedSequence, description: e.target.value })} className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none" />
+                                            <input value={selectedSequence.description || ''} onChange={e => setSelectedSequence({ ...selectedSequence, description: e.target.value })} className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none" />
                                         </div>
                                     </div>
 
@@ -1301,7 +1301,7 @@ const CommunicationPage: React.FC = () => {
                                             <input type="checkbox" checked={selectedSequence.isActive} onChange={e => { setSelectedSequence({ ...selectedSequence, isActive: e.target.checked }); communicationService.updateSequence(selectedSequence.id, { isActive: e.target.checked }); }} className="sr-only peer" />
                                             <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
                                         </label>
-                                        <span className="text-xs text-white font-bold">Sequence Active</span>
+                                        <span className="text-xs text-on-surface font-bold">Sequence Active</span>
                                     </div>
 
                                     {/* Channel Order */}
@@ -1312,7 +1312,7 @@ const CommunicationPage: React.FC = () => {
                                                 const channelsUsed = selectedSequence.steps?.map((s: any) => s.channel) || [];
                                                 const isUsed = channelsUsed.includes(ch.value);
                                                 return (
-                                                    <div key={ch.value} className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${isUsed ? 'border-primary/40 bg-primary/10 text-white' : 'border-border-dark bg-[#1a2332] text-text-muted'}`}>
+                                                    <div key={ch.value} className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold rounded-lg border transition-all ${isUsed ? 'border-primary/40 bg-primary/10 text-on-surface' : 'border-border-dark bg-[#1a2332] text-text-muted'}`}>
                                                         <span className="material-symbols-outlined" style={{ fontSize: 14, color: ch.color }}>{ch.icon}</span>
                                                         {ch.label}
                                                     </div>
@@ -1377,13 +1377,13 @@ const CommunicationPage: React.FC = () => {
                                                         <div className="grid grid-cols-3 gap-3">
                                                             <div>
                                                                 <label className="text-[10px] text-text-muted font-bold block mb-1">Channel</label>
-                                                                <select value={step.channel} onChange={e => handleUpdateStepField(step.id, 'channel', e.target.value)} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none">
+                                                                <select value={step.channel} onChange={e => handleUpdateStepField(step.id, 'channel', e.target.value)} className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none">
                                                                     {CHANNEL_OPTIONS.map(ch => (<option key={ch.value} value={ch.value}>{ch.label}</option>))}
                                                                 </select>
                                                             </div>
                                                             <div>
                                                                 <label className="text-[10px] text-text-muted font-bold block mb-1">Trigger</label>
-                                                                <select value={step.trigger || 'auto'} onChange={e => handleUpdateStepField(step.id, 'trigger', e.target.value)} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none">
+                                                                <select value={step.trigger || 'auto'} onChange={e => handleUpdateStepField(step.id, 'trigger', e.target.value)} className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none">
                                                                     <option value="auto">Auto (Timer)</option>
                                                                     <option value="manual">Manual</option>
                                                                     <option value="on_no_response">On No Response</option>
@@ -1391,19 +1391,19 @@ const CommunicationPage: React.FC = () => {
                                                             </div>
                                                             <div>
                                                                 <label className="text-[10px] text-text-muted font-bold block mb-1">Delay (min)</label>
-                                                                <input type="number" value={step.delayMinutes || 0} onChange={e => handleUpdateStepField(step.id, 'delayMinutes', parseInt(e.target.value) || 0)} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none" min={0} />
+                                                                <input type="number" value={step.delayMinutes || 0} onChange={e => handleUpdateStepField(step.id, 'delayMinutes', parseInt(e.target.value) || 0)} className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none" min={0} />
                                                             </div>
                                                         </div>
                                                         <div className="mt-3">
                                                             <label className="text-[10px] text-text-muted font-bold block mb-1">Content / Template</label>
-                                                            <textarea value={step.content || ''} onChange={e => handleUpdateStepField(step.id, 'content', e.target.value)} rows={2} className="w-full bg-[#111a22] border border-border-dark rounded-lg px-2 py-1.5 text-xs text-white focus:border-primary outline-none resize-none" placeholder={`Message template for ${chOpt?.label || 'channel'}...`} />
+                                                            <textarea value={step.content || ''} onChange={e => handleUpdateStepField(step.id, 'content', e.target.value)} rows={2} className="w-full bg-surface-lowest border border-border-dark rounded-lg px-2 py-1.5 text-xs text-on-surface focus:border-primary outline-none resize-none" placeholder={`Message template for ${chOpt?.label || 'channel'}...`} />
                                                         </div>
                                                         {/* DTMF branches display */}
                                                         {step.branches && Object.keys(step.branches).length > 0 && (
                                                             <div className="mt-3 flex flex-wrap gap-2">
                                                                 {Object.entries(step.branches as Record<string, string>).map(([key, val]) => (
-                                                                    <span key={key} className="px-2.5 py-1 bg-[#111a22] rounded-lg text-[10px] font-bold border border-border-dark">
-                                                                        <span className="text-amber-400">Press {key}</span> → <span className="text-white">{val}</span>
+                                                                    <span key={key} className="px-2.5 py-1 bg-surface-lowest rounded-lg text-[10px] font-bold border border-border-dark">
+                                                                        <span className="text-amber-400">Press {key}</span> → <span className="text-on-surface">{val}</span>
                                                                     </span>
                                                                 ))}
                                                             </div>
@@ -1422,7 +1422,7 @@ const CommunicationPage: React.FC = () => {
 
                                 {/* Footer */}
                                 <div className="p-5 pt-0 flex justify-end gap-3">
-                                    <button onClick={() => setSelectedSequence(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-white transition-colors">Cancel</button>
+                                    <button onClick={() => setSelectedSequence(null)} className="px-4 py-2 text-xs font-bold text-text-muted hover:text-on-surface transition-colors">Cancel</button>
                                     <button onClick={async () => { try { await communicationService.updateSequence(selectedSequence.id, { name: selectedSequence.name, description: selectedSequence.description, isActive: selectedSequence.isActive, conditions: selectedSequence.conditions }); toast('success', '✅ Sequence saved!'); fetchSequences(); } catch { toast('error', 'Failed to save'); }}} className="px-6 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
                                         Save Sequence
                                     </button>
@@ -1442,24 +1442,24 @@ const CommunicationPage: React.FC = () => {
 
             {/* New Sequence Modal */}
             {showNewSeqModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowNewSeqModal(false)}>
-                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[480px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-white text-lg font-bold mb-4">✨ New Sequence</h3>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowNewSeqModal(false)}>
+                    <div className="bg-surface-lowest rounded-2xl border border-border-dark p-6 w-[480px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-on-surface text-lg font-bold mb-4">✨ New Sequence</h3>
                         <div className="flex flex-col gap-3">
                             <div>
                                 <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Name</label>
-                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.name || ''} onChange={e => setNewSeq({ ...newSeq, name: e.target.value })} placeholder="e.g. Confirmation Flow — Spain" />
+                                <input type="text" className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.name || ''} onChange={e => setNewSeq({ ...newSeq, name: e.target.value })} placeholder="e.g. Confirmation Flow — Spain" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Category</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.category || 'confirmation'} onChange={e => setNewSeq({ ...newSeq, category: e.target.value })}>
+                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.category || 'confirmation'} onChange={e => setNewSeq({ ...newSeq, category: e.target.value })}>
                                         {CATEGORY_OPTIONS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Condition</label>
-                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.triggerEvent || 'order_created'} onChange={e => setNewSeq({ ...newSeq, triggerEvent: e.target.value })}>
+                                    <select className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.triggerEvent || 'order_created'} onChange={e => setNewSeq({ ...newSeq, triggerEvent: e.target.value })}>
                                         <option value="order_created">Order Created</option>
                                         <option value="status_changed">Status Changed</option>
                                         <option value="no_response">No Response</option>
@@ -1471,11 +1471,11 @@ const CommunicationPage: React.FC = () => {
                             </div>
                             <div>
                                 <label className="text-text-muted text-xs font-bold uppercase tracking-wider mb-1.5 block">Description</label>
-                                <textarea rows={2} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.description || ''} onChange={e => setNewSeq({ ...newSeq, description: e.target.value })} placeholder="Optional description..." />
+                                <textarea rows={2} className="w-full px-3 py-2.5 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" value={newSeq.description || ''} onChange={e => setNewSeq({ ...newSeq, description: e.target.value })} placeholder="Optional description..." />
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-5">
-                            <button onClick={() => setShowNewSeqModal(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-white transition-all">Cancel</button>
+                            <button onClick={() => setShowNewSeqModal(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-on-surface transition-all">Cancel</button>
                             <button onClick={handleCreateSequence} className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20" disabled={!newSeq.name}>Create</button>
                         </div>
                     </div>
@@ -1486,9 +1486,9 @@ const CommunicationPage: React.FC = () => {
 
             {/* Condition Editor Modal */}
             {showConditionEditor && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowConditionEditor(false)}>
-                    <div className="bg-[#111a22] rounded-2xl border border-border-dark p-6 w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-white text-lg font-bold mb-5">🎯 Edit Conditions</h3>
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowConditionEditor(false)}>
+                    <div className="bg-surface-lowest rounded-2xl border border-border-dark p-6 w-[520px] shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-on-surface text-lg font-bold mb-5">🎯 Edit Conditions</h3>
                         <div className="flex flex-col gap-5">
                             {/* Confirmation Status */}
                             <div>
@@ -1520,7 +1520,7 @@ const CommunicationPage: React.FC = () => {
                             {/* Product SKU */}
                             <div>
                                 <label className="text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2 block">Product SKU</label>
-                                <input type="text" className="w-full px-3 py-2 bg-[#0a1018] border border-border-dark rounded-xl text-white text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Search SKU..." value={skuSearch} onChange={e => setSkuSearch(e.target.value)} />
+                                <input type="text" className="w-full px-3 py-2 bg-[#0a1018] border border-border-dark rounded-xl text-on-surface text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Search SKU..." value={skuSearch} onChange={e => setSkuSearch(e.target.value)} />
                                 <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
                                     {filteredSkus.slice(0, 20).map(p => (
                                         <button key={p.sku} onClick={() => toggleConditionItem('skuTypes', p.sku)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${(editingConditions.skuTypes || []).includes(p.sku) ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40' : 'bg-[#0a1018] text-text-muted border-border-dark hover:border-cyan-500/30'}`}>
@@ -1534,7 +1534,7 @@ const CommunicationPage: React.FC = () => {
                                         {editingConditions.skuTypes.map((s: string) => (
                                             <span key={s} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
                                                 {s}
-                                                <button onClick={() => toggleConditionItem('skuTypes', s)} className="hover:text-white">×</button>
+                                                <button onClick={() => toggleConditionItem('skuTypes', s)} className="hover:text-on-surface">×</button>
                                             </span>
                                         ))}
                                     </div>
@@ -1542,7 +1542,7 @@ const CommunicationPage: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex justify-end gap-2 mt-6">
-                            <button onClick={() => setShowConditionEditor(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-white transition-all">Cancel</button>
+                            <button onClick={() => setShowConditionEditor(false)} className="px-4 py-2.5 text-text-muted text-sm font-bold hover:text-on-surface transition-all">Cancel</button>
                             <button onClick={handleSaveConditions} className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">Save Conditions</button>
                         </div>
                     </div>
@@ -1551,7 +1551,7 @@ const CommunicationPage: React.FC = () => {
 
             {/* Toast */}
             {showToast && (
-                <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-2xl text-sm font-bold z-50 flex items-center gap-2 animate-pulse ${showToast.type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white'}`}>
+                <div className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-2xl text-sm font-bold z-50 flex items-center gap-2 animate-pulse ${showToast.type === 'success' ? 'bg-emerald-500/90 text-on-surface' : 'bg-red-500/90 text-on-surface'}`}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{showToast.type === 'success' ? 'check_circle' : 'error'}</span>
                     {showToast.msg}
                 </div>

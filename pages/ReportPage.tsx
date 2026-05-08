@@ -4,6 +4,7 @@ import { adsCampaignsService, PocReportData, PocCampaignDetail } from '../src/se
 import { customersService } from '../src/services/customers.service';
 import { financialService } from '../src/services/financial.service';
 import ReportsTab from '../components/inventory/ReportsTab';
+import DistributionReportTab from '../components/DistributionReportTab';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // P&L REPORT TAB
@@ -134,7 +135,7 @@ const PnlReportTab: React.FC = () => {
                     <select
                         value={year}
                         onChange={e => setYear(Number(e.target.value))}
-                        className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]"
+                        className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm appearance-none cursor-pointer min-w-[120px]"
                     >
                         {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
@@ -142,8 +143,8 @@ const PnlReportTab: React.FC = () => {
             </div>
 
             {/* P&L Table */}
-            <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-                <div className="px-6 py-4 border-b border-border-dark bg-[#14202c]">
+            <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
+                <div className="px-6 py-4 border-b border-border-dark bg-surface-low">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">
                         📊 Profit & Loss Statement — {year}
                     </h3>
@@ -151,8 +152,8 @@ const PnlReportTab: React.FC = () => {
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse" style={{ minWidth: `${200 + displayIndices.length * 130 + 130}px` }}>
                         <thead>
-                            <tr className="bg-[#17232f]">
-                                <th className="px-5 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest sticky left-0 bg-[#17232f] z-10 min-w-[180px]">
+                            <tr className="bg-surface-container">
+                                <th className="px-5 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest sticky left-0 bg-surface-container z-10 min-w-[180px]">
                                     {/* Empty label cell */}
                                 </th>
                                 {displayIndices.map(i => (
@@ -176,16 +177,16 @@ const PnlReportTab: React.FC = () => {
                                         className={`transition-colors hover:bg-white/[0.02] ${row.bgClass || ''} ${row.borderTop ? 'border-t-2 border-border-dark' : 'border-t border-border-dark/30'}`}
                                     >
                                         {/* Label */}
-                                        <td className={`px-5 py-2.5 sticky left-0 z-10 ${row.bgClass || 'bg-card-dark'} ${row.isHeader || row.isSummary ? 'font-black' : ''} ${row.isSubItem ? 'pl-8' : ''}`}>
-                                            <span className={`text-xs ${row.colorClass || (row.isSubItem ? 'text-text-muted' : 'text-white')} ${row.isHeader || row.isSummary ? 'font-black' : 'font-medium'}`}>
+                                        <td className={`px-5 py-2.5 sticky left-0 z-10 ${row.bgClass || 'bg-surface-lowest'} ${row.isHeader || row.isSummary ? 'font-black' : ''} ${row.isSubItem ? 'pl-8' : ''}`}>
+                                            <span className={`text-xs ${row.colorClass || (row.isSubItem ? 'text-text-muted' : 'text-on-surface')} ${row.isHeader || row.isSummary ? 'font-black' : 'font-medium'}`}>
                                                 {row.label}
                                             </span>
                                         </td>
                                         {/* Month values */}
                                         {displayIndices.map(mi => {
                                             const val = row.key ? data[mi]?.[row.key] ?? 0 : 0;
-                                            let valColor = 'text-white';
-                                            if (row.isHeader || row.isSummary) valColor = row.colorClass || 'text-white';
+                                            let valColor = 'text-on-surface';
+                                            if (row.isHeader || row.isSummary) valColor = row.colorClass || 'text-on-surface';
                                             if (row.isSubItem) valColor = 'text-text-muted';
                                             if (isProfit) valColor = val >= 0 ? 'text-emerald-400' : 'text-red-400';
 
@@ -198,8 +199,8 @@ const PnlReportTab: React.FC = () => {
                                         {/* Total column */}
                                         {(() => {
                                             const totalVal = row.key ? totals[row.key] : 0;
-                                            let totalColor = 'text-white';
-                                            if (row.isHeader || row.isSummary) totalColor = row.colorClass || 'text-white';
+                                            let totalColor = 'text-on-surface';
+                                            if (row.isHeader || row.isSummary) totalColor = row.colorClass || 'text-on-surface';
                                             if (row.isSubItem) totalColor = 'text-text-muted';
                                             if (isProfit) totalColor = totalVal >= 0 ? 'text-emerald-400' : 'text-red-400';
 
@@ -359,14 +360,14 @@ const PocReportTab: React.FC = () => {
             <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Country</label>
-                    <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[120px]">
+                    <select value={countryFilter} onChange={e => setCountryFilter(e.target.value)} className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm appearance-none cursor-pointer min-w-[120px]">
                         <option value="">All</option>
                         {dbCountries.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Date Range</label>
-                    <select value={dateRangePreset} onChange={e => handlePresetChange(e.target.value)} className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm appearance-none cursor-pointer min-w-[140px]">
+                    <select value={dateRangePreset} onChange={e => handlePresetChange(e.target.value)} className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm appearance-none cursor-pointer min-w-[140px]">
                         <option value="All Time">All Time</option>
                         <option value="Today">Today</option>
                         <option value="Yesterday">Yesterday</option>
@@ -380,12 +381,12 @@ const PocReportTab: React.FC = () => {
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">From</label>
                             <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setDateRangePreset('Custom'); }}
-                                className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
+                                className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm" />
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">To</label>
                             <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setDateRangePreset('Custom'); }}
-                                className="bg-card-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm" />
+                                className="bg-surface-lowest border border-border-dark rounded-lg px-3 py-2 text-on-surface text-sm" />
                         </div>
                     </>
                 )}
@@ -394,7 +395,7 @@ const PocReportTab: React.FC = () => {
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {kpis.map((kpi, i) => (
-                    <div key={i} className={`bg-card-dark p-5 rounded-2xl border border-border-dark border-l-4 ${kpi.border} relative overflow-hidden group hover:shadow-lg transition-shadow`}>
+                    <div key={i} className={`bg-surface-lowest p-5 rounded-2xl border border-border-dark border-l-4 ${kpi.border} relative overflow-hidden group hover:shadow-lg transition-shadow`}>
                         <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity"><span className="material-symbols-outlined text-[80px]">{kpi.icon}</span></div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">{kpi.label}</p>
                         <h3 className={`text-2xl font-black tracking-tight mt-2 ${kpi.color}`}>{kpi.value}</h3>
@@ -403,7 +404,7 @@ const PocReportTab: React.FC = () => {
             </div>
 
             {/* POC Funnel Visualization */}
-            <div className="bg-card-dark rounded-2xl border border-border-dark p-6">
+            <div className="bg-surface-lowest rounded-2xl border border-border-dark p-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-6">🔻 POC Conversion Funnel</h3>
                 {data.funnel.tested === 0 ? (
                     <div className="text-text-muted text-sm text-center py-8">No POC data available. Upload campaigns with stage "Test" to see the funnel.</div>
@@ -417,7 +418,7 @@ const PocReportTab: React.FC = () => {
                                     <div className="w-[150px] shrink-0 text-right">
                                         <span className="text-xs font-bold text-text-muted">{item.stage}</span>
                                     </div>
-                                    <div className="flex-1 relative h-10 bg-[#1c2d3d] rounded-xl overflow-hidden">
+                                    <div className="flex-1 relative h-10 bg-surface-high rounded-xl overflow-hidden">
                                         <div
                                             className="h-full rounded-xl flex items-center justify-end pr-3 transition-all duration-700 ease-out"
                                             style={{
@@ -428,7 +429,7 @@ const PocReportTab: React.FC = () => {
                                         >
                                         </div>
                                         <div className="absolute inset-0 flex items-center pl-3">
-                                            <span className="text-sm font-black text-white drop-shadow-lg">
+                                            <span className="text-sm font-black text-on-surface drop-shadow-lg">
                                                 {item.value.toLocaleString()}
                                             </span>
                                             <span className="text-[10px] text-text-muted font-bold ml-2">
@@ -444,8 +445,8 @@ const PocReportTab: React.FC = () => {
             </div>
 
             {/* POC Detail Table */}
-            <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden">
-                <div className="px-6 py-4 border-b border-border-dark bg-[#14202c]">
+            <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden">
+                <div className="px-6 py-4 border-b border-border-dark bg-surface-low">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">
                         📊 POC Product Detail ({data.campaigns.length} products tested)
                     </h3>
@@ -459,23 +460,23 @@ const PocReportTab: React.FC = () => {
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[1000px]">
                             <thead>
-                                <tr className="bg-[#17232f]">
+                                <tr className="bg-surface-container">
                                     <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">Product Name</th>
                                     <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">Country</th>
                                     <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">SKU</th>
-                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-white transition-colors" onClick={() => handleSort('spendEur')}>
+                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-on-surface transition-colors" onClick={() => handleSort('spendEur')}>
                                         <span className="flex items-center">Cost (EUR)<SortIcon field="spendEur" /></span>
                                     </th>
-                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-white transition-colors" onClick={() => handleSort('leads')}>
+                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-on-surface transition-colors" onClick={() => handleSort('leads')}>
                                         <span className="flex items-center">Leads<SortIcon field="leads" /></span>
                                     </th>
-                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-white transition-colors" onClick={() => handleSort('confirmedLeads')}>
+                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-on-surface transition-colors" onClick={() => handleSort('confirmedLeads')}>
                                         <span className="flex items-center">Confirm Leads<SortIcon field="confirmedLeads" /></span>
                                     </th>
-                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-white transition-colors" onClick={() => handleSort('cpl')}>
+                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-on-surface transition-colors" onClick={() => handleSort('cpl')}>
                                         <span className="flex items-center">CPL<SortIcon field="cpl" /></span>
                                     </th>
-                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-white transition-colors" onClick={() => handleSort('cpcl')}>
+                                    <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-on-surface transition-colors" onClick={() => handleSort('cpcl')}>
                                         <span className="flex items-center">CPCL<SortIcon field="cpcl" /></span>
                                     </th>
                                     <th className="px-4 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest">Qualify POC</th>
@@ -484,14 +485,14 @@ const PocReportTab: React.FC = () => {
                             <tbody className="divide-y divide-border-dark/50">
                                 {sorted.map((c, i) => (
                                     <tr key={i} className="hover:bg-primary/[0.03] transition-colors">
-                                        <td className="px-4 py-3 text-xs text-white font-bold max-w-[250px] truncate" title={c.productName}>{c.productName}</td>
+                                        <td className="px-4 py-3 text-xs text-on-surface font-bold max-w-[250px] truncate" title={c.productName}>{c.productName}</td>
                                         <td className="px-4 py-3">
                                             {c.country ? (
                                                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">{c.country}</span>
                                             ) : <span className="text-text-muted text-xs">—</span>}
                                         </td>
                                         <td className="px-4 py-3 text-xs text-primary font-mono">{c.sku || '—'}</td>
-                                        <td className="px-4 py-3 text-xs font-black text-white">€{c.spendEur.toLocaleString()}</td>
+                                        <td className="px-4 py-3 text-xs font-black text-on-surface">€{c.spendEur.toLocaleString()}</td>
                                         <td className="px-4 py-3 text-xs font-bold text-indigo-400">{c.leads}</td>
                                         <td className="px-4 py-3 text-xs font-bold text-teal-400">{c.confirmedLeads}</td>
                                         <td className="px-4 py-3 text-xs font-bold text-cyan-400">€{c.cpl.toFixed(2)}</td>
@@ -513,8 +514,33 @@ const PocReportTab: React.FC = () => {
 // REPORT PAGE (Main)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { useLocation } from 'react-router-dom';
+
 const ReportPage: React.FC = () => {
-    const [tab, setTab] = useState<'poc' | 'pnl' | 'fulfillment'>('pnl');
+    const location = useLocation();
+    const path = location.pathname;
+
+    let tabContent = null;
+    let title = 'Reports';
+    let subtitle = 'Select a report to view.';
+
+    if (path.includes('pnl')) {
+        tabContent = <PnlReportTab />;
+        title = 'P&L Statement';
+        subtitle = 'Monthly profit and loss tracking and financial breakdown.';
+    } else if (path.includes('poc')) {
+        tabContent = <PocReportTab />;
+        title = 'POC Analytics';
+        subtitle = 'Product concept testing performance and qualification funnel.';
+    } else if (path.includes('fulfillment')) {
+        tabContent = <ReportsTab selectedWarehouse="" />;
+        title = 'Fulfillment Report';
+        subtitle = 'Delivery rates, warehouse tracking, and SLA performance.';
+    } else if (path.includes('distribution')) {
+        tabContent = <DistributionReportTab />;
+        title = 'Distribution Report';
+        subtitle = 'Geographic distribution of orders across countries and regions.';
+    }
 
     return (
         <div className="flex flex-col gap-6 pb-12">
@@ -523,33 +549,16 @@ const ReportPage: React.FC = () => {
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-text-muted text-xs font-bold uppercase tracking-wider opacity-60">Home</span>
                     <span className="text-text-muted text-xs opacity-30">/</span>
-                    <span className="text-white text-xs font-bold uppercase tracking-wider">Reports</span>
+                    <span className="text-text-muted text-xs font-bold uppercase tracking-wider opacity-60">Reports</span>
+                    <span className="text-text-muted text-xs opacity-30">/</span>
+                    <span className="text-on-surface text-xs font-bold uppercase tracking-wider">{title}</span>
                 </div>
-                <h1 className="text-white text-3xl font-black tracking-tight">Reports</h1>
-                <p className="text-text-muted text-sm">P&L statements, POC reports, funnel analytics, and product qualification tracking.</p>
-            </div>
-
-            {/* Tab Switcher */}
-            <div className="flex gap-1 p-1 bg-card-dark rounded-xl border border-border-dark w-fit">
-                {([
-                    { key: 'pnl' as const, label: '📊 P&L Report' },
-                    { key: 'poc' as const, label: '🧪 POC Report' },
-                    { key: 'fulfillment' as const, label: '📦 Fulfillment Report' },
-                ]).map(t => (
-                    <button
-                        key={t.key}
-                        onClick={() => setTab(t.key)}
-                        className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${tab === t.key ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
-                    >
-                        {t.label}
-                    </button>
-                ))}
+                <h1 className="text-on-surface text-3xl font-black tracking-tight">{title}</h1>
+                <p className="text-text-muted text-sm">{subtitle}</p>
             </div>
 
             {/* Tab Content */}
-            {tab === 'pnl' && <PnlReportTab />}
-            {tab === 'poc' && <PocReportTab />}
-            {tab === 'fulfillment' && <ReportsTab selectedWarehouse="" />}
+            {tabContent}
         </div>
     );
 };

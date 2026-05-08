@@ -27,7 +27,8 @@
 - [x] **Order Tab**: Full CRUD, Status Management, Pagination (20/page).
 - [x] **Store Sync**: Shopify Webhook maps store domains automatically.
 - [x] **Responsive UI**: App scaling added for tablet & mobile devices.
-- [x] **Delete Order**: Implemented.
+- [x] **UI Theme & Navigation**: Collapsible sidebar and corporate light theme applied system-wide.
+- [x] **Delete Order**: Implemented with foreign key constraint cascading and error handling.
 - [x] **Google Sheets Sync**: Two-way sync for Orders.
 - [ ] **Fulfillment Center Sync**: Add FC data to Google Sheets.
 - [ ] **Suppliers Sync**: Add Supplier data to Google Sheets.
@@ -43,7 +44,7 @@
 **Focus**: Automated risk scoring, address verification, and incident lifecycle.
 - [x] **Risk Scoring Engine**: Two-layer scoring (Base + Loqate) with automated action triggers.
 - [x] **Address Verification**: Loqate API integration with caching & retry cron.
-- [x] **Incident Tickets**: Full CRUD with auto-creation from 17Track, SLA tracking (72h business), PIC assignment.
+- [x] **Incident Tickets**: Full CRUD with auto-creation from 17Track, SLA tracking, PIC assignment (UI decommissioned).
 - [x] **Incident Auto-Create**: `IncidentAutoService` classifies 17Track events into case types (address_issue, delivery_refused, etc.).
 - [x] **SLA Breach Checker**: Cron (every 15 min) auto-escalates breached tickets to urgent.
 - [x] **Incident Sheets Sync**: Open/resolved tickets synced to Google Sheets.
@@ -64,7 +65,7 @@
 
 ### Version 3: Advanced Incident Management
 **Focus**: Handling operational issues (Damaged goods, Lost packages, Complaints).
-- [x] **Incident Tab**: Dedicated UI (`IncidentsPage.tsx`) for reporting and tracking incidents.
+- [-] **Incident Tab**: Dedicated UI (`IncidentsPage.tsx`) decommissioned during CRM redesign.
 - [x] **Resolution Workflow**: Resolution types (Return to Warehouse, Reshipment, Resolved, Cancelled).
 - [ ] **Advanced Resolution**: Assignment rules, auto-escalation to supervisors.
 
@@ -81,6 +82,7 @@
 - [x] **Financial Suite**: Financial Records module with bulk Excel import, VND/EUR conversions, and flexible payment source tracking.
 - [x] **P&L Reporting**: Core implementations extracting profit logic across revenue, fulfillment, and product costs.
 - [x] **Traffic Attribution**: Store analytics mapped to Traffic Channels (UTM source) and Browser IP extracted from Shopify payloads.
+- [x] **Geo Distribution Reports**: Interactive country/city mapping with island detection and KPI aggregation.
 - [ ] **Analytics Tab**: Profitability, RTO Rates, Operator Performance.
 - [ ] WhatsApp real number connection → test for in transit mode.
 - [ ] 17Track sync sample data → test for real tracking number.

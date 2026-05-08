@@ -80,7 +80,7 @@ const LogisticsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Logistic Companies</h1>
+          <h1 className="text-2xl font-black text-on-surface tracking-tight">Logistic Companies</h1>
           <p className="text-sm text-text-muted mt-1">Manage shipping companies that handle delivery from suppliers to fulfillment centers.</p>
         </div>
         <button
@@ -100,7 +100,7 @@ const LogisticsPage: React.FC = () => {
         <input
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="pl-9 w-full bg-card-dark border border-border-dark rounded-xl text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder-text-muted/50 py-2.5 outline-none transition-all"
+          className="pl-9 w-full bg-surface-lowest border border-border-dark rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder-text-muted/50 py-2.5 outline-none transition-all"
           placeholder="Search companies..."
           type="text"
         />
@@ -108,35 +108,35 @@ const LogisticsPage: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card-dark rounded-2xl border border-border-dark p-5">
+        <div className="bg-surface-lowest rounded-2xl border border-border-dark p-5">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-amber-400" style={{ fontSize: 22 }}>local_shipping</span>
             </div>
             <div>
-              <p className="text-2xl font-black text-white">{lcList.length}</p>
+              <p className="text-2xl font-black text-on-surface">{lcList.length}</p>
               <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Total Companies</p>
             </div>
           </div>
         </div>
-        <div className="bg-card-dark rounded-2xl border border-border-dark p-5">
+        <div className="bg-surface-lowest rounded-2xl border border-border-dark p-5">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-blue-400" style={{ fontSize: 22 }}>person</span>
             </div>
             <div>
-              <p className="text-2xl font-black text-white">{lcList.filter(l => l.contactPerson).length}</p>
+              <p className="text-2xl font-black text-on-surface">{lcList.filter(l => l.contactPerson).length}</p>
               <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">With Contacts</p>
             </div>
           </div>
         </div>
-        <div className="bg-card-dark rounded-2xl border border-border-dark p-5">
+        <div className="bg-surface-lowest rounded-2xl border border-border-dark p-5">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-xl bg-green-500/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-green-400" style={{ fontSize: 22 }}>verified</span>
             </div>
             <div>
-              <p className="text-2xl font-black text-white">{lcList.filter(l => l.phone && l.email).length}</p>
+              <p className="text-2xl font-black text-on-surface">{lcList.filter(l => l.phone && l.email).length}</p>
               <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Fully Profiled</p>
             </div>
           </div>
@@ -144,7 +144,7 @@ const LogisticsPage: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -180,7 +180,7 @@ const LogisticsPage: React.FC = () => {
                         <div className="size-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
                           <span className="material-symbols-outlined text-amber-400" style={{ fontSize: 20 }}>local_shipping</span>
                         </div>
-                        <span className="text-sm font-bold text-white">{lc.name}</span>
+                        <span className="text-sm font-bold text-on-surface">{lc.name}</span>
                       </div>
                     </td>
                     <td className="py-4 px-6 text-sm text-text-muted">{lc.contactPerson || '—'}</td>
@@ -191,7 +191,7 @@ const LogisticsPage: React.FC = () => {
                       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEdit(lc)}
-                          className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-[#2d445a] transition-all"
+                          className="p-1.5 rounded-lg text-text-muted hover:text-on-surface hover:bg-surface-container transition-all"
                           title="Edit"
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
@@ -214,7 +214,7 @@ const LogisticsPage: React.FC = () => {
         {filtered.length > 0 && (
           <div className="border-t border-border-dark bg-[#1a2332] p-4 flex items-center justify-between">
             <p className="text-xs text-text-muted">
-              Showing <span className="font-bold text-white">{filtered.length}</span> of <span className="font-bold text-white">{lcList.length}</span> companies
+              Showing <span className="font-bold text-on-surface">{filtered.length}</span> of <span className="font-bold text-on-surface">{lcList.length}</span> companies
             </p>
           </div>
         )}
@@ -223,14 +223,14 @@ const LogisticsPage: React.FC = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
-          <div className="relative bg-card-dark border border-border-dark rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)}></div>
+          <div className="relative bg-surface-lowest border border-border-dark rounded-2xl w-full max-w-lg p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-black text-white flex items-center gap-2">
+              <h3 className="text-lg font-black text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-400" style={{ fontSize: 22 }}>local_shipping</span>
                 {editId ? 'Edit Company' : 'Add New Company'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-text-muted hover:text-white transition-colors">
+              <button onClick={() => setShowModal(false)} className="text-text-muted hover:text-on-surface transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -238,40 +238,40 @@ const LogisticsPage: React.FC = () => {
               <div>
                 <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Company Name <span className="text-red-500">*</span></label>
                 <input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })}
-                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                   placeholder="e.g., BAOHAI Express" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Contact Person</label>
                   <input value={form.contactPerson || ''} onChange={e => setForm({ ...form, contactPerson: e.target.value })}
-                    className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                    className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                     placeholder="John Doe" />
                 </div>
                 <div>
                   <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Phone</label>
                   <input value={form.phone || ''} onChange={e => setForm({ ...form, phone: e.target.value })}
-                    className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                    className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                     placeholder="+86 138 0000 0000" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Email</label>
                 <input value={form.email || ''} onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                   placeholder="contact@company.com" />
               </div>
               <div>
                 <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Address</label>
                 <textarea value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })}
                   rows={2}
-                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
+                  className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
                   placeholder="Full shipping address" />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 bg-border-dark text-white text-xs font-bold rounded-xl hover:bg-[#2d445a] transition-all">Cancel</button>
+                className="flex-1 py-2.5 bg-border-dark text-on-surface text-xs font-bold rounded-xl hover:bg-surface-container transition-all">Cancel</button>
               <button onClick={handleSave}
                 className="flex-1 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
                 {editId ? 'Update Company' : 'Create Company'}

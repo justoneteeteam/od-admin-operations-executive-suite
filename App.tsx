@@ -15,7 +15,7 @@ import SettingsPage from './pages/SettingsPage';
 import InventoryDashboard from './pages/InventoryDashboard';
 import AdsPage from './pages/AdsPage';
 import ReportPage from './pages/ReportPage';
-import IncidentsPage from './pages/IncidentsPage';
+
 import LogisticsPage from './pages/LogisticsPage';
 import CommunicationPage from './pages/CommunicationPage';
 import FinancialPage from './pages/FinancialPage';
@@ -63,8 +63,12 @@ const App: React.FC = () => {
           <Route path="/logistics" element={<RoleRoute path="/logistics" element={<LogisticsPage />} />} />
           <Route path="/settings" element={<RoleRoute path="/settings" element={<SettingsPage />} />} />
           <Route path="/ads" element={<RoleRoute path="/ads" element={<AdsPage />} />} />
-          <Route path="/reports" element={<RoleRoute path="/reports" element={<ReportPage />} />} />
-          <Route path="/incidents" element={<RoleRoute path="/incidents" element={<IncidentsPage />} />} />
+          <Route path="/reports/pnl" element={<RoleRoute path="/reports/pnl" element={<ReportPage />} />} />
+          <Route path="/reports/poc" element={<RoleRoute path="/reports/poc" element={<ReportPage />} />} />
+          <Route path="/reports/fulfillment" element={<RoleRoute path="/reports/fulfillment" element={<ReportPage />} />} />
+          <Route path="/reports/distribution" element={<RoleRoute path="/reports/distribution" element={<ReportPage />} />} />
+          <Route path="/reports" element={<Navigate to="/reports/pnl" replace />} />
+
           <Route path="/communication" element={<RoleRoute path="/communication" element={<CommunicationPage />} />} />
           <Route path="/financial" element={<RoleRoute path="/financial" element={<FinancialPage />} />} />
           <Route path="*" element={<Navigate to={defaultRoute} />} />

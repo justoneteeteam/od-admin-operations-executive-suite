@@ -78,7 +78,7 @@ const StatCard: React.FC<{
   label: string; value: string; sub?: string; icon: string;
   iconColor: string; trend?: number; spark?: number[];
 }> = ({ label, value, sub, icon, iconColor, trend, spark }) => (
-  <div className="bg-card-dark border border-border-dark rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/30 transition-all group">
+  <div className="bg-surface-lowest border border-border-dark rounded-2xl p-5 flex flex-col gap-3 hover:border-primary/30 transition-all group">
     <div className="flex items-start justify-between">
       <div className={`size-10 rounded-xl flex items-center justify-center ${iconColor}`}>
         <span className="material-symbols-outlined text-[20px]">{icon}</span>
@@ -91,7 +91,7 @@ const StatCard: React.FC<{
     </div>
     <div>
       <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">{label}</p>
-      <p className="text-2xl font-black text-white mt-1 leading-none">{value}</p>
+      <p className="text-2xl font-black text-on-surface mt-1 leading-none">{value}</p>
       {sub && <p className="text-xs text-text-muted mt-1">{sub}</p>}
     </div>
     {spark && <Sparkline data={spark} color={iconColor.includes('emerald') ? '#10b981' : iconColor.includes('blue') ? '#3b82f6' : iconColor.includes('amber') ? '#f59e0b' : '#6366f1'} />}
@@ -247,8 +247,8 @@ const PerformancePage: React.FC = () => {
   if (error) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
       <span className="material-symbols-outlined text-red-500 text-5xl">error</span>
-      <p className="text-white font-bold text-lg">{error}</p>
-      <button onClick={fetchOrders} className="px-6 py-3 bg-primary rounded-xl text-white text-sm font-bold hover:bg-primary/90 transition-all">
+      <p className="text-on-surface font-bold text-lg">{error}</p>
+      <button onClick={fetchOrders} className="px-6 py-3 bg-primary rounded-xl text-on-surface text-sm font-bold hover:bg-primary/90 transition-all">
         Retry
       </button>
     </div>
@@ -261,27 +261,27 @@ const PerformancePage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-text-muted text-xs mb-2">
-            <span>Home</span><span>/</span><span className="text-white">Executive Performance</span>
+            <span>Home</span><span>/</span><span className="text-on-surface">Executive Performance</span>
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Executive Performance</h1>
+          <h1 className="text-3xl font-black text-on-surface tracking-tight">Executive Performance</h1>
           <p className="text-text-muted text-sm mt-1">Real-time COD pipeline intelligence and business metrics.</p>
         </div>
-        <button onClick={fetchOrders} className="flex items-center gap-2 px-4 py-2.5 bg-card-dark border border-border-dark rounded-xl text-text-muted hover:text-white hover:border-primary/40 transition-all text-sm font-bold">
+        <button onClick={fetchOrders} className="flex items-center gap-2 px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-text-muted hover:text-on-surface hover:border-primary/40 transition-all text-sm font-bold">
           <span className="material-symbols-outlined text-[18px]">refresh</span>
           Refresh
         </button>
       </div>
 
       {/* ── Filters Bar ──────────────────────────────────────────────────────── */}
-      <div className="bg-card-dark border border-border-dark rounded-2xl p-4 flex flex-col gap-4 relative">
+      <div className="bg-surface-lowest border border-border-dark rounded-2xl p-4 flex flex-col gap-4 relative">
         <div className="flex flex-wrap items-center gap-3">
           {/* Date presets */}
-          <div className="flex items-center gap-1 bg-[#1c2d3d] rounded-xl p-1 flex-wrap">
+          <div className="flex items-center gap-1 bg-surface-high rounded-xl p-1 flex-wrap">
             {(['today', 'yesterday', '7days', 'thisMonth', 'lastMonth', 'custom'] as DatePreset[]).map(p => (
               <button
                 key={p}
                 onClick={() => applyPreset(p)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${datePreset === p ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-white'}`}
+                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${datePreset === p ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-text-muted hover:text-on-surface'}`}
               >
                 {presetLabels[p]}
               </button>
@@ -291,7 +291,7 @@ const PerformancePage: React.FC = () => {
           {/* Country Filter */}
           <div className="relative">
             <select
-              className="appearance-none bg-[#1c2d3d] border border-border-dark text-white text-xs font-bold rounded-xl pl-4 pr-8 py-2.5 focus:outline-none focus:border-primary transition-all cursor-pointer"
+              className="appearance-none bg-surface-high border border-border-dark text-on-surface text-xs font-bold rounded-xl pl-4 pr-8 py-2.5 focus:outline-none focus:border-primary transition-all cursor-pointer"
               value={selectedCountry}
               onChange={e => setSelectedCountry(e.target.value)}
             >
@@ -301,14 +301,14 @@ const PerformancePage: React.FC = () => {
           </div>
 
           {/* Date range display */}
-          <div className="ml-auto text-[10px] text-text-muted font-bold uppercase tracking-widest bg-[#1c2d3d] px-3 py-2 rounded-xl border border-border-dark">
+          <div className="ml-auto text-[10px] text-text-muted font-bold uppercase tracking-widest bg-surface-high px-3 py-2 rounded-xl border border-border-dark">
             {fmtDate(dateRange.from)} → {fmtDate(dateRange.to)}
           </div>
         </div>
 
         {/* Custom date picker */}
         {showCalendar && (
-          <div className="flex items-center gap-3 bg-[#1c2d3d] border border-border-dark rounded-xl p-4">
+          <div className="flex items-center gap-3 bg-surface-high border border-border-dark rounded-xl p-4">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black text-text-muted uppercase">From</label>
               <input
@@ -321,7 +321,7 @@ const PerformancePage: React.FC = () => {
                     setDateRange(prev => ({ ...prev, from: d }));
                   }
                 }}
-                className="bg-[#17232f] border border-border-dark text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
+                className="bg-surface-container border border-border-dark text-on-surface text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
             </div>
             <span className="text-text-muted mt-5">→</span>
             <div className="flex flex-col gap-1">
@@ -337,14 +337,14 @@ const PerformancePage: React.FC = () => {
                     setDateRange(prev => ({ ...prev, to: d }));
                   }
                 }}
-                className="bg-[#17232f] border border-border-dark text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
+                className="bg-surface-container border border-border-dark text-on-surface text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary" />
             </div>
             <button onClick={applyCustomRange}
               className="mt-5 px-4 py-2 bg-primary text-white text-xs font-black uppercase rounded-lg hover:bg-primary/90 transition-all">
               Apply
             </button>
             <button onClick={() => setShowCalendar(false)}
-              className="mt-5 px-3 py-2 bg-[#17232f] text-text-muted text-xs font-bold rounded-lg hover:text-white transition-all border border-border-dark">
+              className="mt-5 px-3 py-2 bg-surface-container text-text-muted text-xs font-bold rounded-lg hover:text-on-surface transition-all border border-border-dark">
               ✕
             </button>
           </div>
@@ -365,11 +365,11 @@ const PerformancePage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Order Funnel */}
-        <div className="lg:col-span-2 bg-card-dark border border-border-dark rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
+        <div className="lg:col-span-2 bg-surface-lowest border border-border-dark rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border-dark bg-surface-low flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-[18px]">filter_alt</span>
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Order Pipeline Funnel</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface">Order Pipeline Funnel</h3>
             </div>
             <span className="text-[10px] text-text-muted font-bold">{filtered.length} total</span>
           </div>
@@ -423,39 +423,39 @@ const PerformancePage: React.FC = () => {
             </div>
 
             {/* Side Panel: Drop-offs & Other Pipeline Stages */}
-            <div className="w-full max-w-[280px] flex flex-col gap-4 bg-[#17232f] border border-[#233648] p-5 rounded-2xl shadow-xl">
+            <div className="w-full max-w-[280px] flex flex-col gap-4 bg-surface-container border border-outline-variant p-5 rounded-2xl shadow-xl">
               <h4 className="text-[10px] font-black text-text-muted uppercase tracking-widest border-b border-border-dark pb-3 mb-1">Pipeline Drop-offs / Other</h4>
 
               <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
                 <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-yellow-500">hourglass_empty</span><span className="text-text-muted text-xs font-bold">Pending</span></div>
-                <span className="font-black text-white">{metrics.pending}</span>
+                <span className="font-black text-on-surface">{metrics.pending}</span>
               </div>
               <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
                 <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-red-400">cancel</span><span className="text-text-muted text-xs font-bold">Rejected Leads</span></div>
-                <span className="font-black text-white">{metrics.rejectLeads}</span>
+                <span className="font-black text-on-surface">{metrics.rejectLeads}</span>
               </div>
               <div className="flex justify-between items-center text-sm border-b border-[#1c2d3d] pb-2">
                 <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-amber-500">assignment_return</span><span className="text-text-muted text-xs font-bold">Undelivered</span></div>
-                <span className="font-black text-white">{metrics.undelivered}</span>
+                <span className="font-black text-on-surface">{metrics.undelivered}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px] text-red-500">error</span><span className="text-text-muted text-xs font-bold">Delivery Fail / Expired</span></div>
-                <span className="font-black text-white">{metrics.failed}</span>
+                <span className="font-black text-on-surface">{metrics.failed}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Market Share Card */}
-        <div className="bg-card-dark border border-border-dark rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Market Share</h3>
+        <div className="bg-surface-lowest border border-border-dark rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-border-dark bg-surface-low flex items-center justify-between">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface">Market Share</h3>
             <span className="material-symbols-outlined text-text-muted text-[18px]">more_horiz</span>
           </div>
           <div className="p-6 flex flex-col gap-4">
             {/* Big Revenue Number */}
             <div className="flex flex-col items-center justify-center py-4 gap-1">
-              <p className="text-4xl font-black text-white">{formatK(metrics.totalRevenue)}</p>
+              <p className="text-4xl font-black text-on-surface">{formatK(metrics.totalRevenue)}</p>
               <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Shipped Revenue</p>
             </div>
             <div className="h-px bg-border-dark"></div>
@@ -475,7 +475,7 @@ const PerformancePage: React.FC = () => {
                   <div key={country} className="flex items-center gap-3">
                     <div className={`size-2.5 rounded-sm shrink-0 ${colors[i]}`}></div>
                     <span className="text-xs text-text-muted flex-1 truncate font-medium">{country}</span>
-                    <span className="text-xs font-black text-white">{formatK(rev)}</span>
+                    <span className="text-xs font-black text-on-surface">{formatK(rev)}</span>
                     <span className="text-[10px] text-text-muted w-10 text-right">{((rev / total) * 100).toFixed(0)}%</span>
                   </div>
                 ));
@@ -489,20 +489,20 @@ const PerformancePage: React.FC = () => {
       </div>
 
       {/* ── Top Moving SKUs ───────────────────────────────────────────────────── */}
-      <div className="bg-card-dark border border-border-dark rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-border-dark bg-[#14202c] flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-surface-lowest border border-border-dark rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-dark bg-surface-low flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-[18px]">trending_up</span>
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-white">Top Moving SKUs</h3>
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-on-surface">Top Moving SKUs</h3>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSkuView('revenue')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${skuView === 'revenue' ? 'bg-primary text-white' : 'text-text-muted hover:text-white bg-[#1c2d3d]'}`}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${skuView === 'revenue' ? 'bg-primary text-white' : 'text-text-muted hover:text-on-surface bg-surface-high'}`}
             >Revenue</button>
             <button
               onClick={() => setSkuView('profit')}
-              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${skuView === 'profit' ? 'bg-primary text-white' : 'text-text-muted hover:text-white bg-[#1c2d3d]'}`}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${skuView === 'profit' ? 'bg-primary text-white' : 'text-text-muted hover:text-on-surface bg-surface-high'}`}
             >Profit</button>
           </div>
         </div>
@@ -510,7 +510,7 @@ const PerformancePage: React.FC = () => {
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
-              <tr className="bg-[#17232f] border-b border-[#233648]">
+              <tr className="bg-surface-container border-b border-outline-variant">
                 <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest w-8">#</th>
                 <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest">Product Details</th>
                 <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Leads</th>
@@ -520,7 +520,7 @@ const PerformancePage: React.FC = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">Conv. Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#233648]">
+            <tbody className="divide-y divide-outline-variant">
               {topSkus.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center">
@@ -534,19 +534,19 @@ const PerformancePage: React.FC = () => {
                 const convRate = sku.leads > 0 ? (sku.orders / sku.leads) * 100 : 0;
                 const retRate = (sku.orders) > 0 ? (sku.returns / sku.orders) * 100 : 0;
                 return (
-                  <tr key={sku.sku || i} className="hover:bg-[#1c2d3d]/50 transition-colors">
+                  <tr key={sku.sku || i} className="hover:bg-surface-high/50 transition-colors">
                     <td className="px-6 py-5">
                       <span className="text-[10px] font-black text-text-muted/50">#{i + 1}</span>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-sm font-bold text-white">{sku.name || 'Unknown Product'}</p>
+                      <p className="text-sm font-bold text-on-surface">{sku.name || 'Unknown Product'}</p>
                       <p className="text-[10px] text-text-muted font-mono mt-0.5">{sku.sku || 'N/A'}</p>
                     </td>
                     <td className="px-6 py-5 text-right">
                       <span className="text-sm font-bold text-text-muted">{sku.leads.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <span className="text-sm font-black text-white">{sku.orders.toLocaleString()}</span>
+                      <span className="text-sm font-black text-on-surface">{sku.orders.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-5 text-right">
                       <span className="text-sm font-black text-primary">{formatCurrency(sku.revenue)}</span>
@@ -558,7 +558,7 @@ const PerformancePage: React.FC = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 bg-[#1c2d3d] rounded-full overflow-hidden">
+                        <div className="w-16 h-1.5 bg-surface-high rounded-full overflow-hidden">
                           <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(convRate, 100)}%` }}></div>
                         </div>
                         <span className="text-xs font-bold text-text-muted w-10 text-right">{convRate.toFixed(0)}%</span>
@@ -573,7 +573,7 @@ const PerformancePage: React.FC = () => {
 
         <div className="px-6 py-4 border-t border-border-dark flex items-center justify-between">
           <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">REAL-TIME DATA</span>
-          <button className="text-[10px] font-black text-primary hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1">
+          <button className="text-[10px] font-black text-primary hover:text-on-surface uppercase tracking-widest transition-colors flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">open_in_new</span>
             FULL INVENTORY AUDIT
           </button>
@@ -592,7 +592,7 @@ const PerformancePage: React.FC = () => {
           { label: 'Undelivered', count: metrics.undelivered, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: 'assignment_return' },
           { label: 'Exception / Expired', count: metrics.failed, color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: 'error' },
           { label: 'COD Paid', count: filtered.filter(o => o.paymentStatus === 'Paid').length, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', icon: 'payments' },
-          { label: 'Awaiting Payment', count: filtered.filter(o => o.paymentStatus !== 'Paid').length, color: 'text-text-muted', bg: 'bg-[#1c2d3d]', border: 'border-border-dark', icon: 'hourglass_empty' },
+          { label: 'Awaiting Payment', count: filtered.filter(o => o.paymentStatus !== 'Paid').length, color: 'text-text-muted', bg: 'bg-surface-high', border: 'border-border-dark', icon: 'hourglass_empty' },
         ].map(s => (
           <div key={s.label} className={`${s.bg} border ${s.border} rounded-xl p-4 flex flex-col gap-2`}>
             <div className="flex items-center justify-between">

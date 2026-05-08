@@ -439,7 +439,7 @@ const SettingsPage: React.FC = () => {
 
       {/* Actions Bar */}
       <div className="flex items-center justify-between">
-        <p className="text-text-muted text-sm"><span className="text-white font-bold">{users.length}</span> team members</p>
+        <p className="text-text-muted text-sm"><span className="text-on-surface font-bold">{users.length}</span> team members</p>
         <button
           onClick={() => setShowCreateUser(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
@@ -451,36 +451,36 @@ const SettingsPage: React.FC = () => {
 
       {/* Create User Form */}
       {showCreateUser && (
-        <div className="bg-card-dark rounded-2xl border border-primary/20 overflow-hidden shadow-sm">
+        <div className="bg-surface-lowest rounded-2xl border border-primary/20 overflow-hidden shadow-sm">
           <div className="p-5 border-b border-border-dark flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>person_add</span>
               New Team Member
             </h3>
-            <button onClick={() => setShowCreateUser(false)} className="text-text-muted hover:text-white transition-colors">
+            <button onClick={() => setShowCreateUser(false)} className="text-text-muted hover:text-on-surface transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: 20 }}>close</span>
             </button>
           </div>
           <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Full Name *</label>
-              <input value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} placeholder="John Doe" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+              <input value={newUser.fullName} onChange={e => setNewUser({ ...newUser, fullName: e.target.value })} placeholder="John Doe" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Email *</label>
-              <input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} placeholder="john@company.com" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+              <input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} placeholder="john@company.com" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Password *</label>
-              <input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="••••••••" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+              <input type="password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} placeholder="••••••••" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Phone</label>
-              <input value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+971500000000" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
+              <input value={newUser.phone} onChange={e => setNewUser({ ...newUser, phone: e.target.value })} placeholder="+971500000000" className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Role *</label>
-              <select value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all">
+              <select value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })} className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all">
                 <option value="ADMIN">Admin</option>
                 <option value="MARKETING">Marketing</option>
                 <option value="CS">Customer Service</option>
@@ -497,7 +497,7 @@ const SettingsPage: React.FC = () => {
       )}
 
       {/* Users Table */}
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -516,7 +516,7 @@ const SettingsPage: React.FC = () => {
                 <tr><td colSpan={5} className="py-12 text-center text-text-muted text-sm">No users found.</td></tr>
               ) : (
                 users.map((u) => {
-                  const badge = ROLE_BADGE[u.role] || { bg: 'bg-gray-500/10', text: 'text-gray-400', label: u.role };
+                  const badge = ROLE_BADGE[u.role] || { bg: 'bg-gray-500/10', text: 'text-on-surface-variant', label: u.role };
                   return (
                     <tr key={u.id} className="hover:bg-[#1a2332] transition-colors">
                       <td className="py-4 px-6">
@@ -526,7 +526,7 @@ const SettingsPage: React.FC = () => {
                             style={{ backgroundImage: `url('https://api.dicebear.com/7.x/avataaars/svg?seed=${u.fullName || u.email}')` }}
                           ></div>
                           <div>
-                            <p className="text-sm font-bold text-white">{u.fullName || '--'}</p>
+                            <p className="text-sm font-bold text-on-surface">{u.fullName || '--'}</p>
                             <p className="text-xs text-text-muted">{u.email}</p>
                           </div>
                         </div>
@@ -536,7 +536,7 @@ const SettingsPage: React.FC = () => {
                           <select
                             value={u.role}
                             onChange={e => handleUpdateRole(u.id, e.target.value)}
-                            className="bg-[#1a2332] border border-primary rounded-lg px-2 py-1 text-xs text-white outline-none"
+                            className="bg-[#1a2332] border border-primary rounded-lg px-2 py-1 text-xs text-on-surface outline-none"
                           >
                             <option value="ADMIN">Admin</option>
                             <option value="MARKETING">Marketing</option>
@@ -555,21 +555,21 @@ const SettingsPage: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="text-sm text-white">{u.lastLoginAt ? timeAgo(u.lastLoginAt) : 'Never'}</span>
+                        <span className="text-sm text-on-surface">{u.lastLoginAt ? timeAgo(u.lastLoginAt) : 'Never'}</span>
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => setEditingUserId(editingUserId === u.id ? null : u.id)}
                             title="Change role"
-                            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-[#2d445a] transition-colors"
+                            className="p-1.5 rounded-lg text-text-muted hover:text-on-surface hover:bg-surface-container transition-colors"
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
                           </button>
                           <button
                             onClick={() => handleResetPassword(u.id)}
                             title="Reset password"
-                            className="p-1.5 rounded-lg text-text-muted hover:text-white hover:bg-[#2d445a] transition-colors"
+                            className="p-1.5 rounded-lg text-text-muted hover:text-on-surface hover:bg-surface-container transition-colors"
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>lock_reset</span>
                           </button>
@@ -614,7 +614,7 @@ const SettingsPage: React.FC = () => {
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 w-full bg-card-dark border border-border-dark rounded-xl text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder-text-muted/50 py-2.5 outline-none transition-all"
+            className="pl-9 w-full bg-surface-lowest border border-border-dark rounded-xl text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/30 placeholder-text-muted/50 py-2.5 outline-none transition-all"
             placeholder="Search stores or sheets..."
             type="text"
           />
@@ -622,7 +622,7 @@ const SettingsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={fetchStores}
-            className="flex items-center gap-2 px-3 py-2 bg-card-dark border border-border-dark rounded-xl text-sm text-text-muted font-medium hover:text-white transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-surface-lowest border border-border-dark rounded-xl text-sm text-text-muted font-medium hover:text-on-surface transition-colors"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
             Refresh
@@ -631,7 +631,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       {/* Stores Table */}
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -676,7 +676,7 @@ const SettingsPage: React.FC = () => {
                             {getInitials(store.storeName)}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{store.storeName}</p>
+                            <p className="text-sm font-bold text-on-surface">{store.storeName}</p>
                             {store.storeUrl && (
                               <span className="text-xs text-text-muted">{store.storeUrl.replace(/^https?:\/\//, '')}</span>
                             )}
@@ -686,7 +686,7 @@ const SettingsPage: React.FC = () => {
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <span className="material-symbols-outlined text-[#34A853]" style={{ fontSize: 18 }}>table_chart</span>
-                          <span className="text-sm text-white">Google Sheets</span>
+                          <span className="text-sm text-on-surface">Google Sheets</span>
                         </div>
                       </td>
                       <td className="py-4 px-6">
@@ -694,7 +694,7 @@ const SettingsPage: React.FC = () => {
                           {store.gsSpreadsheetId ? (
                             <>
                               <span className="material-symbols-outlined text-[#34A853]" style={{ fontSize: 18 }}>table_chart</span>
-                              <span className="text-sm text-white truncate max-w-[150px]" title={store.gsSheetName || 'Sheet1'}>
+                              <span className="text-sm text-on-surface truncate max-w-[150px]" title={store.gsSheetName || 'Sheet1'}>
                                 {store.gsSheetName || 'Sheet1'}
                               </span>
                             </>
@@ -721,7 +721,7 @@ const SettingsPage: React.FC = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
-                          <span className="text-sm text-white">{store.gsLastSyncAt ? timeAgo(store.gsLastSyncAt) : '--'}</span>
+                          <span className="text-sm text-on-surface">{store.gsLastSyncAt ? timeAgo(store.gsLastSyncAt) : '--'}</span>
                           <span className="text-xs text-text-muted">{isConnected ? 'Auto-syncs every 3h' : 'Never synced'}</span>
                         </div>
                       </td>
@@ -729,15 +729,15 @@ const SettingsPage: React.FC = () => {
                         <div className="relative">
                           <button
                             onClick={e => { e.stopPropagation(); setOpenMenuId(openMenuId === store.id ? null : store.id); }}
-                            className="text-text-muted hover:text-white transition-colors p-1 rounded-lg hover:bg-[#2d445a]"
+                            className="text-text-muted hover:text-on-surface transition-colors p-1 rounded-lg hover:bg-surface-container"
                           >
                             <span className="material-symbols-outlined">more_vert</span>
                           </button>
                           {openMenuId === store.id && (
-                            <div className="absolute right-0 top-8 bg-card-dark border border-border-dark rounded-xl shadow-xl z-50 py-1 w-40 animate-enter">
+                            <div className="absolute right-0 top-8 bg-surface-lowest border border-border-dark rounded-xl shadow-xl z-50 py-1 w-40 animate-enter">
                               <button
                                 onClick={e => { e.stopPropagation(); handleEditStore(store); }}
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white hover:bg-[#1a2332] transition-colors"
+                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-on-surface hover:bg-[#1a2332] transition-colors"
                               >
                                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
                                 Edit Store
@@ -745,7 +745,7 @@ const SettingsPage: React.FC = () => {
                               <button
                                 onClick={e => { e.stopPropagation(); handleSync(store.id); }}
                                 disabled={!!isSyncing}
-                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white hover:bg-[#1a2332] transition-colors disabled:opacity-50"
+                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-on-surface hover:bg-[#1a2332] transition-colors disabled:opacity-50"
                               >
                                 <span className={`material-symbols-outlined ${isSyncing === store.id ? 'animate-spin' : ''}`} style={{ fontSize: 16 }}>
                                   {isSyncing === store.id ? 'refresh' : 'sync'}
@@ -773,7 +773,7 @@ const SettingsPage: React.FC = () => {
         {filteredStores.length > 0 && (
           <div className="border-t border-border-dark bg-[#1a2332] p-4 flex items-center justify-between">
             <p className="text-xs text-text-muted">
-              Showing <span className="font-bold text-white">1-{filteredStores.length}</span> of <span className="font-bold text-white">{filteredStores.length}</span> stores
+              Showing <span className="font-bold text-on-surface">1-{filteredStores.length}</span> of <span className="font-bold text-on-surface">{filteredStores.length}</span> stores
             </p>
           </div>
         )}
@@ -786,17 +786,17 @@ const SettingsPage: React.FC = () => {
             <span className="material-symbols-outlined">help</span>
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">Need help connecting?</h4>
+            <h4 className="text-sm font-bold text-on-surface">Need help connecting?</h4>
             <p className="text-xs text-text-muted mt-1 leading-relaxed">Check our documentation for step-by-step guides on how to connect your Google Sheets to import orders automatically.</p>
             <button className="text-xs font-bold text-primary hover:text-primary/80 mt-2 inline-block transition-colors">View Documentation →</button>
           </div>
         </div>
-        <div className="bg-card-dark border border-border-dark rounded-2xl p-5 flex items-start gap-4">
+        <div className="bg-surface-lowest border border-border-dark rounded-2xl p-5 flex items-start gap-4">
           <div className="bg-[#1a2332] p-2.5 rounded-xl text-text-muted">
             <span className="material-symbols-outlined">api</span>
           </div>
           <div>
-            <h4 className="text-sm font-bold text-white">API Access</h4>
+            <h4 className="text-sm font-bold text-on-surface">API Access</h4>
             <p className="text-xs text-text-muted mt-1 leading-relaxed">Developers can use the API to programmatically manage store connections and sync status.</p>
             <button className="text-xs font-bold text-primary hover:text-primary/80 mt-2 inline-block transition-colors">Get API Keys →</button>
           </div>
@@ -811,16 +811,16 @@ const SettingsPage: React.FC = () => {
       {/* Back button */}
       <button
         onClick={handleBackToStores}
-        className="flex items-center gap-1 text-text-muted text-sm hover:text-white transition-colors w-fit"
+        className="flex items-center gap-1 text-text-muted text-sm hover:text-on-surface transition-colors w-fit"
       >
         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>arrow_back</span>
         Back to Stores
       </button>
 
       {/* Store Information */}
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
         <div className="p-6 border-b border-border-dark">
-          <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+          <h3 className="text-sm font-black uppercase tracking-widest text-on-surface flex items-center gap-2">
             <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>storefront</span>
             Store Information
           </h3>
@@ -833,7 +833,7 @@ const SettingsPage: React.FC = () => {
               value={formData.storeName || ''}
               onChange={e => handleChange('storeName', e.target.value)}
               placeholder="e.g., Urban Trends Dubai"
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -843,7 +843,7 @@ const SettingsPage: React.FC = () => {
               value={formData.storeUrl || ''}
               onChange={e => handleChange('storeUrl', e.target.value)}
               placeholder="https://yourstore.com"
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -853,7 +853,7 @@ const SettingsPage: React.FC = () => {
               value={formData.supportEmail || ''}
               onChange={e => handleChange('supportEmail', e.target.value)}
               placeholder="support@yourstore.com"
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -861,7 +861,7 @@ const SettingsPage: React.FC = () => {
             <select
               value={formData.currency || 'AED'}
               onChange={e => handleChange('currency', e.target.value)}
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
             >
               <option value="AED">AED - United Arab Emirates Dirham</option>
               <option value="SAR">SAR - Saudi Riyal</option>
@@ -874,10 +874,10 @@ const SettingsPage: React.FC = () => {
       </div>
 
       {/* Google Sheets Integration */}
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
         <div className="p-6 border-b border-border-dark flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-[#34A853]" style={{ fontSize: 18 }}>table_chart</span>
               Google Sheets Integration
               <span className="material-symbols-outlined text-text-muted/60" style={{ fontSize: 14 }}>lock</span>
@@ -904,9 +904,9 @@ const SettingsPage: React.FC = () => {
               value={formData.gsSpreadsheetId || ''}
               onChange={e => handleChange('gsSpreadsheetId', e.target.value)}
               placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjGMUWqTGk..."
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
             />
-            <p className="text-[10px] text-text-muted">Found in your Google Sheet URL: docs.google.com/spreadsheets/d/<strong className="text-white/60">THIS-IS-THE-ID</strong>/edit</p>
+            <p className="text-[10px] text-text-muted">Found in your Google Sheet URL: docs.google.com/spreadsheets/d/<strong className="text-on-surface/60">THIS-IS-THE-ID</strong>/edit</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -917,7 +917,7 @@ const SettingsPage: React.FC = () => {
                 value={formData.gsSheetName || 'Sheet1'}
                 onChange={e => handleChange('gsSheetName', e.target.value)}
                 placeholder="Sheet1"
-                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
               />
               <p className="text-[10px] text-text-muted">Name of the tab in your spreadsheet.</p>
             </div>
@@ -928,7 +928,7 @@ const SettingsPage: React.FC = () => {
                 value={formData.gsProjectId || ''}
                 onChange={e => handleChange('gsProjectId', e.target.value)}
                 placeholder="e.g., cod-logistics-123456"
-                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
               />
               <p className="text-[10px] text-text-muted">Found in your Google Cloud Console.</p>
             </div>
@@ -941,7 +941,7 @@ const SettingsPage: React.FC = () => {
               value={formData.gsClientEmail || ''}
               onChange={e => handleChange('gsClientEmail', e.target.value)}
               placeholder="service-account@project-id.iam.gserviceaccount.com"
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
             />
             <p className="text-[10px] text-text-muted">Share your Google Sheet with this email address.</p>
           </div>
@@ -963,7 +963,7 @@ const SettingsPage: React.FC = () => {
               placeholder={'-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----'}
               rows={4}
               style={showPrivateKey ? {} : { WebkitTextSecurity: 'disc' as any }}
-              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
+              className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
             />
           </div>
 
@@ -982,7 +982,7 @@ const SettingsPage: React.FC = () => {
             <button
               onClick={handleTestConnection}
               disabled={isTesting}
-              className="flex items-center gap-2 px-4 py-2 bg-border-dark text-white text-xs font-bold rounded-xl hover:bg-[#2d445a] transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-border-dark text-on-surface text-xs font-bold rounded-xl hover:bg-surface-container transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>wifi_tethering</span>
               {isTesting ? 'Testing...' : 'Test Connection'}
@@ -992,10 +992,10 @@ const SettingsPage: React.FC = () => {
       </div>
 
       {/* Call Center Queue Integration */}
-      <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+      <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
         <div className="p-6 border-b border-border-dark flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-orange-400" style={{ fontSize: 18 }}>assignment_ind</span>
               Call Center Queue Integration
             </h3>
@@ -1016,7 +1016,7 @@ const SettingsPage: React.FC = () => {
                 value={formData.callCenterSheetId || ''}
                 onChange={e => handleChange('callCenterSheetId', e.target.value)}
                 placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjGMUWqTGk..."
-                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface font-mono placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
               />
               <p className="text-[10px] text-text-muted">The ID of the Call Center Google Sheet.</p>
             </div>
@@ -1027,7 +1027,7 @@ const SettingsPage: React.FC = () => {
                 value={formData.callCenterSheetName || ''}
                 onChange={e => handleChange('callCenterSheetName', e.target.value)}
                 placeholder="e.g., Queue1"
-                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
+                className="bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
               />
               <p className="text-[10px] text-text-muted">Name of the tracking tab.</p>
             </div>
@@ -1037,7 +1037,7 @@ const SettingsPage: React.FC = () => {
 
       {/* Danger Zone */}
       {activeStoreId && (
-        <div className="bg-card-dark rounded-2xl border border-red-500/20 overflow-hidden shadow-sm">
+        <div className="bg-surface-lowest rounded-2xl border border-red-500/20 overflow-hidden shadow-sm">
           <div className="p-6 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-black uppercase tracking-widest text-red-400">Danger Zone</h3>
@@ -1077,9 +1077,9 @@ const SettingsPage: React.FC = () => {
         )}
 
         {/* ── Section 1: Account Management ── */}
-        <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
           <div className="p-6 border-b border-border-dark flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface flex items-center gap-2">
               <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="size-5" />
               WhatsApp Account
             </h3>
@@ -1096,7 +1096,7 @@ const SettingsPage: React.FC = () => {
                     <span className="material-symbols-outlined text-green-400" style={{ fontSize: 24 }}>phone_iphone</span>
                   </div>
                   <div>
-                    <p className="text-white font-bold text-sm">+{waPhone?.replace('@c.us', '')}</p>
+                    <p className="text-on-surface font-bold text-sm">+{waPhone?.replace('@c.us', '')}</p>
                     <p className="text-text-muted text-xs">17Track Arrival messages will be sent from this number (1hr after In Transit).</p>
                   </div>
                 </div>
@@ -1112,7 +1112,7 @@ const SettingsPage: React.FC = () => {
               <div className="flex flex-col gap-6">
                 {/* Phone Number Pairing (Primary) */}
                 <div className="flex flex-col gap-3">
-                  <h4 className="text-white font-bold text-sm">Link with Phone Number</h4>
+                  <h4 className="text-on-surface font-bold text-sm">Link with Phone Number</h4>
                   <p className="text-text-muted text-xs">Enter your WhatsApp number with country code. You'll get an 8-digit code to type into your WhatsApp app.</p>
                   <div className="flex items-center gap-3">
                     <input
@@ -1120,7 +1120,7 @@ const SettingsPage: React.FC = () => {
                       value={waPhoneInput}
                       onChange={e => setWaPhoneInput(e.target.value)}
                       placeholder="+393331234567"
-                      className="flex-1 max-w-xs bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-white placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-mono"
+                      className="flex-1 max-w-xs bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all font-mono"
                     />
                     <button
                       onClick={requestPairingCode}
@@ -1136,7 +1136,7 @@ const SettingsPage: React.FC = () => {
                   {waPairingCode && (
                     <div className="bg-primary/5 border border-primary/20 rounded-xl px-6 py-4 flex flex-col items-center gap-2 max-w-sm">
                       <p className="text-text-muted text-xs">Enter this code on your phone:</p>
-                      <p className="text-white font-black text-3xl tracking-[0.4em] font-mono">{waPairingCode}</p>
+                      <p className="text-on-surface font-black text-3xl tracking-[0.4em] font-mono">{waPairingCode}</p>
                       <p className="text-primary text-[10px] font-bold uppercase mt-1">WhatsApp → Linked Devices → Link a Device → Link with phone number</p>
                     </div>
                   )}
@@ -1153,7 +1153,7 @@ const SettingsPage: React.FC = () => {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => { setWaShowQr(!waShowQr); if (!waShowQr) fetchWaQr(); }}
-                    className="text-text-muted text-xs font-bold hover:text-white transition-colors flex items-center gap-1 w-fit"
+                    className="text-text-muted text-xs font-bold hover:text-on-surface transition-colors flex items-center gap-1 w-fit"
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{waShowQr ? 'expand_less' : 'qr_code_2'}</span>
                     {waShowQr ? 'Hide QR Code' : 'Scan QR Code instead'}
@@ -1165,14 +1165,14 @@ const SettingsPage: React.FC = () => {
                           <img src={waQrCode} alt="WhatsApp QR Code" className="size-48" />
                         ) : (
                           <div className="size-48 bg-gray-100 animate-pulse rounded-xl flex items-center justify-center">
-                            <span className="text-gray-400 font-bold text-xs">Loading QR...</span>
+                            <span className="text-on-surface-variant font-bold text-xs">Loading QR...</span>
                           </div>
                         )}
                       </div>
                       <div className="text-text-muted text-xs leading-relaxed">
                         <p>1. Open WhatsApp on your phone</p>
-                        <p>2. Tap <strong className="text-white">Linked Devices</strong></p>
-                        <p>3. Tap <strong className="text-white">Link a Device</strong></p>
+                        <p>2. Tap <strong className="text-on-surface">Linked Devices</strong></p>
+                        <p>3. Tap <strong className="text-on-surface">Link a Device</strong></p>
                         <p>4. Point your phone at this QR code</p>
                       </div>
                     </div>
@@ -1184,9 +1184,9 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {/* ── Section 2: Editable Message Templates ── */}
-        <div className="bg-card-dark rounded-2xl border border-border-dark overflow-hidden shadow-sm">
+        <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-sm">
           <div className="p-6 border-b border-border-dark">
-            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+            <h3 className="text-sm font-black uppercase tracking-widest text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-primary" style={{ fontSize: 18 }}>edit_note</span>
               Message Templates
             </h3>
@@ -1211,7 +1211,7 @@ const SettingsPage: React.FC = () => {
                         setWaTemplates(prev => prev.map(t => t.id === tpl.id ? { ...t, bodyTemplate: e.target.value } : t));
                       }}
                       rows={8}
-                      className="bg-[#0f1923] border border-border-dark rounded-lg px-3 py-2 text-xs text-white/80 font-mono leading-relaxed focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
+                      className="bg-[#0f1923] border border-border-dark rounded-lg px-3 py-2 text-xs text-on-surface/80 font-mono leading-relaxed focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all resize-none"
                     />
                     <button
                       onClick={() => saveTemplate(tpl.id, tpl.bodyTemplate)}
@@ -1236,8 +1236,8 @@ const SettingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-white text-3xl font-black tracking-tight">Store Management</h1>
-          <span className="bg-card-dark text-text-muted text-xs px-2.5 py-1 rounded-full font-bold border border-border-dark">{stores.length} Store{stores.length !== 1 ? 's' : ''}</span>
+          <h1 className="text-on-surface text-3xl font-black tracking-tight">Store Management</h1>
+          <span className="bg-surface-lowest text-text-muted text-xs px-2.5 py-1 rounded-full font-bold border border-border-dark">{stores.length} Store{stores.length !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex items-center gap-3">
           {activeTab === 'create' && (
@@ -1274,7 +1274,7 @@ const SettingsPage: React.FC = () => {
       <div className="flex items-center border-b border-border-dark">
         <button
           onClick={() => setActiveTab('connection')}
-          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'connection' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'connection' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
         >
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>link</span>
@@ -1284,7 +1284,7 @@ const SettingsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('create')}
-          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'create' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'create' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
         >
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{activeStoreId ? 'edit' : 'add_circle'}</span>
@@ -1294,7 +1294,7 @@ const SettingsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('whatsapp')}
-          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'whatsapp' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'whatsapp' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
         >
           <div className="flex items-center gap-2">
             <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" className="size-4" style={{ filter: activeTab !== 'whatsapp' ? 'grayscale(100%) opacity(60%)' : 'none' }} />
@@ -1304,7 +1304,7 @@ const SettingsPage: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('email')}
-          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'email' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+          className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'email' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
         >
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>mail</span>
@@ -1315,7 +1315,7 @@ const SettingsPage: React.FC = () => {
         {isAdmin && (
           <button
             onClick={() => { setActiveTab('users'); fetchUsers(); }}
-            className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'users' ? 'text-primary' : 'text-text-muted hover:text-white'}`}
+            className={`px-5 py-3 text-sm font-bold transition-all relative ${activeTab === 'users' ? 'text-primary' : 'text-text-muted hover:text-on-surface'}`}
           >
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>manage_accounts</span>
@@ -1342,13 +1342,13 @@ function renderEmailTabContent(
   return (
     <div className="flex flex-col gap-6 py-6">
       {/* SMTP Config */}
-      <div className="bg-card-dark rounded-xl border border-border-dark p-6">
+      <div className="bg-surface-lowest rounded-xl border border-border-dark p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="size-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-orange-400" style={{ fontSize: 20 }}>mail</span>
           </div>
           <div>
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">Elastic Email SMTP</h3>
+            <h3 className="text-sm font-black text-on-surface uppercase tracking-wider">Elastic Email SMTP</h3>
             <p className="text-xs text-text-muted">Configure outbound/inbound email via Elastic Email</p>
           </div>
         </div>
@@ -1360,7 +1360,7 @@ function renderEmailTabContent(
               value={formData.emailSmtpHost || ''}
               onChange={e => setFormData({ ...formData, emailSmtpHost: e.target.value })}
               placeholder="smtp.elasticemail.com"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
             />
           </div>
           <div>
@@ -1369,7 +1369,7 @@ function renderEmailTabContent(
               type="number"
               value={formData.emailSmtpPort || 587}
               onChange={e => setFormData({ ...formData, emailSmtpPort: parseInt(e.target.value) })}
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface focus:border-primary outline-none"
             />
           </div>
           <div>
@@ -1378,7 +1378,7 @@ function renderEmailTabContent(
               value={formData.emailSmtpUser || ''}
               onChange={e => setFormData({ ...formData, emailSmtpUser: e.target.value })}
               placeholder="your-api-key"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
             />
           </div>
           <div>
@@ -1388,7 +1388,7 @@ function renderEmailTabContent(
               value={formData.emailSmtpPass || ''}
               onChange={e => setFormData({ ...formData, emailSmtpPass: e.target.value })}
               placeholder="••••••••"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
             />
           </div>
           <div>
@@ -1397,7 +1397,7 @@ function renderEmailTabContent(
               value={formData.emailFromAddress || ''}
               onChange={e => setFormData({ ...formData, emailFromAddress: e.target.value })}
               placeholder="cod@justonetee.org"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
             />
           </div>
           <div>
@@ -1406,7 +1406,7 @@ function renderEmailTabContent(
               value={formData.emailFromName || ''}
               onChange={e => setFormData({ ...formData, emailFromName: e.target.value })}
               placeholder="JustOneTee Support"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
             />
           </div>
         </div>
@@ -1421,18 +1421,18 @@ function renderEmailTabContent(
             />
             <div className="w-9 h-5 bg-border-dark rounded-full peer peer-checked:bg-primary transition-colors peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
           </label>
-          <span className="text-xs text-white font-bold">Enable Inbound Email Webhook</span>
+          <span className="text-xs text-on-surface font-bold">Enable Inbound Email Webhook</span>
         </div>
       </div>
 
       {/* Incident Call Center Sheet */}
-      <div className="bg-card-dark rounded-xl border border-border-dark p-6">
+      <div className="bg-surface-lowest rounded-xl border border-border-dark p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="size-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
             <span className="material-symbols-outlined text-purple-400" style={{ fontSize: 20 }}>report_problem</span>
           </div>
           <div>
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">Incident Call Center Sheet</h3>
+            <h3 className="text-sm font-black text-on-surface uppercase tracking-wider">Incident Call Center Sheet</h3>
             <p className="text-xs text-text-muted">Google Sheet for incident call queue (separate from orders call center)</p>
           </div>
         </div>
@@ -1444,7 +1444,7 @@ function renderEmailTabContent(
               value={formData.incidentSheetId || ''}
               onChange={e => setFormData({ ...formData, incidentSheetId: e.target.value })}
               placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none font-mono"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none font-mono"
             />
           </div>
           <div>
@@ -1453,7 +1453,7 @@ function renderEmailTabContent(
               value={formData.incidentSheetName || ''}
               onChange={e => setFormData({ ...formData, incidentSheetName: e.target.value })}
               placeholder="Incident Queue"
-              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-white placeholder-text-muted/50 focus:border-primary outline-none"
+              className="w-full bg-[#1a2332] border border-border-dark rounded-lg px-3 py-2 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary outline-none"
             />
           </div>
         </div>

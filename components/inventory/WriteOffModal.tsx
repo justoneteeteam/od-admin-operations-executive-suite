@@ -52,8 +52,8 @@ const WriteOffModal: React.FC<WriteOffModalProps> = ({ isOpen, product, warehous
     return (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
-            <div className="relative bg-[#111a22] border border-border-dark rounded-2xl shadow-2xl w-full max-w-md p-6">
-                <h3 className="text-xl font-black text-white mb-2">Write-Off Stock Location</h3>
+            <div className="relative bg-surface-lowest border border-border-dark rounded-2xl shadow-2xl w-full max-w-md p-6">
+                <h3 className="text-xl font-black text-on-surface mb-2">Write-Off Stock Location</h3>
                 <p className="text-sm text-text-muted mb-6">Record damaged, lost, or compromised inventory for {product.name}</p>
 
                 <div className="space-y-4">
@@ -64,7 +64,7 @@ const WriteOffModal: React.FC<WriteOffModalProps> = ({ isOpen, product, warehous
                             min="1"
                             value={quantity}
                             onChange={(e) => setQuantity(Number(e.target.value))}
-                            className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary"
+                            className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary"
                         />
                     </div>
                     <div className="space-y-2">
@@ -72,7 +72,7 @@ const WriteOffModal: React.FC<WriteOffModalProps> = ({ isOpen, product, warehous
                         <select 
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            className="bg-[#1c2d3d] border-[#2d445a] text-white text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary"
+                            className="bg-surface-high border-outline-variant text-on-surface text-sm rounded-xl w-full h-12 px-4 focus:ring-primary/40 focus:border-primary"
                         >
                             <option value="damaged">Damaged Output</option>
                             <option value="lost">Lost in Transit</option>
@@ -85,7 +85,7 @@ const WriteOffModal: React.FC<WriteOffModalProps> = ({ isOpen, product, warehous
                 <div className="flex gap-3 mt-8">
                     <button 
                         onClick={onClose}
-                        className="flex-1 px-4 py-2 border border-[#2d445a] text-white rounded-xl text-sm font-bold hover:bg-[#1c2d3d] transition-colors"
+                        className="flex-1 px-4 py-2 border border-outline-variant text-on-surface rounded-xl text-sm font-bold hover:bg-surface-high transition-colors"
                     >
                         Cancel
                     </button>

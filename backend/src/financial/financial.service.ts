@@ -1094,6 +1094,259 @@ const rawRows = this._parseInvoice(fileBuffer);
         };
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // DISTRIBUTION GEO REPORT
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Known European island regions / provinces / cities.
+     * Used to flag orders shipped to island destinations.
+     */
+    private static readonly ISLAND_KEYWORDS: string[] = [
+        // Spain
+        'canarias', 'canary', 'tenerife', 'gran canaria', 'lanzarote', 'fuerteventura',
+        'la palma', 'la gomera', 'el hierro', 'baleares', 'balearic', 'mallorca',
+        'menorca', 'ibiza', 'formentera', 'ceuta', 'melilla',
+        // Italy
+        'sardegna', 'sardinia', 'sicilia', 'sicily', 'lampedusa', 'pantelleria',
+        // France
+        'corse', 'corsica', 'guadeloupe', 'martinique', 'réunion', 'reunion',
+        'mayotte', 'guyane',
+        // Greece
+        'crete', 'kriti', 'rhodes', 'corfu', 'santorini', 'mykonos', 'lesbos',
+        'zakynthos', 'kefalonia', 'cyclades', 'dodecanese', 'aegean',
+        // Portugal
+        'madeira', 'açores', 'azores',
+        // Croatia
+        'hvar', 'brač', 'brac', 'korčula', 'korcula', 'vis',
+        // Generic
+        'island', 'islands', 'isla', 'islas', 'île', 'iles',
+    ];
+
+    private isIslandLocation(city?: string, province?: string): boolean {
+        const haystack = `${city || ''} ${province || ''}`.toLowerCase();
+        return FinancialService.ISLAND_KEYWORDS.some((kw) => haystack.includes(kw));
+    }
+
+    async getDistributionReport(filters: {
+        type: 'test' | 'actual';
+        month?: string;
+        startDate?: string;
+        endDate?: string;
+    }) {
+        // Date range
+        let dateStart: Date | undefined;
+        let dateEnd: Date | undefined;
+
+        if (filters.month) {
+            const [year, m] = filters.month.split('-').map(Number);
+            dateStart = new Date(year, m - 1, 1);
+            dateEnd = new Date(year, m, 0, 23, 59, 59);
+        } else if (filters.startDate || filters.endDate) {
+            if (filters.startDate) dateStart = new Date(filters.startDate);
+            if (filters.endDate) dateEnd = new Date(filters.endDate + 'T23:59:59');
+        }
+
+        // Build where clause
+        const whereClause: any = {};
+        if (dateStart || dateEnd) {
+            whereClause.orderDate = {};
+            if (dateStart) whereClause.orderDate.gte = dateStart;
+            if (dateEnd) whereClause.orderDate.lte = dateEnd;
+        }
+
+        // Fetch orders with items
+        const orders = await this.prisma.order.findMany({
+            where: whereClause,
+            select: {
+                id: true,
+                shippingCountry: true,
+                shippingCity: true,
+                shippingProvince: true,
+                orderStatus: true,
+                confirmationStatus: true,
+                totalAmount: true,
+                items: {
+                    select: {
+                        sku: true,
+                    },
+                },
+            },
+        });
+
+        // Filter by SKU type:
+        // Test = Non-SKU orders (ALL items start with NO-SKU-)
+        // Actual = SKU orders (at least one real SKU item)
+        const filtered = orders.filter((o) => {
+            if (!o.items || o.items.length === 0) return false;
+            const allNoSku = o.items.every((item) => item.sku?.startsWith('NO-SKU-'));
+            return filters.type === 'test' ? allNoSku : !allNoSku;
+        });
+
+        // Aggregate by country → city
+        interface CityAgg {
+            city: string;
+            allOrders: number;
+            cancelOrders: number;
+            confirmedQty: number;
+            revenue: number;
+            returnedOrders: number;
+            isIsland: boolean;
+        }
+        interface CountryAgg {
+            country: string;
+            allOrders: number;
+            cancelOrders: number;
+            confirmedQty: number;
+            revenue: number;
+            returnedOrders: number;
+            cities: Record<string, CityAgg>;
+        }
+
+        const countryMap: Record<string, CountryAgg> = {};
+        let totalAll = 0;
+        let totalCancel = 0;
+        let totalConfirmed = 0;
+        let totalRevenue = 0;
+        let totalReturned = 0;
+
+        for (const order of filtered) {
+            const country = (order.shippingCountry || 'Unknown').trim();
+            const city = (order.shippingCity || 'Unknown').trim();
+            const amount = Number(order.totalAmount) || 0;
+            const isCancelled = order.confirmationStatus === 'Cancelled' || order.orderStatus === 'Cancelled';
+            const isConfirmed = order.confirmationStatus === 'Confirmed';
+            const isReturned = order.orderStatus === 'Returned';
+            const isIsland = this.isIslandLocation(order.shippingCity || undefined, order.shippingProvince || undefined);
+
+            // Initialize country
+            if (!countryMap[country]) {
+                countryMap[country] = {
+                    country,
+                    allOrders: 0,
+                    cancelOrders: 0,
+                    confirmedQty: 0,
+                    revenue: 0,
+                    returnedOrders: 0,
+                    cities: {},
+                };
+            }
+            const cAgg = countryMap[country];
+
+            // Initialize city
+            if (!cAgg.cities[city]) {
+                cAgg.cities[city] = {
+                    city,
+                    allOrders: 0,
+                    cancelOrders: 0,
+                    confirmedQty: 0,
+                    revenue: 0,
+                    returnedOrders: 0,
+                    isIsland,
+                };
+            }
+            const cityAgg = cAgg.cities[city];
+
+            // Accumulate
+            cAgg.allOrders++;
+            cityAgg.allOrders++;
+            totalAll++;
+
+            if (isCancelled) {
+                cAgg.cancelOrders++;
+                cityAgg.cancelOrders++;
+                totalCancel++;
+            }
+
+            if (isConfirmed) {
+                cAgg.confirmedQty++;
+                cityAgg.confirmedQty++;
+                totalConfirmed++;
+            }
+
+            if (isConfirmed && !isCancelled) {
+                cAgg.revenue += amount;
+                cityAgg.revenue += amount;
+                totalRevenue += amount;
+            }
+
+            if (isReturned) {
+                cAgg.returnedOrders++;
+                cityAgg.returnedOrders++;
+                totalReturned++;
+            }
+        }
+
+        // Build response
+        const round2 = (v: number) => Math.round(v * 100) / 100;
+        const calcReturnRate = (returned: number, total: number) => {
+            const nonCancelled = total; // return rate = returned / all orders
+            return nonCancelled > 0 ? round2((returned / nonCancelled) * 100) : 0;
+        };
+
+        const countries = Object.values(countryMap)
+            .map((c) => ({
+                country: c.country,
+                allOrders: c.allOrders,
+                cancelOrders: c.cancelOrders,
+                confirmedQty: c.confirmedQty,
+                revenue: round2(c.revenue),
+                returnRate: calcReturnRate(c.returnedOrders, c.allOrders),
+                cities: Object.values(c.cities)
+                    .map((city) => ({
+                        city: city.city,
+                        allOrders: city.allOrders,
+                        cancelOrders: city.cancelOrders,
+                        confirmedQty: city.confirmedQty,
+                        revenue: round2(city.revenue),
+                        returnRate: calcReturnRate(city.returnedOrders, city.allOrders),
+                        isIsland: city.isIsland,
+                    }))
+                    .sort((a, b) => b.allOrders - a.allOrders),
+            }))
+            .sort((a, b) => b.allOrders - a.allOrders);
+
+        // Extract island orders
+        const islands: Array<{
+            country: string;
+            city: string;
+            allOrders: number;
+            cancelOrders: number;
+            confirmedQty: number;
+            revenue: number;
+            returnRate: number;
+        }> = [];
+        for (const c of countries) {
+            for (const city of c.cities) {
+                if (city.isIsland) {
+                    islands.push({
+                        country: c.country,
+                        city: city.city,
+                        allOrders: city.allOrders,
+                        cancelOrders: city.cancelOrders,
+                        confirmedQty: city.confirmedQty,
+                        revenue: city.revenue,
+                        returnRate: city.returnRate,
+                    });
+                }
+            }
+        }
+        islands.sort((a, b) => b.allOrders - a.allOrders);
+
+        return {
+            type: filters.type,
+            kpis: {
+                allOrders: totalAll,
+                cancelOrders: totalCancel,
+                confirmedQty: totalConfirmed,
+                revenue: round2(totalRevenue),
+                returnRate: calcReturnRate(totalReturned, totalAll),
+            },
+            countries,
+            islands,
+        };
+    }
+
     async getLatestExchangeRate() {
         try {
             return await this.prisma.exchangeRate.findFirst({

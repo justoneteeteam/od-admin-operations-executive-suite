@@ -137,6 +137,24 @@ export class FinancialController {
         return this.financialService.getFulfillmentReport(month);
     }
 
+    // ─── Distribution Geo Report ─────────────────────────────
+
+    @Get('distribution-report')
+    async getDistributionReport(
+        @Query('type') type?: string,
+        @Query('month') month?: string,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+    ) {
+        const reportType = type === 'actual' ? 'actual' : 'test';
+        return this.financialService.getDistributionReport({
+            type: reportType,
+            month,
+            startDate,
+            endDate,
+        });
+    }
+
     // ─── Utility ──────────────────────────────────────────────
 
     @Get('exchange-rate')

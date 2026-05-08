@@ -122,8 +122,8 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
     };
 
     return (
-        <div className="bg-card-dark rounded-lg border border-border-dark p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Inventory Operations</h2>
+        <div className="bg-surface-lowest rounded-lg border border-border-dark p-6">
+            <h2 className="text-xl font-bold text-on-surface mb-6">Inventory Operations</h2>
 
             {/* Operation Type Toggle */}
             <div className="flex gap-4 mb-8">
@@ -131,7 +131,7 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
                     onClick={() => { setOperation('adjust'); setMessage(null); }}
                     className={`flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${operation === 'adjust'
                         ? 'bg-primary/20 border-primary text-primary'
-                        : 'bg-[#1c2d3d] border-[#2d445a] text-gray-400 hover:text-white'
+                        : 'bg-surface-high border-outline-variant text-on-surface-variant hover:text-on-surface'
                         }`}
                 >
                     Stock Adjustment
@@ -140,7 +140,7 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
                     onClick={() => { setOperation('transfer'); setMessage(null); }}
                     className={`flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors ${operation === 'transfer'
                         ? 'bg-primary/20 border-primary text-primary'
-                        : 'bg-[#1c2d3d] border-[#2d445a] text-gray-400 hover:text-white'
+                        : 'bg-surface-high border-outline-variant text-on-surface-variant hover:text-on-surface'
                         }`}
                 >
                     Stock Transfer
@@ -158,10 +158,10 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
 
                 {/* Product Select */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Product</label>
+                    <label className="block text-sm font-medium text-on-surface-variant mb-2">Product</label>
                     <select
                         required
-                        className="w-full bg-[#1c2d3d] border border-[#2d445a] text-white rounded-lg p-2.5 focus:ring-primary focus:border-primary"
+                        className="w-full bg-surface-high border border-outline-variant text-on-surface rounded-lg p-2.5 focus:ring-primary focus:border-primary"
                         value={selectedProduct}
                         onChange={(e) => setSelectedProduct(e.target.value)}
                     >
@@ -175,12 +175,12 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
                 {/* Warehouse Selects */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                        <label className="block text-sm font-medium text-on-surface-variant mb-2">
                             {operation === 'transfer' ? 'From Warehouse' : 'Warehouse'}
                         </label>
                         <select
                             required
-                            className="w-full bg-[#1c2d3d] border border-[#2d445a] text-white rounded-lg p-2.5 focus:ring-primary focus:border-primary"
+                            className="w-full bg-surface-high border border-outline-variant text-on-surface rounded-lg p-2.5 focus:ring-primary focus:border-primary"
                             value={sourceWarehouse}
                             onChange={(e) => setSourceWarehouse(e.target.value)}
                         >
@@ -193,10 +193,10 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
 
                     {operation === 'transfer' && (
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">To Warehouse</label>
+                            <label className="block text-sm font-medium text-on-surface-variant mb-2">To Warehouse</label>
                             <select
                                 required
-                                className="w-full bg-[#1c2d3d] border border-[#2d445a] text-white rounded-lg p-2.5 focus:ring-primary focus:border-primary"
+                                className="w-full bg-surface-high border border-outline-variant text-on-surface rounded-lg p-2.5 focus:ring-primary focus:border-primary"
                                 value={targetWarehouse}
                                 onChange={(e) => setTargetWarehouse(e.target.value)}
                             >
@@ -212,26 +212,26 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
                 {/* Quantity & Reason */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Quantity</label>
+                        <label className="block text-sm font-medium text-on-surface-variant mb-2">Quantity</label>
                         <input
                             type="number"
                             required
-                            className="w-full bg-[#1c2d3d] border border-[#2d445a] text-white rounded-lg p-2.5 focus:ring-primary focus:border-primary"
+                            className="w-full bg-surface-high border border-outline-variant text-on-surface rounded-lg p-2.5 focus:ring-primary focus:border-primary"
                             value={quantity}
                             onChange={(e) => setQuantity(Number(e.target.value))}
                             placeholder="0"
                         />
                         {operation === 'adjust' && (
-                            <p className="text-xs text-gray-500 mt-1">Use negative values to remove stock.</p>
+                            <p className="text-xs text-on-surface-variant mt-1">Use negative values to remove stock.</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Reason (Reference)</label>
+                        <label className="block text-sm font-medium text-on-surface-variant mb-2">Reason (Reference)</label>
                         <input
                             type="text"
                             required
-                            className="w-full bg-[#1c2d3d] border border-[#2d445a] text-white rounded-lg p-2.5 focus:ring-primary focus:border-primary"
+                            className="w-full bg-surface-high border border-outline-variant text-on-surface rounded-lg p-2.5 focus:ring-primary focus:border-primary"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="e.g. Broken Item, Restock, PO-123"
@@ -243,7 +243,7 @@ const InventoryOperations: React.FC<InventoryOperationsProps> = ({ warehouses })
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-primary hover:bg-primary/90 text-on-surface font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Processing...' : (operation === 'adjust' ? 'Update Stock' : 'Transfer Stock')}
                     </button>

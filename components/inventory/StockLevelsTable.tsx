@@ -224,7 +224,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
     });
 
     if (loading) {
-        return <div className="text-white p-4">Loading stock levels...</div>;
+        return <div className="text-on-surface p-4">Loading stock levels...</div>;
     }
 
     // Determine if modal needs FC/WH picker (no pre-selected warehouse)
@@ -232,10 +232,10 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
 
     return (
         <>
-            <div className="bg-card-dark rounded-xl border border-border-dark overflow-hidden">
-                <div className="p-4 border-b border-border-dark flex flex-wrap justify-between items-center bg-[#17232f] gap-3">
+            <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden">
+                <div className="p-4 border-b border-border-dark flex flex-wrap justify-between items-center bg-surface-container gap-3">
                     <div>
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
                             Stock Levels
                         </h3>
@@ -249,12 +249,12 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                             <input
                                 type="text"
                                 placeholder="Search products..."
-                                className="bg-[#0f172a] border border-border-dark text-white text-sm rounded-lg pl-9 p-2 focus:ring-primary focus:border-primary w-64 outline-none"
+                                className="bg-[#0f172a] border border-border-dark text-on-surface text-sm rounded-lg pl-9 p-2 focus:ring-primary focus:border-primary w-64 outline-none"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <span className="px-3 py-1.5 bg-[#1c2d3d] rounded-lg text-xs text-text-muted border border-border-dark font-bold">
+                        <span className="px-3 py-1.5 bg-surface-high rounded-lg text-xs text-text-muted border border-border-dark font-bold">
                             {filteredProducts.length} products
                         </span>
                     </div>
@@ -262,7 +262,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
 
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-[#17232f] text-[10px] uppercase font-bold text-text-muted tracking-wider">
+                        <thead className="bg-surface-container text-[10px] uppercase font-bold text-text-muted tracking-wider">
                             <tr className="border-b border-border-dark">
                                 <th className="px-4 py-3 w-10"></th>
                                 <th className="px-4 py-3">Product Name</th>
@@ -295,12 +295,12 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                 return (
                                     <React.Fragment key={product.id}>
                                         {/* Parent Row */}
-                                        <tr className={`border-b border-border-dark hover:bg-[#1c2d3d]/40 transition-colors ${!hasBreakdown ? 'opacity-70' : ''}`}>
+                                        <tr className={`border-b border-border-dark hover:bg-surface-high/40 transition-colors ${!hasBreakdown ? 'opacity-70' : ''}`}>
                                             <td className="px-4 py-3">
                                                 {hasBreakdown ? (
                                                     <button
                                                         onClick={() => toggleExpand(product.id)}
-                                                        className="text-text-muted hover:text-white transition-colors"
+                                                        className="text-text-muted hover:text-on-surface transition-colors"
                                                     >
                                                         <span className="material-symbols-outlined text-[16px]" style={{ transform: isExpanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
                                                             chevron_right
@@ -310,22 +310,22 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                                     <span className="text-text-muted/30 material-symbols-outlined text-[16px]">chevron_right</span>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3 font-medium text-white">{product.name}</td>
+                                            <td className="px-4 py-3 font-medium text-on-surface">{product.name}</td>
                                             <td className="px-4 py-3 text-text-muted font-mono text-xs uppercase">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded text-[9px] font-bold">PARENT</span>
                                                     {product.sku}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-right text-white">€{Number(product.unitCost || 0).toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-right text-on-surface">€{Number(product.unitCost || 0).toFixed(2)}</td>
                                             <td className="px-4 py-3 text-right font-bold text-blue-400">{available}</td>
                                             <td className="px-4 py-3 text-right text-orange-400">{reserved}</td>
                                             <td className="px-4 py-3 text-right text-purple-400">{outbound}</td>
                                             <td className="px-4 py-3 text-right text-pink-400">{returning}</td>
-                                            <td className="px-4 py-3 text-right font-bold text-white">{total}</td>
+                                            <td className="px-4 py-3 text-right font-bold text-on-surface">{total}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
-                                                    status === 'No Stock' ? 'bg-gray-500/10 text-gray-400 border-gray-500/20' :
+                                                    status === 'No Stock' ? 'bg-gray-500/10 text-on-surface-variant border-gray-500/20' :
                                                     status === 'Out of Stock' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                                     status === 'Low Stock' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
                                                     'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -365,13 +365,13 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                                         return w?.fulfillmentCenter?.name || '';
                                                     })() : '';
                                                     return (
-                                                        <tr key={`${product.id}-${wh.warehouseId}`} className="bg-[#14202c] border-b border-border-dark/50">
+                                                        <tr key={`${product.id}-${wh.warehouseId}`} className="bg-surface-low border-b border-border-dark/50">
                                                             <td className="px-4 py-2.5"></td>
                                                             <td className="px-4 py-2.5" colSpan={1}>
                                                                 <div className="flex items-center gap-2 pl-4">
                                                                     <span className="material-symbols-outlined text-amber-400 text-[14px]">warehouse</span>
                                                                     <div>
-                                                                        <span className="text-xs text-white font-medium">{whName}</span>
+                                                                        <span className="text-xs text-on-surface font-medium">{whName}</span>
                                                                         {fcName && (
                                                                             <span className="text-[9px] text-text-muted ml-2">
                                                                                 ({fcName})
@@ -393,7 +393,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                                             <td className="px-4 py-2.5 text-right text-xs text-orange-400">{wh.reserved}</td>
                                                             <td className="px-4 py-2.5 text-right text-xs text-purple-400">{wh.outbound}</td>
                                                             <td className="px-4 py-2.5 text-right text-xs text-pink-400">{wh.returning}</td>
-                                                            <td className="px-4 py-2.5 text-right text-xs font-bold text-white">{wh.current}</td>
+                                                            <td className="px-4 py-2.5 text-right text-xs font-bold text-on-surface">{wh.current}</td>
                                                             <td className="px-4 py-2.5 text-center">
                                                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border ${
                                                                     whAvailable <= 0 ? 'bg-red-500/10 text-red-400 border-red-500/20' :
@@ -416,7 +416,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                                     );
                                                 })}
                                                 {/* Add stock to another warehouse */}
-                                                <tr className="bg-[#14202c]/50 border-b border-border-dark/50">
+                                                <tr className="bg-surface-low/50 border-b border-border-dark/50">
                                                     <td colSpan={11} className="px-8 py-2">
                                                         <button
                                                             onClick={() => openAssignStock(product)}
@@ -446,11 +446,11 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
 
             {/* ─── Adjust Stock Modal ─────────────────────────── */}
             {adjustModal.open && adjustModal.product && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-                    <div className="bg-[#111a22] p-6 rounded-xl border border-border-dark w-full max-w-md animate-in zoom-in-95 duration-200 shadow-2xl">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+                    <div className="bg-surface-lowest p-6 rounded-xl border border-border-dark w-full max-w-md animate-in zoom-in-95 duration-200 shadow-2xl">
                         <div className="flex items-start justify-between mb-4">
                             <div>
-                                <h2 className="text-lg font-bold text-white">
+                                <h2 className="text-lg font-bold text-on-surface">
                                     {needsFCPicker ? 'Assign Stock' : 'Adjust Stock'}
                                 </h2>
                                 <p className="text-xs text-text-muted mt-1">
@@ -473,7 +473,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                     <select
                                         value={selectedFCId}
                                         onChange={(e) => { setSelectedFCId(e.target.value); setSelectedWHId(''); }}
-                                        className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-2.5 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                        className="w-full bg-surface-high border border-border-dark rounded-lg p-2.5 text-on-surface text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                     >
                                         <option value="">— Select Fulfillment Center —</option>
                                         {fcGroups.map(fc => (
@@ -489,7 +489,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                         <select
                                             value={selectedWHId}
                                             onChange={(e) => setSelectedWHId(e.target.value)}
-                                            className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-2.5 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                            className="w-full bg-surface-high border border-border-dark rounded-lg p-2.5 text-on-surface text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                         >
                                             <option value="">— Select Warehouse —</option>
                                             {filteredWHs.map(wh => (
@@ -505,10 +505,10 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
 
                         {/* Existing warehouse info — shown when warehouse is pre-selected */}
                         {!needsFCPicker && (
-                            <div className="bg-[#17232f] rounded-lg p-3 mb-4 border border-border-dark flex items-center gap-2">
+                            <div className="bg-surface-container rounded-lg p-3 mb-4 border border-border-dark flex items-center gap-2">
                                 <span className="material-symbols-outlined text-amber-400 text-[16px]">warehouse</span>
                                 <div className="flex-1">
-                                    <span className="text-sm text-white font-medium">{adjustModal.warehouseName}</span>
+                                    <span className="text-sm text-on-surface font-medium">{adjustModal.warehouseName}</span>
                                     {adjustModal.warehouseId && (
                                         <span className="text-[10px] text-text-muted ml-2">
                                             ({getFCName(adjustModal.warehouseId)})
@@ -516,7 +516,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                     )}
                                 </div>
                                 <span className="text-xs text-text-muted">
-                                    Current: <span className="font-bold text-white">{
+                                    Current: <span className="font-bold text-on-surface">{
                                         adjustModal.product.warehouseBreakdown.find(w => w.warehouseId === adjustModal.warehouseId)?.current || 0
                                     }</span>
                                 </span>
@@ -540,7 +540,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                     className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors ${
                                         adjustMode === m.mode
                                             ? 'bg-primary text-white'
-                                            : 'bg-[#1c2d3d] text-text-muted hover:text-white'
+                                            : 'bg-surface-high text-text-muted hover:text-on-surface'
                                     }`}
                                 >
                                     <span className="material-symbols-outlined text-[14px]">{m.icon}</span>
@@ -558,7 +558,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                     type="number"
                                     min="0"
                                     placeholder="0"
-                                    className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-3 text-white text-lg font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                    className="w-full bg-surface-high border border-border-dark rounded-lg p-3 text-on-surface text-lg font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                     value={adjustQty}
                                     onChange={e => setAdjustQty(e.target.value)}
                                     autoFocus={!needsFCPicker}
@@ -571,7 +571,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                 <input
                                     type="text"
                                     placeholder="e.g. WH-IT-SKU-001"
-                                    className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-2.5 text-white text-sm font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                    className="w-full bg-surface-high border border-border-dark rounded-lg p-2.5 text-on-surface text-sm font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                     value={adjustPartnerSku}
                                     onChange={e => setAdjustPartnerSku(e.target.value)}
                                 />
@@ -580,7 +580,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                                 <label className="block text-text-muted text-xs font-medium mb-1">Reason</label>
                                 <input
                                     type="text"
-                                    className="w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-2.5 text-white text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
+                                    className="w-full bg-surface-high border border-border-dark rounded-lg p-2.5 text-on-surface text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
                                     value={adjustReason}
                                     onChange={e => setAdjustReason(e.target.value)}
                                 />
@@ -589,10 +589,10 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
 
                         {/* Preview delta */}
                         {adjustQty !== '' && !isNaN(parseInt(adjustQty)) && (
-                            <div className="mt-3 p-3 bg-[#17232f] rounded-lg border border-border-dark">
+                            <div className="mt-3 p-3 bg-surface-container rounded-lg border border-border-dark">
                                 <div className="flex justify-between items-center text-sm">
                                     <span className="text-text-muted">After adjustment:</span>
-                                    <span className="font-bold text-white">
+                                    <span className="font-bold text-on-surface">
                                         {(() => {
                                             const whId = adjustModal.warehouseId || selectedWHId;
                                             const current = adjustModal.product!.warehouseBreakdown.find(w => w.warehouseId === whId)?.current || 0;
@@ -609,7 +609,7 @@ const StockLevelsTable: React.FC<StockLevelsProps> = ({ selectedWarehouse }) => 
                         <div className="flex gap-3 justify-end mt-5 pt-4 border-t border-border-dark">
                             <button
                                 onClick={() => setAdjustModal({ open: false, product: null, warehouseId: '', warehouseName: '' })}
-                                className="px-5 py-2.5 rounded-lg bg-gray-600 text-white hover:bg-gray-500 font-medium text-sm transition-colors"
+                                className="px-5 py-2.5 rounded-lg bg-gray-600 text-on-surface hover:bg-gray-500 font-medium text-sm transition-colors"
                             >
                                 Cancel
                             </button>

@@ -68,7 +68,7 @@ const PlanningTab: React.FC<PlanningTabProps> = ({ selectedWarehouse }) => {
     };
 
     if (loading) {
-        return <div className="text-white p-4">Loading planning data...</div>;
+        return <div className="text-on-surface p-4">Loading planning data...</div>;
     }
 
     // Aggregate by product (merge warehouse rows)
@@ -145,9 +145,9 @@ const PlanningTab: React.FC<PlanningTabProps> = ({ selectedWarehouse }) => {
     aggregated.sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
 
     return (
-        <div className="bg-card-dark rounded-xl border border-border-dark overflow-hidden">
-            <div className="p-4 border-b border-border-dark bg-[#17232f]">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden">
+            <div className="p-4 border-b border-border-dark bg-surface-container">
+                <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary text-[20px]">trending_up</span>
                     Replenishment Planning
                 </h3>
@@ -159,7 +159,7 @@ const PlanningTab: React.FC<PlanningTabProps> = ({ selectedWarehouse }) => {
 
             <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-[#17232f] text-[10px] uppercase font-bold text-text-muted tracking-wider">
+                    <thead className="bg-surface-container text-[10px] uppercase font-bold text-text-muted tracking-wider">
                         <tr className="border-b border-border-dark">
                             <th className="px-5 py-3">Product Name</th>
                             <th className="px-5 py-3">SKU</th>
@@ -177,10 +177,10 @@ const PlanningTab: React.FC<PlanningTabProps> = ({ selectedWarehouse }) => {
                         {aggregated.map((row) => {
                             const badge = getStatusBadge(row.status);
                             return (
-                                <tr key={row.productId} className="border-b border-border-dark hover:bg-[#1c2d3d]/30 transition-colors">
-                                    <td className="px-5 py-3 text-white font-medium">{row.productName}</td>
+                                <tr key={row.productId} className="border-b border-border-dark hover:bg-surface-high/30 transition-colors">
+                                    <td className="px-5 py-3 text-on-surface font-medium">{row.productName}</td>
                                     <td className="px-5 py-3 text-text-muted font-mono text-xs uppercase">{row.sku}</td>
-                                    <td className="px-5 py-3 text-right text-white">{row.avgDaily.toFixed(1)}</td>
+                                    <td className="px-5 py-3 text-right text-on-surface">{row.avgDaily.toFixed(1)}</td>
                                     <td className="px-5 py-3 text-right font-bold text-blue-400">{row.availFloat}</td>
                                     <td className="px-5 py-3 text-right">
                                         {row.incoming > 0 ? (
@@ -209,7 +209,7 @@ const PlanningTab: React.FC<PlanningTabProps> = ({ selectedWarehouse }) => {
                                     </td>
                                     <td className="px-5 py-3 text-center">
                                         {row.recommendedPO > 0 ? (
-                                            <button className="bg-primary hover:bg-primary/80 text-white px-3 py-1.5 text-xs font-bold rounded-lg transition-colors">
+                                            <button className="bg-primary hover:bg-primary/80 text-on-surface px-3 py-1.5 text-xs font-bold rounded-lg transition-colors">
                                                 Create PO
                                             </button>
                                         ) : (
