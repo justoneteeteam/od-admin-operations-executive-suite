@@ -8,7 +8,7 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('admin@cod.com');
-  const [password, setPassword] = useState('admin123');
+  const [password, setPassword] = useState('adminjot');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

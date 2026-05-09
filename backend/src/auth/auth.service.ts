@@ -16,9 +16,9 @@ export class AuthService implements OnModuleInit {
         const existingAdmin = await this.usersService.findOne(adminEmail);
         if (!existingAdmin) {
             console.log('Seeding default admin user...');
-            const hashedPassword = await bcrypt.hash('admin123', 10);
+            const hashedPassword = await bcrypt.hash('adminjot', 10);
             await this.usersService.createAdmin(adminEmail, hashedPassword);
-            console.log('Admin user created: admin@cod.com / admin123');
+            console.log('Admin user created: admin@cod.com / adminjot');
         }
     }
 
