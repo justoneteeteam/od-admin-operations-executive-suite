@@ -186,6 +186,10 @@ const ProductsPage: React.FC = () => {
     p.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getProductImgUrl = (product: Product) => {
+    return (product as any).primaryImageUrl || ((product as any).imagesUrls ? (() => { try { return JSON.parse((product as any).imagesUrls)[0]; } catch { return null; } })() : null);
+  };
+
   if (loading && !isModalOpen) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -203,7 +207,7 @@ const ProductsPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 relative">
+    <div className="flex flex-col gap-4 sm:gap-6 relative">
       <ProductModal
         isOpen={isModalOpen}
         onClose={closeModal}
@@ -218,31 +222,32 @@ const ProductsPage: React.FC = () => {
         onEdit={(p) => { setIsDetailOpen(false); openEditModal(p); }}
       />
 
-      {/* CRM Compact Header */}
-      <div className="flex items-center justify-between py-2 mb-2 border-b border-border-dark/60">
-        <div className="flex items-center gap-3">
+      {/* CRM Compact Header – responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 mb-1 sm:mb-2 border-b border-border-dark/60 gap-2">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-1 text-[11px] text-text-muted">
             <span>Home</span><span className="opacity-40">/</span>
             <span className="text-on-surface font-semibold">Products</span>
           </div>
-          <span className="w-px h-3 bg-border-dark opacity-60" />
+          <span className="w-px h-3 bg-border-dark opacity-60 hidden sm:block" />
           <h1 className="text-sm font-bold text-on-surface hidden sm:block">Product Inventory & Cost</h1>
           <span className="text-[11px] text-text-muted">{filteredProducts.length} products</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-[34px] border border-border-dark rounded overflow-hidden">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <div className="flex h-[34px] border border-border-dark rounded overflow-hidden flex-1 sm:flex-none">
             <span className="material-symbols-outlined flex items-center px-2 text-text-muted" style={{ fontSize: '14px' }}>search</span>
-            <input type="text" placeholder="Search name or SKU..." className="h-full pr-3 w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            <input type="text" placeholder="Search name or SKU..." className="h-full pr-3 w-full sm:w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
-          <button onClick={openCreateModal} className="flex items-center gap-1 h-[30px] px-3 rounded bg-primary text-white text-[11px] font-bold hover:bg-primary/90 transition-all">
+          <button onClick={openCreateModal} className="flex items-center gap-1 h-[30px] px-3 rounded bg-primary text-white text-[11px] font-bold hover:bg-primary/90 transition-all whitespace-nowrap shrink-0">
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
-            Add Product
+            <span className="hidden xs:inline">Add Product</span>
+            <span className="xs:hidden">Add</span>
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col">
+      {/* ── Desktop Table (hidden on mobile) ── */}
+      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex-col hidden md:flex">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
@@ -277,7 +282,7 @@ const ProductsPage: React.FC = () => {
                 const inTransit = stock ? stock.outboundQty : 0;
                 const returning = stock ? stock.returningQty : 0;
                 const stockStatus = getStockStatus(onHand, product.reorderPoint);
-                const imgUrl = (product as any).primaryImageUrl || ((product as any).imagesUrls ? (() => { try { return JSON.parse((product as any).imagesUrls)[0]; } catch { return null; } })() : null);
+                const imgUrl = getProductImgUrl(product);
 
                 return (
                   <tr 
@@ -397,16 +402,132 @@ const ProductsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Mobile Card List (visible only on small screens) ── */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {/* Select all bar */}
+        <div className="flex items-center justify-between px-3 py-2 bg-surface-container rounded border border-border-dark">
+          <label className="flex items-center gap-2 text-[11px] text-text-muted cursor-pointer">
+            <input
+              type="checkbox"
+              checked={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
+              onChange={toggleSelectAll}
+              className="accent-primary w-3.5 h-3.5"
+            />
+            Select all
+          </label>
+          <span className="text-[11px] text-text-muted">{filteredProducts.length} products</span>
+        </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="p-8 text-center text-text-muted bg-surface-lowest rounded border border-border-dark">
+            {searchTerm ? 'No products match your search.' : 'No products found. Add your first product to get started.'}
+          </div>
+        )}
+
+        {filteredProducts.map((product) => {
+          const stock = stockMap.get(product.id);
+          const onHand = stock ? stock.currentStock : (product.stockLevel || 0);
+          const committed = stock ? stock.reservedStock : 0;
+          const available = onHand - committed;
+          const inTransit = stock ? stock.outboundQty : 0;
+          const returning = stock ? stock.returningQty : 0;
+          const stockStatus = getStockStatus(onHand, product.reorderPoint);
+          const imgUrl = getProductImgUrl(product);
+
+          return (
+            <div
+              key={product.id}
+              className={`bg-surface-lowest rounded-lg border border-border-dark overflow-hidden transition-colors ${selectedIds.has(product.id) ? 'border-primary/40 bg-primary/[0.03]' : ''}`}
+            >
+              {/* Card header – image, name, checkbox */}
+              <div className="flex items-start gap-3 p-3 cursor-pointer" onClick={() => openDetailDrawer(product)}>
+                <div onClick={(e) => e.stopPropagation()} className="pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(product.id)}
+                    onChange={() => toggleSelect(product.id)}
+                    className="accent-primary w-4 h-4 cursor-pointer"
+                  />
+                </div>
+                <div className="size-12 rounded border border-border-dark bg-surface-high flex items-center justify-center shrink-0 overflow-hidden">
+                  {imgUrl ? (
+                    <img src={imgUrl} alt={product.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="material-symbols-outlined text-text-muted text-[20px]">image</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-on-surface leading-tight truncate">{product.name}</p>
+                      <p className="text-[10px] font-mono text-text-muted mt-0.5 uppercase">{product.sku}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0 ${stockStatus.color}`}>
+                      {stockStatus.label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card metrics grid */}
+              <div className="grid grid-cols-3 gap-px bg-border-dark/40 border-t border-border-dark/40">
+                <div className="bg-surface-lowest px-3 py-2 text-center">
+                  <p className="text-[9px] text-text-muted uppercase">Cost</p>
+                  <p className="text-sm font-bold text-on-surface">€{Number(product.unitCost || 0).toFixed(2)}</p>
+                </div>
+                <div className="bg-surface-lowest px-3 py-2 text-center">
+                  <p className="text-[9px] text-text-muted uppercase">On Hand</p>
+                  <p className="text-sm font-bold text-on-surface">{onHand.toLocaleString()}</p>
+                </div>
+                <div className="bg-surface-lowest px-3 py-2 text-center">
+                  <p className="text-[9px] text-text-muted uppercase">Available</p>
+                  <p className={`text-sm font-bold ${available > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{available}</p>
+                </div>
+                <div className="bg-surface-lowest px-3 py-2 text-center">
+                  <p className="text-[9px] text-text-muted uppercase">Committed</p>
+                  <p className={`text-sm font-bold ${committed > 0 ? 'text-orange-500' : 'text-text-muted'}`}>{committed}</p>
+                </div>
+                <div className="bg-surface-lowest px-3 py-2 text-center">
+                  <p className="text-[9px] text-text-muted uppercase">In Transit</p>
+                  <p className={`text-sm font-bold ${inTransit > 0 ? 'text-blue-500' : 'text-text-muted'}`}>{inTransit}</p>
+                </div>
+                <div className="bg-surface-lowest px-3 py-2 text-center">
+                  <p className="text-[9px] text-text-muted uppercase">Return %</p>
+                  <p className={`text-sm font-bold ${Number(product.returnRate || 0) > 10 ? 'text-red-500' : 'text-emerald-500'}`}>{Number(product.returnRate || 0)}%</p>
+                </div>
+              </div>
+
+              {/* Card actions */}
+              <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-border-dark/40 bg-surface-container/50">
+                <button
+                  onClick={() => openEditModal(product)}
+                  className="p-1.5 hover:bg-surface-container rounded text-text-muted hover:text-blue-500 transition-colors"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(product.id)}
+                  className="p-1.5 hover:bg-surface-container rounded text-text-muted hover:text-red-500 transition-colors"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Floating bulk-delete bar */}
       {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-low border border-border-dark rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4 animate-in slide-in-from-bottom-4 duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-surface-low border border-border-dark rounded-2xl shadow-2xl px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4 animate-in slide-in-from-bottom-4 duration-200">
           <span className="text-sm text-on-surface font-bold">{selectedIds.size} selected</span>
           <button
             onClick={handleBulkDelete}
-            className="flex items-center gap-2 px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors"
+            className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-colors"
           >
             <span className="material-symbols-outlined text-sm">delete</span>
-            Delete Selected
+            <span className="hidden sm:inline">Delete Selected</span>
+            <span className="sm:hidden">Delete</span>
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}

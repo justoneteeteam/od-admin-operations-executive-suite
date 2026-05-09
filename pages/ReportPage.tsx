@@ -153,7 +153,7 @@ const PnlReportTab: React.FC = () => {
                     <table className="w-full text-left border-collapse" style={{ minWidth: `${200 + displayIndices.length * 130 + 130}px` }}>
                         <thead>
                             <tr className="bg-surface-container">
-                                <th className="px-5 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest sticky left-0 bg-surface-container z-10 min-w-[180px]">
+                                <th className="px-3 sm:px-5 py-3 text-text-muted font-black text-[10px] uppercase tracking-widest sticky left-0 bg-surface-container z-10 min-w-[120px] sm:min-w-[180px]">
                                     {/* Empty label cell */}
                                 </th>
                                 {displayIndices.map(i => (
@@ -398,13 +398,13 @@ const PocReportTab: React.FC = () => {
                     <div key={i} className={`bg-surface-lowest p-5 rounded-2xl border border-border-dark border-l-4 ${kpi.border} relative overflow-hidden group hover:shadow-lg transition-shadow`}>
                         <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity"><span className="material-symbols-outlined text-[80px]">{kpi.icon}</span></div>
                         <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">{kpi.label}</p>
-                        <h3 className={`text-2xl font-black tracking-tight mt-2 ${kpi.color}`}>{kpi.value}</h3>
+                        <h3 className={`text-lg sm:text-2xl font-black tracking-tight mt-2 ${kpi.color}`}>{kpi.value}</h3>
                     </div>
                 ))}
             </div>
 
             {/* POC Funnel Visualization */}
-            <div className="bg-surface-lowest rounded-2xl border border-border-dark p-6">
+            <div className="bg-surface-lowest rounded-2xl border border-border-dark p-4 sm:p-6">
                 <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-6">🔻 POC Conversion Funnel</h3>
                 {data.funnel.tested === 0 ? (
                     <div className="text-text-muted text-sm text-center py-8">No POC data available. Upload campaigns with stage "Test" to see the funnel.</div>
@@ -415,8 +415,8 @@ const PocReportTab: React.FC = () => {
                             const percent = data.funnel.tested > 0 ? Math.round((item.value / data.funnel.tested) * 100) : 0;
                             return (
                                 <div key={idx} className="flex items-center gap-4">
-                                    <div className="w-[150px] shrink-0 text-right">
-                                        <span className="text-xs font-bold text-text-muted">{item.stage}</span>
+                                    <div className="w-[80px] sm:w-[150px] shrink-0 text-right">
+                                        <span className="text-[10px] sm:text-xs font-bold text-text-muted">{item.stage}</span>
                                     </div>
                                     <div className="flex-1 relative h-10 bg-surface-high rounded-xl overflow-hidden">
                                         <div
@@ -553,7 +553,7 @@ const ReportPage: React.FC = () => {
                     <span className="text-text-muted text-xs opacity-30">/</span>
                     <span className="text-on-surface text-xs font-bold uppercase tracking-wider">{title}</span>
                 </div>
-                <h1 className="text-on-surface text-3xl font-black tracking-tight">{title}</h1>
+                <h1 className="text-on-surface text-xl sm:text-3xl font-black tracking-tight">{title}</h1>
                 <p className="text-text-muted text-sm">{subtitle}</p>
             </div>
 

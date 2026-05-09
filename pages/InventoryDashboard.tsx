@@ -65,9 +65,9 @@ const InventoryDashboard: React.FC = () => {
     ] : [];
 
     return (
-        <div className="p-6">
+        <div className="px-3 sm:px-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h1 className="text-2xl font-bold text-on-surface">Inventory Management</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-on-surface">Inventory Management</h1>
 
                 <div className="flex items-center gap-4">
                     {/* Warehouse Selector */}
@@ -88,7 +88,7 @@ const InventoryDashboard: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-border-dark mb-6">
+            <div className="flex border-b border-border-dark mb-6 overflow-x-auto">
                 <button
                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'overview'
                         ? 'border-primary text-primary'
@@ -143,22 +143,22 @@ const InventoryDashboard: React.FC = () => {
                     ) : (
                         <>
                             {/* KPI Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                                <div className="bg-surface-lowest p-6 rounded-lg shadow-sm border border-border-dark">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
+                                <div className="bg-surface-lowest p-4 sm:p-6 rounded-lg shadow-sm border border-border-dark">
                                     <p className="text-on-surface-variant text-sm">Total Inventory Value</p>
                                     <p className="text-2xl font-bold text-on-surface">
                                         €{metrics?.totalInventoryValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                                     </p>
                                 </div>
-                                <div className="bg-surface-lowest p-6 rounded-lg shadow-sm border border-border-dark">
+                                <div className="bg-surface-lowest p-4 sm:p-6 rounded-lg shadow-sm border border-border-dark">
                                     <p className="text-on-surface-variant text-sm">Low Stock Items</p>
                                     <p className="text-2xl font-bold text-orange-500">{metrics?.lowStockCount || 0}</p>
                                 </div>
-                                <div className="bg-surface-lowest p-6 rounded-lg shadow-sm border border-border-dark">
+                                <div className="bg-surface-lowest p-4 sm:p-6 rounded-lg shadow-sm border border-border-dark">
                                     <p className="text-on-surface-variant text-sm">Out of Stock</p>
                                     <p className="text-2xl font-bold text-red-500">{metrics?.outOfStockCount || 0}</p>
                                 </div>
-                                <div className="bg-surface-lowest p-6 rounded-lg shadow-sm border border-border-dark">
+                                <div className="bg-surface-lowest p-4 sm:p-6 rounded-lg shadow-sm border border-border-dark">
                                     <p className="text-on-surface-variant text-sm">Total Products</p>
                                     <p className="text-2xl font-bold text-blue-400">{metrics?.totalProducts || 0}</p>
                                 </div>
@@ -166,7 +166,7 @@ const InventoryDashboard: React.FC = () => {
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {/* Stock Status Chart */}
-                                <div className="bg-surface-lowest p-6 rounded-lg shadow-sm border border-border-dark h-96">
+                                <div className="bg-surface-lowest p-4 sm:p-6 rounded-lg shadow-sm border border-border-dark h-72 sm:h-96">
                                     <h3 className="text-lg font-semibold mb-4 text-on-surface">Stock Status Distribution</h3>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
@@ -191,7 +191,7 @@ const InventoryDashboard: React.FC = () => {
                                 </div>
 
                                 {/* Low Stock Alerts */}
-                                <div className="bg-surface-lowest p-6 rounded-lg shadow-sm border border-border-dark">
+                                <div className="bg-surface-lowest p-4 sm:p-6 rounded-lg shadow-sm border border-border-dark">
                                     <h3 className="text-lg font-semibold mb-4 text-on-surface">Low Stock Alerts</h3>
                                     <div className="overflow-auto max-h-80 custom-scrollbar">
                                         <table className="w-full text-left">

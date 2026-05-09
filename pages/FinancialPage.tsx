@@ -15,12 +15,12 @@ const FinancialPage: React.FC = () => {
                     <span className="text-text-muted text-xs opacity-30">/</span>
                     <span className="text-on-surface text-xs font-bold uppercase tracking-wider">Financial</span>
                 </div>
-                <h1 className="text-on-surface text-3xl font-black tracking-tight">Financial Management</h1>
+                <h1 className="text-on-surface text-xl sm:text-3xl font-black tracking-tight">Financial Management</h1>
                 <p className="text-text-muted text-sm">Track expenses, upload invoices, and reconcile fulfillment costs.</p>
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex gap-1 p-1 bg-surface-lowest rounded-xl border border-border-dark w-fit">
+            <div className="flex gap-1 p-1 bg-surface-lowest rounded-xl border border-border-dark w-full sm:w-fit overflow-x-auto">
                 {([
                     { key: 'records' as const, label: '📊 Financial Records' },
                     { key: 'reconciliation' as const, label: '🔄 COD Reconciliation' },

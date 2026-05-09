@@ -152,13 +152,13 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
 
     if (!isOpen) return null;
 
-    const inputClass = 'w-full bg-[#1c2d3d] border border-border-dark rounded-lg p-2.5 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors';
+    const inputClass = 'w-full bg-surface-high border border-border-dark rounded-lg p-2.5 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors';
     const labelClass = 'block text-text-muted text-sm font-medium mb-1';
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
-            <div className="bg-[#111a22] p-6 rounded-xl border border-border-dark w-full max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
-                <h2 className="text-xl font-bold text-white mb-5">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-2 sm:p-4">
+            <div className="bg-surface-lowest p-4 sm:p-6 rounded-xl border border-border-dark w-full max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
+                <h2 className="text-lg sm:text-xl font-bold text-on-surface mb-4 sm:mb-5">
                     {productToEdit ? 'Edit Product' : 'Add New Product'}
                 </h2>
 
@@ -171,7 +171,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                         <div className="flex items-start gap-4">
                             <div
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-24 h-24 rounded-lg border-2 border-dashed border-border-dark bg-[#1c2d3d] flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden flex-shrink-0"
+                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-2 border-dashed border-border-dark bg-surface-high flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden flex-shrink-0"
                             >
                                 {imagePreview ? (
                                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
@@ -194,7 +194,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                                     <input
                                         type="text"
                                         placeholder="https://example.com/image.jpg"
-                                        className="w-full bg-[#1c2d3d] border border-border-dark rounded p-1.5 text-white text-xs"
+                                        className="w-full bg-surface-high border border-border-dark rounded p-1.5 text-on-surface text-xs"
                                         value={formData.primaryImageUrl.startsWith('data:') ? '' : formData.primaryImageUrl}
                                         onChange={(e) => {
                                             setFormData({ ...formData, primaryImageUrl: e.target.value });
@@ -213,7 +213,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                     </div>
 
                     {/* SKU + Category */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>SKU *</label>
                             <input type="text" required className={inputClass} value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} />
@@ -231,7 +231,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                     </div>
 
                     {/* Fulfillment Center Dropdown */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>Fulfillment Center</label>
                             <select className={inputClass} value={formData.fulfillmentCenterId} onChange={(e) => setFormData({ ...formData, fulfillmentCenterId: e.target.value })}>
@@ -253,10 +253,10 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                     </div>
 
                     {/* Prices */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>Unit Cost (€) <span className="text-amber-400 text-[10px]">(auto from purchases)</span></label>
-                            <div className="w-full bg-[#1c2d3d]/50 border border-border-dark rounded-lg p-2.5 text-text-muted cursor-not-allowed">
+                            <div className="w-full bg-surface-high/50 border border-border-dark rounded-lg p-2.5 text-text-muted cursor-not-allowed">
                                 €{productToEdit ? Number(productToEdit.unitCost || 0).toFixed(2) : '0.00'}
                             </div>
                         </div>
@@ -267,7 +267,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                     </div>
 
                     {/* Stock */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={labelClass}>Stock Level</label>
                             <input type="number" className={inputClass} value={formData.stockLevel} onChange={(e) => setFormData({ ...formData, stockLevel: parseInt(e.target.value) || 0 })} />
@@ -280,8 +280,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
 
                     {/* Buttons */}
                     <div className="flex gap-3 justify-end mt-2 pt-4 border-t border-border-dark">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-lg bg-gray-600 text-white hover:bg-gray-500 font-medium transition-colors">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 font-bold transition-colors disabled:opacity-50">
+                        <button type="button" onClick={onClose} className="px-4 sm:px-5 py-2.5 rounded-lg bg-gray-600 text-on-surface hover:bg-gray-500 font-medium transition-colors">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 sm:px-5 py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 font-bold transition-colors disabled:opacity-50">
                             {loading ? 'Saving...' : productToEdit ? 'Save Changes' : 'Create Product'}
                         </button>
                     </div>

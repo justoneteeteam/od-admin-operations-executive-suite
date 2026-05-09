@@ -188,7 +188,7 @@ const CustomersPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-0">
       {/* CRM Compact Header */}
-      <div className="flex items-center justify-between py-2 mb-2 border-b border-border-dark/60">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 mb-2 border-b border-border-dark/60 gap-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-[11px] text-text-muted">
             <span>Home</span><span className="opacity-40">/</span>
@@ -198,13 +198,13 @@ const CustomersPage: React.FC = () => {
           <h1 className="text-sm font-bold text-on-surface hidden sm:block">Customer Intelligence</h1>
           <span className="text-[11px] text-text-muted font-medium">{customers.length.toLocaleString()} records</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="flex h-[34px] border border-border-dark rounded overflow-hidden">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+          <div className="flex h-[34px] border border-border-dark rounded overflow-hidden flex-1 sm:flex-none">
             <span className="material-symbols-outlined flex items-center px-2 text-text-muted pointer-events-none" style={{ fontSize: '14px' }}>search</span>
             <input
               type="text"
               placeholder="Search customers..."
-              className="h-full pr-3 w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none"
+              className="h-full pr-3 w-full sm:w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none"
               value={searchTerm}
               onChange={handleSearch}
             />
@@ -233,7 +233,52 @@ const CustomersPage: React.FC = () => {
         ) : error ? (
           <div className="p-6 text-center text-red-400 text-sm">{error}</div>
         ) : (
-          <div className="overflow-x-auto custom-scrollbar">
+          <>
+          {/* Mobile Card View */}
+          <div className="md:hidden flex flex-col gap-2 p-2">
+            {filteredCustomers.length === 0 ? (
+              <div className="p-8 text-center text-text-muted">No customers found.</div>
+            ) : (
+              filteredCustomers.map((customer) => (
+                <div
+                  key={customer.id}
+                  className={`bg-surface-lowest rounded-lg border border-border-dark p-3 active:bg-surface-high/60 transition-colors ${customer.status === 'Blocked' ? 'border-l-2 border-l-red-500' : ''}`}
+                  onClick={() => openDetailDrawer(customer)}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`size-8 rounded flex items-center justify-center text-[11px] font-bold border shrink-0 ${customer.status === 'Blocked' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-surface-high text-on-surface border-border-dark'}`}>
+                        {customer.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-[12px] font-bold leading-tight truncate ${customer.status === 'Blocked' ? 'text-red-400' : 'text-on-surface'}`}>{customer.name}</p>
+                        <p className="text-[10px] text-text-muted">{customer.phone} · {customer.country}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => toggleBlock(customer)} className={`p-1 rounded transition-all ${customer.status === 'Blocked' ? 'bg-red-500/20 text-red-400' : 'text-text-muted'}`}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{customer.status === 'Blocked' ? 'block' : 'check_circle'}</span>
+                      </button>
+                      <button onClick={() => handleEdit(customer)} className="p-1 text-text-muted"><span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit_square</span></button>
+                      <button onClick={() => handleDelete(customer.id)} className="p-1 text-text-muted"><span className="material-symbols-outlined" style={{ fontSize: '15px' }}>delete</span></button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-dark/30 text-[10px]">
+                    <div className="flex items-center gap-2 text-text-muted">
+                      <span className={`size-1.5 rounded-full inline-block ${customer.status === 'Blocked' ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                      <span>{customer.status || 'Standard'}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-on-surface">{customer.ordersCount || 0} orders</span>
+                      <span className="text-text-muted">${(customer.totalSpent || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-surface-container border-b border-border-dark">
@@ -302,10 +347,11 @@ const CustomersPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Footer Info */}
-        <div className="bg-surface-container/80 px-8 py-4 border-t border-border-dark flex items-center justify-between">
+        <div className="bg-surface-container/80 px-4 sm:px-8 py-3 sm:py-4 border-t border-border-dark flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="size-2 rounded-full bg-emerald-500 animate-pulse"></div>
             <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">
@@ -622,7 +668,7 @@ const CustomersPage: React.FC = () => {
             </div>
 
             {/* Modal Body */}
-            <div className="p-8 grid grid-cols-2 gap-6">
+            <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm">mail</span>

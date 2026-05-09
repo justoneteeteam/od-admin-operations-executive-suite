@@ -606,7 +606,7 @@ ${items.map((item: any) => {
   return (
     <div className="flex flex-col gap-4">
       {/* CRM Compact Header */}
-      <div className="flex items-center justify-between py-2 mb-1 border-b border-border-dark/60">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 mb-1 border-b border-border-dark/60 gap-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-[11px] text-text-muted">
             <span>Home</span><span className="opacity-40">/</span>
@@ -627,8 +627,41 @@ ${items.map((item: any) => {
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col mb-6">
+      {/* ── Mobile Card View (below md) ── */}
+      <div className="md:hidden flex flex-col gap-2 mb-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12"><div className="animate-spin size-6 border-2 border-primary border-t-transparent rounded-full"></div></div>
+        ) : purchases.length === 0 ? (
+          <div className="py-12 text-center text-text-muted text-sm">No purchases found</div>
+        ) : (
+          purchases.map((purchase) => (
+            <div key={purchase.id} className={`bg-surface-lowest rounded-lg border border-border-dark p-3 active:bg-surface-high/60 transition-colors ${selectedIds.has(purchase.id) ? 'ring-1 ring-primary/40 bg-primary/5' : ''}`}
+              onClick={() => handleEditPurchase(purchase)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <input type="checkbox" className="w-3.5 h-3.5 accent-primary cursor-pointer shrink-0" checked={selectedIds.has(purchase.id)} onChange={() => toggleSelect(purchase.id)} onClick={(e) => e.stopPropagation()} />
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-bold text-primary leading-tight">{purchase.purchaseOrderNumber}</p>
+                    <p className="text-[11px] text-on-surface font-medium truncate">{purchase.supplier?.name || 'Unknown'}</p>
+                  </div>
+                </div>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">{purchase.purchaseStatus}</span>
+              </div>
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-dark/30 text-[10px] text-text-muted">
+                <span>{new Date(purchase.orderDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short' })}</span>
+                <span className="font-bold text-on-surface text-[11px]">€{Number(purchase.totalAmount || purchase.total || 0).toFixed(2)}</span>
+              </div>
+              {purchase.trackingNumber && (
+                <div className="mt-1 text-[10px] text-emerald-400 font-mono truncate">🚚 {purchase.trackingNumber}</div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Main Table (md and up) */}
+      <div className="hidden md:flex bg-surface-lowest rounded border border-border-dark overflow-hidden flex-col mb-6">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[1400px]">
             <thead>
@@ -712,10 +745,10 @@ ${items.map((item: any) => {
       {showDrawer && (
         <div className="fixed inset-0 z-[100] flex justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDrawer(false)}></div>
-          <div className="side-drawer relative w-[1100px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="px-8 py-6 border-b border-border-dark flex items-center justify-between bg-surface-low">
+          <div className="side-drawer relative w-full sm:w-[1100px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-border-dark flex items-center justify-between bg-surface-low">
               <div>
-                <h2 className="text-2xl font-black text-on-surface flex items-center gap-2 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-on-surface flex items-center gap-2 tracking-tight">
                   {editingId ? 'Edit Purchase' : 'Add Purchase'}
                 </h2>
                 <p className="text-xs text-text-muted mt-1 uppercase font-bold tracking-widest">
@@ -727,9 +760,9 @@ ${items.map((item: any) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8 pb-20">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 space-y-6 sm:space-y-8 pb-20">
               {/* Header Inputs */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Supplier <span className="text-red-500">*</span></label>
                   <select
@@ -753,7 +786,7 @@ ${items.map((item: any) => {
               </div>
 
               {/* Reference, Tracking, Logistic */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Fulfillment Ref #</label>
                   <input
@@ -804,7 +837,7 @@ ${items.map((item: any) => {
                   <span className="material-symbols-outlined text-sm">currency_exchange</span>
                   VND → EUR Converter
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="flex-1">
                     <input
                       type="number"
@@ -842,7 +875,7 @@ ${items.map((item: any) => {
 
                 <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden mt-6">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[1200px]">
+                    <table className="w-full text-left border-collapse min-w-[900px]">
                       <thead>
                         <tr className="bg-surface-container/80 border-b border-border-dark">
                           <th className="px-3 py-3 text-text-muted font-bold text-[10px] uppercase">Product</th>
@@ -944,7 +977,7 @@ ${items.map((item: any) => {
               </div>
 
               {/* Footer Inputs */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Status</label>
                   <select
@@ -970,30 +1003,30 @@ ${items.map((item: any) => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-12 text-right pt-4 border-t border-border-dark/50">
+              <div className="flex flex-col sm:flex-row sm:justify-end gap-4 sm:gap-12 text-right pt-4 border-t border-border-dark/50">
                 <div>
                   <p className="text-xs text-text-muted uppercase font-bold">Items Subtotal (₫)</p>
-                  <p className="text-xl font-bold text-on-surface">₫{totals.subtotalVnd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                  <p className="text-lg sm:text-xl font-bold text-on-surface">₫{totals.subtotalVnd.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                 </div>
                 <div>
                   <p className="text-xs text-text-muted uppercase font-bold">Grand Total (€)</p>
-                  <p className="text-3xl font-black text-emerald-400">€{totals.total.toFixed(2)}</p>
+                  <p className="text-2xl sm:text-3xl font-black text-emerald-400">€{totals.total.toFixed(2)}</p>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="p-8 bg-surface-container border-t border-border-dark flex gap-4 sticky bottom-0 z-[110] shadow-2xl">
+            <div className="p-4 sm:p-8 bg-surface-container border-t border-border-dark flex gap-3 sm:gap-4 sticky bottom-0 z-[110] shadow-2xl">
               <button
                 onClick={() => setShowDrawer(false)}
-                className="flex-1 h-14 bg-surface-lowest hover:bg-surface-high text-on-surface text-sm font-black uppercase tracking-widest rounded-xl transition-all border border-border-dark"
+                className="flex-1 h-12 sm:h-14 bg-surface-lowest hover:bg-surface-high text-on-surface text-xs sm:text-sm font-black uppercase tracking-widest rounded-xl transition-all border border-border-dark"
               >
                 Discard
               </button>
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex-[2] h-14 bg-primary hover:bg-primary/90 text-on-surface text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
+                className="flex-[2] h-12 sm:h-14 bg-primary hover:bg-primary/90 text-on-surface text-xs sm:text-sm font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : (editingId ? 'Update Purchase' : 'Save Purchase')}
               </button>
@@ -1016,8 +1049,8 @@ ${items.map((item: any) => {
       {showReceiveModal && receivePurchase && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowReceiveModal(false)}></div>
-          <div className="relative bg-surface-lowest border border-border-dark rounded-2xl shadow-2xl w-[900px] max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-8 py-5 border-b border-border-dark flex items-center justify-between bg-surface-low rounded-t-2xl">
+          <div className="relative bg-surface-lowest border border-border-dark rounded-2xl shadow-2xl w-full sm:w-[900px] max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 mx-2 sm:mx-0">
+            <div className="px-4 sm:px-8 py-4 sm:py-5 border-b border-border-dark flex items-center justify-between bg-surface-low rounded-t-2xl">
               <div>
                 <h2 className="text-xl font-black text-on-surface flex items-center gap-2">
                   <span className="material-symbols-outlined text-emerald-400">inventory_2</span>
@@ -1030,8 +1063,9 @@ ${items.map((item: any) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6">
               <p className="text-xs text-text-muted mb-4">Confirm received quantities and enter the <strong className="text-amber-400">Partner SKU (Child SKU)</strong> for each item. This will update inventory levels.</p>
+              <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-surface-container/80 border-b border-border-dark">
@@ -1102,9 +1136,10 @@ ${items.map((item: any) => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
-            <div className="p-6 bg-surface-container border-t border-border-dark flex items-center justify-between rounded-b-2xl">
+            <div className="p-3 sm:p-6 bg-surface-container border-t border-border-dark flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 rounded-b-2xl">
               <p className="text-xs text-text-muted">
                 Total receiving: <strong className="text-emerald-400">{receiveItems.reduce((s, i) => s + i.receiveQty, 0)}</strong> units
               </p>

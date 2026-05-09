@@ -208,8 +208,8 @@ const FulfillmentPage: React.FC = () => {
         <div className="space-y-6">
           {/* Table Area */}
           <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden">
-            <div className="p-3 border-b border-border-dark flex flex-wrap justify-between items-center gap-3 bg-surface-low">
-              <div className="flex h-[34px] items-center rounded border border-border-dark bg-surface-lowest w-64 focus-within:ring-1 focus-within:ring-primary/40 transition-all overflow-hidden">
+            <div className="p-3 border-b border-border-dark flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-3 bg-surface-low">
+              <div className="flex h-[34px] items-center rounded border border-border-dark bg-surface-lowest w-full sm:w-64 focus-within:ring-1 focus-within:ring-primary/40 transition-all overflow-hidden">
                 <span className="material-symbols-outlined text-text-muted pl-3" style={{ fontSize: '15px' }}>search</span>
                 <input className="w-full border-none bg-transparent text-on-surface focus:ring-0 placeholder:text-text-muted pl-2 text-[11px]" placeholder="Search Fulfillment Centers..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
@@ -329,7 +329,7 @@ const FulfillmentPage: React.FC = () => {
               {/* Create Warehouse Form */}
               <div className="bg-surface-container rounded-xl p-5 border border-border-dark">
                 <h4 className="text-sm font-bold text-on-surface mb-4">Create New Warehouse</h4>
-                <div className="flex gap-4 items-end">
+                <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
                   <div className="space-y-1 flex-1">
                     <label className="text-[10px] font-black text-text-muted uppercase tracking-wider">Warehouse Name</label>
                     <input
@@ -412,7 +412,7 @@ const FulfillmentPage: React.FC = () => {
               <div className="col-span-full">
                 <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1 mb-2 block">Initial Warehouses (Optional)</label>
                 <div className="bg-surface-low p-4 rounded-xl border border-dashed border-border-dark space-y-4">
-                  <div className="flex gap-4 items-end">
+                  <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
                     <div className="flex-1 space-y-1">
                       <label className="text-[10px] font-bold text-text-muted">Warehouse Name</label>
                       <input

@@ -80,7 +80,7 @@ const LogisticsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-on-surface tracking-tight">Logistic Companies</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-on-surface tracking-tight">Logistic Companies</h1>
           <p className="text-sm text-text-muted mt-1">Manage shipping companies that handle delivery from suppliers to fulfillment centers.</p>
         </div>
         <button
@@ -188,7 +188,7 @@ const LogisticsPage: React.FC = () => {
                     <td className="py-4 px-6 text-sm text-text-muted">{lc.email || '—'}</td>
                     <td className="py-4 px-6 text-sm text-text-muted truncate max-w-[200px]">{lc.address || '—'}</td>
                     <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => openEdit(lc)}
                           className="p-1.5 rounded-lg text-text-muted hover:text-on-surface hover:bg-surface-container transition-all"
@@ -241,7 +241,7 @@ const LogisticsPage: React.FC = () => {
                   className="w-full bg-[#1a2332] border border-border-dark rounded-xl px-4 py-2.5 text-sm text-on-surface placeholder-text-muted/50 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all"
                   placeholder="e.g., BAOHAI Express" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] text-text-muted font-bold uppercase tracking-wider block mb-1.5">Contact Person</label>
                   <input value={form.contactPerson || ''} onChange={e => setForm({ ...form, contactPerson: e.target.value })}

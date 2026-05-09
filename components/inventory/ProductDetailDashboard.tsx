@@ -400,13 +400,13 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
     return (
         <div className="fixed inset-0 z-[200] flex justify-end">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full sm:w-[680px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="relative w-full sm:w-[680px] h-full bg-surface-lowest border-l border-border-dark flex flex-col shadow-2xl animate-in slide-in-from-right duration-300 overflow-hidden">
 
                 {/* ─── Header ──────────────────────────────────────── */}
-                <div className="px-6 py-4 border-b border-border-dark bg-surface-lowest flex-shrink-0">
+                <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-border-dark bg-surface-lowest flex-shrink-0">
                     <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0 pr-4">
-                            <h2 className="text-2xl font-black text-on-surface leading-tight">{product.name}</h2>
+                            <h2 className="text-lg sm:text-2xl font-black text-on-surface leading-tight">{product.name}</h2>
                             <div className="flex flex-wrap items-center gap-2 mt-2">
                                 <span className="px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 font-mono">
                                     PARENT: {product.sku}
@@ -459,12 +459,12 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                     </div>
 
                     {/* ─── Tab Bar ──────────────────────────────────── */}
-                    <div className="flex gap-1 -mb-4 mt-1">
+                    <div className="flex gap-1 -mb-4 mt-1 overflow-x-auto scrollbar-hide">
                         {tabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                                     activeTab === tab.id
                                         ? 'border-primary text-primary'
                                         : 'border-transparent text-text-muted hover:text-on-surface'
@@ -481,9 +481,9 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
 
                     {/* ═══ Overview Tab ═══ */}
                     {activeTab === 'overview' && (
-                        <div className="p-6 space-y-6">
+                        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
                             {/* KPI Cards Row */}
-                            <div className="grid grid-cols-5 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                 {[
                                     { label: 'ON HAND', value: onHand, color: 'text-on-surface' },
                                     { label: 'COMMITTED', value: committed, color: 'text-orange-400' },
@@ -491,15 +491,15 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                     { label: 'IN TRANSIT', value: inTransit, color: 'text-blue-400' },
                                     { label: 'RETURNING', value: returning, color: 'text-purple-400' },
                                 ].map((kpi, idx) => (
-                                    <div key={idx} className="bg-surface-lowest rounded-xl p-3 border border-border-dark">
-                                        <div className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">{kpi.label}</div>
-                                        <div className={`text-2xl font-black ${kpi.color}`}>{kpi.value.toLocaleString()}</div>
+                                    <div key={idx} className="bg-surface-lowest rounded-xl p-2 sm:p-3 border border-border-dark">
+                                        <div className="text-[9px] sm:text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1">{kpi.label}</div>
+                                        <div className={`text-lg sm:text-2xl font-black ${kpi.color}`}>{kpi.value.toLocaleString()}</div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Basic Information + Image */}
-                            <div className="grid grid-cols-[1fr,auto] gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr,auto] gap-4">
                                 <div>
                                     <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-3">Basic Information</h3>
                                     <div className="space-y-0">
@@ -524,7 +524,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                 </div>
 
                                 {/* Product Image */}
-                                <div className="w-48 flex-shrink-0">
+                                <div className="w-full sm:w-48 flex-shrink-0 order-first sm:order-none">
                                     <div className="w-full aspect-square rounded-xl border border-border-dark bg-surface-lowest overflow-hidden flex items-center justify-center">
                                         {imgUrl ? (
                                             <img src={imgUrl} alt={product.name} className="w-full h-full object-cover" />
@@ -612,7 +612,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                     <div className="text-sm text-text-muted">Loading ads data...</div>
                                 ) : adsData ? (
                                     <div className="space-y-3">
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                             {[
                                                 { label: 'CPC', value: `€${adsData.cpc.toFixed(2)}`, sub: 'Cost per click' },
                                                 { label: 'CPL', value: `€${adsData.cpl.toFixed(2)}`, sub: 'Cost per lead' },
@@ -642,7 +642,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
 
                                         <div>
                                             <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Statistics</h4>
-                                            <div className="grid grid-cols-5 gap-2">
+                                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                                 {[
                                                     { label: 'LEADS', value: adsData.totalLeads, color: 'text-emerald-400', sub: '' },
                                                     { label: 'CONFIRMED', value: adsData.totalConfirmed, color: 'text-blue-400', sub: adsData.totalLeads > 0 ? `${(adsData.totalConfirmed / adsData.totalLeads * 100).toFixed(1)}%` : '0%' },
@@ -650,9 +650,9 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                     { label: 'RETURNS', value: adsData.totalReturns, color: 'text-amber-400', sub: '' },
                                                     { label: 'RETURN RATE', value: `${adsData.returnRate.toFixed(0)}%`, color: adsData.returnRate > 15 ? 'text-red-400' : 'text-amber-400', sub: `global ${Number((product as any).globalRate || product.returnRate || 0)}%` },
                                                 ].map((stat, i) => (
-                                                    <div key={i} className="bg-surface-lowest rounded-xl p-2.5 border border-border-dark text-center">
-                                                        <div className="text-[9px] font-bold text-text-muted uppercase tracking-wider leading-tight">{stat.label}</div>
-                                                        <div className={`text-xl font-black ${stat.color} mt-0.5`}>{stat.value}</div>
+                                                    <div key={i} className="bg-surface-lowest rounded-xl p-2 sm:p-2.5 border border-border-dark text-center">
+                                                        <div className="text-[8px] sm:text-[9px] font-bold text-text-muted uppercase tracking-wider leading-tight">{stat.label}</div>
+                                                        <div className={`text-base sm:text-xl font-black ${stat.color} mt-0.5`}>{stat.value}</div>
                                                         {stat.sub && <div className="text-[10px] text-text-muted">{stat.sub}</div>}
                                                     </div>
                                                 ))}
@@ -670,36 +670,38 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
 
                     {/* ═══ Warehouses Tab ═══ */}
                     {activeTab === 'warehouses' && (
-                        <div className="p-6 space-y-4">
-                            <div className="flex items-center justify-between">
+                        <div className="p-3 sm:p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <h3 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
                                     <span className="material-symbols-outlined text-sm">inventory_2</span>
                                     Warehouse Breakdown (Child SKUs)
                                 </h3>
-                                <button
-                                    onClick={openBulkChildSkus}
-                                    className="bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                                    title="Manage child SKUs for all warehouses"
-                                >
-                                    <span className="material-symbols-outlined text-[14px]">tune</span>
-                                    Manage All Child SKUs
-                                </button>
-                                <button
-                                    onClick={() => openAssignStock()}
-                                    className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                                >
-                                    <span className="material-symbols-outlined text-[14px]">add_circle</span>
-                                    Add to FC / Warehouse
-                                </button>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <button
+                                        onClick={openBulkChildSkus}
+                                        className="bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/30 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                        title="Manage child SKUs for all warehouses"
+                                    >
+                                        <span className="material-symbols-outlined text-[14px]">tune</span>
+                                        <span className="hidden xs:inline">Manage All</span> Child SKUs
+                                    </button>
+                                    <button
+                                        onClick={() => openAssignStock()}
+                                        className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                    >
+                                        <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                                        Add to FC
+                                    </button>
+                                </div>
                             </div>
 
                             {/* SKU hierarchy info */}
-                            <div className="bg-surface-container rounded-lg p-3 border border-border-dark">
-                                <div className="flex items-center gap-2 text-xs">
+                            <div className="bg-surface-container rounded-lg p-2 sm:p-3 border border-border-dark">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
                                     <span className="px-1.5 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded text-[9px] font-bold">PARENT</span>
-                                    <span className="text-on-surface font-mono font-bold">{product.sku}</span>
-                                    <span className="text-text-muted">= sum of all child warehouse SKUs below</span>
-                                    <span className="ml-auto text-on-surface font-bold">{onHand} total</span>
+                                    <span className="text-on-surface font-mono font-bold text-[10px] sm:text-xs">{product.sku}</span>
+                                    <span className="text-text-muted hidden sm:inline">= sum of all child warehouse SKUs below</span>
+                                    <span className="sm:ml-auto text-on-surface font-bold">{onHand} total</span>
                                 </div>
                             </div>
 
@@ -724,7 +726,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                         const status = getStockStatus(wh.current, product.reorderPoint || 10);
                                         return (
                                             <div key={idx} className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden">
-                                                <div className="flex justify-between items-center px-4 py-3">
+                                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center px-3 sm:px-4 py-3 gap-2">
                                                     <div className="flex items-center gap-2">
                                                         <span className="material-symbols-outlined text-amber-400 text-[16px]">warehouse</span>
                                                         <span className="text-on-surface font-bold text-sm">{wh.warehouseName}</span>
@@ -732,7 +734,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                             {status.label}
                                                         </span>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
                                                         <button
                                                             onClick={() => openAdjust(wh.warehouseId, wh.warehouseName, (wh as any).partnerSku, (wh as any).partnerSkuName)}
                                                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 text-[10px] font-bold uppercase tracking-wider transition-colors"
@@ -783,7 +785,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                         </button>
                                                     </div>
                                                 )}
-                                                <div className="grid grid-cols-5 gap-0 border-t border-border-dark">
+                                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-0 border-t border-border-dark">
                                                     {[
                                                         { label: 'On Hand', value: wh.current, color: 'text-on-surface' },
                                                         { label: 'Reserved', value: wh.reserved, color: 'text-orange-400' },
@@ -791,9 +793,9 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                                         { label: 'Outbound', value: wh.outbound, color: 'text-purple-400' },
                                                         { label: 'Returning', value: wh.returning, color: 'text-pink-400' },
                                                     ].map((col, ci) => (
-                                                        <div key={ci} className="p-3 text-center border-r border-border-dark/50 last:border-0">
-                                                            <div className="text-[10px] text-text-muted uppercase font-bold">{col.label}</div>
-                                                            <div className={`text-lg font-bold ${col.color}`}>{col.value}</div>
+                                                        <div key={ci} className="p-2 sm:p-3 text-center border-r border-border-dark/50 last:border-0">
+                                                            <div className="text-[9px] sm:text-[10px] text-text-muted uppercase font-bold">{col.label}</div>
+                                                            <div className={`text-sm sm:text-lg font-bold ${col.color}`}>{col.value}</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -816,7 +818,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
 
                     {/* ═══ Transactions Tab ═══ */}
                     {activeTab === 'transactions' && (
-                        <div className="p-6 space-y-4">
+                        <div className="p-3 sm:p-6 space-y-4">
                             <h3 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
                                 <span className="material-symbols-outlined text-sm">receipt_long</span>
                                 Transaction Ledger
@@ -829,7 +831,9 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                     No transactions found.
                                 </div>
                             ) : (
-                                <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden">
+                                <>
+                                {/* Desktop Transaction Table */}
+                                <div className="bg-surface-lowest rounded-xl border border-border-dark overflow-hidden hidden sm:block">
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-surface-container">
                                             <tr className="border-b border-border-dark">
@@ -862,30 +866,54 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                         </tbody>
                                     </table>
                                 </div>
+                                {/* Mobile Transaction Cards */}
+                                <div className="flex flex-col gap-2 sm:hidden">
+                                    {transactions.slice(0, 50).map(tx => {
+                                        const txType = formatTxType(tx.type);
+                                        return (
+                                            <div key={tx.id} className="bg-surface-lowest rounded-lg border border-border-dark p-3">
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <span className={`text-xs font-bold ${txType.color}`}>{txType.label}</span>
+                                                    <span className={`text-sm font-bold ${tx.quantity >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                        {tx.quantity >= 0 ? '+' : ''}{tx.quantity}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px] text-text-muted">
+                                                    <span>{new Date(tx.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                                                    <span>{tx.warehouse?.name || '—'}</span>
+                                                </div>
+                                                {(tx.reason || tx.referenceId) && (
+                                                    <div className="text-[10px] text-text-muted mt-1 truncate">{tx.reason || tx.referenceId}</div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                </>
                             )}
                         </div>
                     )}
 
                     {/* ═══ Planning Tab ═══ */}
                     {activeTab === 'planning' && (
-                        <div className="p-6 space-y-4">
+                        <div className="p-3 sm:p-6 space-y-4">
                             <h3 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
                                 <span className="material-symbols-outlined text-sm">trending_up</span>
                                 Demand Planning
                             </h3>
-                            <div className="bg-surface-lowest rounded-xl border border-border-dark p-6 space-y-4">
+                            <div className="bg-surface-lowest rounded-xl border border-border-dark p-4 sm:p-6 space-y-4">
                                 <div className="grid grid-cols-3 gap-3">
                                     <div className="text-center">
                                         <div className="text-[10px] text-text-muted uppercase font-bold">Available</div>
-                                        <div className="text-2xl font-black text-blue-400">{available}</div>
+                                        <div className="text-lg sm:text-2xl font-black text-blue-400">{available}</div>
                                     </div>
                                     <div className="text-center">
                                         <div className="text-[10px] text-text-muted uppercase font-bold">Reorder Point</div>
-                                        <div className="text-2xl font-black text-amber-400">{product.reorderPoint || 10}</div>
+                                        <div className="text-lg sm:text-2xl font-black text-amber-400">{product.reorderPoint || 10}</div>
                                     </div>
                                     <div className="text-center">
                                         <div className="text-[10px] text-text-muted uppercase font-bold">Days of Stock</div>
-                                        <div className="text-2xl font-black text-emerald-400">—</div>
+                                        <div className="text-lg sm:text-2xl font-black text-emerald-400">—</div>
                                     </div>
                                 </div>
                                 <div className="border-t border-border-dark pt-4 text-sm text-text-muted text-center">
@@ -897,7 +925,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
 
                     {/* ═══ History Tab ═══ */}
                     {activeTab === 'history' && (
-                        <div className="p-6 space-y-4">
+                        <div className="p-3 sm:p-6 space-y-4">
                             <h3 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">
                                 <span className="material-symbols-outlined text-sm">history</span>
                                 Change History
@@ -917,7 +945,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
             {/* ─── Stock Adjust Modal ───────────────────────── */}
             {adjustOpen && product && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[300] p-4">
-                    <div className="bg-surface-lowest p-6 rounded-xl border border-border-dark w-full max-w-md animate-in zoom-in-95 duration-200 shadow-2xl">
+                    <div className="bg-surface-lowest p-4 sm:p-6 rounded-xl border border-border-dark w-full max-w-md animate-in zoom-in-95 duration-200 shadow-2xl">
                         <div className="flex items-start justify-between mb-4">
                             <div>
                                 <h2 className="text-lg font-bold text-on-surface">
@@ -1117,8 +1145,8 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
             {bulkChildSkuOpen && (
                 <div className="fixed inset-0 z-[300] flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setBulkChildSkuOpen(false)} />
-                    <div className="relative bg-[#0f1922] rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden border border-border-dark shadow-2xl">
-                        <div className="px-6 py-4 border-b border-border-dark bg-surface-lowest flex items-center justify-between">
+                    <div className="relative bg-[#0f1922] rounded-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden border border-border-dark shadow-2xl mx-2 sm:mx-0">
+                        <div className="px-4 sm:px-6 py-4 border-b border-border-dark bg-surface-lowest flex items-center justify-between">
                             <div>
                                 <h3 className="text-on-surface font-bold text-lg">Manage All Child SKUs</h3>
                                 <p className="text-text-muted text-xs mt-0.5">
@@ -1131,8 +1159,8 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
-                        <div className="overflow-auto max-h-[60vh] p-6">
-                            <table className="w-full">
+                        <div className="overflow-auto max-h-[60vh] p-3 sm:p-6">
+                            <table className="w-full text-left">
                                 <thead>
                                     <tr className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
                                         <th className="text-left pb-3 pr-3">Warehouse</th>
@@ -1183,7 +1211,7 @@ const ProductDetailDashboard: React.FC<ProductDetailDashboardProps> = ({ isOpen,
                                 <p className="text-text-muted text-sm text-center py-6">No warehouses found. Assign stock first.</p>
                             )}
                         </div>
-                        <div className="px-6 py-4 border-t border-border-dark bg-surface-lowest flex justify-end gap-3">
+                        <div className="px-4 sm:px-6 py-4 border-t border-border-dark bg-surface-lowest flex justify-end gap-3">
                             <button
                                 onClick={() => setBulkChildSkuOpen(false)}
                                 className="px-4 py-2 rounded-lg bg-gray-600 text-on-surface hover:bg-gray-500 font-medium text-sm transition-colors"

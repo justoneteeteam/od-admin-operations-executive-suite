@@ -213,7 +213,7 @@ const CreateOrderPage: React.FC = () => {
                 </div>
                 <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
                     <div>
-                        <h1 className="text-on-surface text-3xl font-black tracking-tight">Create Order Detail</h1>
+                        <h1 className="text-on-surface text-xl sm:text-3xl font-black tracking-tight">Create Order Detail</h1>
                         <p className="text-text-muted text-sm mt-1">Initialize a new fulfillment record in the global pipeline.</p>
                     </div>
                     <div className="flex gap-3 w-full md:w-auto">

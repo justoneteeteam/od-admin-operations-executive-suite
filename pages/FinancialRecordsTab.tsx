@@ -408,7 +408,7 @@ const FinancialRecordsTab: React.FC = () => {
             {showAddForm && (
                 <form onSubmit={editingRecord ? handleEditExpense : handleAddExpense} className="bg-surface-lowest rounded-2xl border border-border-dark p-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-text-muted mb-4">{editingRecord ? 'Edit Expense Record' : 'New Expense Record'}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-black text-text-muted uppercase tracking-widest">Date *</label>
                             <input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} required
@@ -513,7 +513,7 @@ const FinancialRecordsTab: React.FC = () => {
                                 <span className="material-symbols-outlined text-[80px]">{card.icon}</span>
                             </div>
                             <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">{card.label}</p>
-                            <h3 className={`text-2xl font-black tracking-tight mt-2 ${card.color}`}>{card.value}</h3>
+                            <h3 className={`text-lg sm:text-2xl font-black tracking-tight mt-2 ${card.color}`}>{card.value}</h3>
                         </div>
                     ))}
                 </div>
@@ -545,7 +545,39 @@ const FinancialRecordsTab: React.FC = () => {
                         No financial records found. Upload an invoice or add a manual expense.
                     </div>
                 ) : (
-                    <div className="overflow-x-auto custom-scrollbar">
+                    <>
+                    {/* Mobile Card View */}
+                    <div className="md:hidden flex flex-col gap-2 p-2">
+                      {records.map((r) => (
+                        <div key={r.id} className="bg-surface-lowest rounded-lg border border-border-dark p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <input type="checkbox" className="w-3.5 h-3.5 accent-primary cursor-pointer shrink-0" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} />
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-bold text-on-surface truncate">{r.description}</p>
+                                <p className="text-[10px] text-text-muted">{new Date(r.date).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })}</p>
+                              </div>
+                            </div>
+                            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${CATEGORY_BADGES[r.category] || CATEGORY_BADGES.Other}`}>{r.category}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-dark/30">
+                            <div className="flex items-center gap-2 text-[10px]">
+                              {r.market && <span className="px-1 py-px rounded bg-indigo-500/10 text-indigo-400 font-bold uppercase">{r.market}</span>}
+                              <span className={`px-1 py-px rounded border text-[9px] font-bold ${r.spendType === 'Variable Cost' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>{r.spendType || 'Fixed'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-bold text-on-surface">{formatEur(Number(r.amountEur))}</span>
+                              <div className="flex gap-0.5" >
+                                <button onClick={() => openEditForm(r)} className="p-1 text-text-muted"><span className="material-symbols-outlined" style={{fontSize:'14px'}}>edit</span></button>
+                                <button onClick={() => handleDeleteRecord(r.id)} className="p-1 text-text-muted"><span className="material-symbols-outlined" style={{fontSize:'14px'}}>delete</span></button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Desktop Table */}
+                    <div className="hidden md:block overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[1000px]">
                             <thead>
                                 <tr className="bg-surface-container">
@@ -616,6 +648,7 @@ const FinancialRecordsTab: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+                    </>
                 )}
             </div>
 

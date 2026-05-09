@@ -589,8 +589,8 @@ const OrdersPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-0">
       {/* ── CRM Compact Header ── */}
-      <div className="flex items-center justify-between px-0 py-2 mb-1 border-b border-border-dark/60">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-0 py-2 mb-1 border-b border-border-dark/60 gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Breadcrumb */}
           <div className="flex items-center gap-1 text-[11px] text-text-muted">
             <span>Home</span>
@@ -625,7 +625,7 @@ const OrdersPage: React.FC = () => {
           )}
         </div>
         {/* Action Buttons */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {selectedOrderIds.length > 0 && (
             <button
               onClick={handleBulkDelete}
@@ -657,9 +657,9 @@ const OrdersPage: React.FC = () => {
       </div>
 
       {/* ── CRM Compact Filter Bar ── */}
-      <div className="flex flex-wrap items-center gap-1.5 py-2 mb-2">
+      <div className="flex flex-wrap items-center gap-1.5 py-2 mb-2 overflow-x-auto">
         {/* Search */}
-        <div className="flex h-[34px] border border-border-dark rounded overflow-hidden flex-shrink-0">
+        <div className="flex h-[34px] border border-border-dark rounded overflow-hidden flex-shrink-0 w-full sm:w-auto">
           <select
             className="h-full pl-2 pr-6 bg-surface-container border-r border-border-dark text-on-surface text-[11px] font-medium cursor-pointer focus:outline-none"
             style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7f95' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center' }}
@@ -675,7 +675,7 @@ const OrdersPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search..."
-              className="h-full pl-7 pr-3 w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
+              className="h-full pl-7 pr-3 w-full sm:w-44 bg-surface-lowest text-on-surface text-[11px] placeholder:text-text-muted/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -777,8 +777,101 @@ const OrdersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-surface-lowest rounded border border-border-dark overflow-hidden flex flex-col mb-6">
+      {/* ── Mobile Card View (below md) ── */}
+      <div className="md:hidden flex flex-col gap-2 mb-6">
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-2 py-12">
+            <div className="animate-spin size-6 border-2 border-primary border-t-transparent rounded-full"></div>
+            <p className="text-sm text-text-muted">Loading orders...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-red-500">
+            <span className="material-symbols-outlined text-3xl">error</span>
+            <p className="text-sm">{error}</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-12 text-text-muted">
+            <span className="material-symbols-outlined text-3xl">inbox</span>
+            <p className="text-sm">No orders found.</p>
+          </div>
+        ) : (
+          filteredOrders.map((order) => {
+            const profit = calculateNetProfit(order);
+            const rss = order.returnStockState;
+            const isRestocked = rss === 'restocked';
+            const isWrittenOff = rss === 'written_off';
+            const isReturning = !!order.returnTrackingNumber && !isRestocked && !isWrittenOff;
+            const s = order.orderStatus;
+            const statusLabel = isRestocked ? 'Restocked' : isWrittenOff ? 'Written Off' : isReturning ? 'Returning' :
+              s === 'InTransit' ? 'In Transit' : s === 'OutForDelivery' ? 'Out for Delivery' : s === 'InfoReceived' ? 'Info Received' : s === 'NotFound' ? 'Not Found' : s;
+            const statusColor = isRestocked ? 'text-emerald-400' : isWrittenOff ? 'text-gray-400' : isReturning ? 'text-pink-400' :
+              s === 'Delivered' ? 'text-emerald-400' : (s === 'Expired' || s === 'Cancelled') ? 'text-red-400' :
+              (s === 'Exception' || s === 'Undelivered') ? 'text-amber-400' : s === 'OutForDelivery' ? 'text-orange-400' : 'text-blue-400';
+            return (
+              <div
+                key={order.id}
+                className={`bg-surface-lowest rounded-lg border border-border-dark p-3 active:bg-surface-high/60 transition-colors ${selectedOrderIds.includes(order.id) ? 'ring-1 ring-primary/40 bg-primary/5' : ''} ${!order.trackingNumber ? 'opacity-60' : ''}`}
+                onClick={() => { setSelectedOrder(order); setShowDrawer(true); }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <input
+                      type="checkbox"
+                      className="w-3.5 h-3.5 rounded border-border-dark checked:bg-primary cursor-pointer accent-primary shrink-0"
+                      checked={selectedOrderIds.includes(order.id)}
+                      onChange={(e) => { e.stopPropagation(); handleSelectOrder(e, order.id); }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-primary leading-tight">#{order.orderNumber}</p>
+                      <p className="text-[11px] text-on-surface font-medium truncate">{order.customer?.name || 'Unknown'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* Risk badge */}
+                    {order.riskLevel === 'LOW' && <span className="inline-flex size-5 items-center justify-center rounded bg-emerald-500/15 text-emerald-400"><span className="material-symbols-outlined" style={{fontSize:'11px'}}>shield</span></span>}
+                    {order.riskLevel === 'MEDIUM' && <span className="inline-flex size-5 items-center justify-center rounded bg-yellow-500/15 text-yellow-400"><span className="material-symbols-outlined" style={{fontSize:'11px'}}>warning</span></span>}
+                    {order.riskLevel === 'HIGH' && <span className="inline-flex size-5 items-center justify-center rounded bg-orange-500/15 text-orange-400"><span className="material-symbols-outlined" style={{fontSize:'11px'}}>front_hand</span></span>}
+                    {order.riskLevel === 'BLOCKED' && <span className="inline-flex size-5 items-center justify-center rounded bg-red-500/15 text-red-400"><span className="material-symbols-outlined" style={{fontSize:'11px'}}>block</span></span>}
+                    {/* Confirmation badge */}
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                      (order.confirmationStatus || 'Pending') === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-500' :
+                      (order.confirmationStatus || 'Pending') === 'Pending' ? 'bg-yellow-500/10 text-yellow-500' :
+                      'bg-red-500/10 text-red-400'
+                    }`}>{order.confirmationStatus || 'Pending'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-dark/30">
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] font-bold uppercase ${statusColor}`}>{statusLabel}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] font-bold text-on-surface">{skuTab === 'non-sku' ? '—' : `$${order.totalAmount.toLocaleString()}`}</span>
+                    <span className={`text-[11px] font-bold ${skuTab === 'non-sku' ? 'text-text-muted' : profit > 0 ? 'text-emerald-500' : profit < 0 ? 'text-red-400' : 'text-text-muted'}`}>
+                      {skuTab === 'non-sku' ? '—' : `${profit >= 0 ? '+' : ''}$${profit.toLocaleString()}`}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5 text-[10px] text-text-muted">
+                  <span>{order.shippingCountry || 'N/A'}</span>
+                  <span className="opacity-30">·</span>
+                  <span>{order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '—'}</span>
+                  {order.trafficChannel && (
+                    <span className={`px-1 py-px rounded text-[9px] font-bold uppercase ${
+                      order.trafficChannel === 'tiktok' ? 'bg-cyan-500/15 text-cyan-400' :
+                      order.trafficChannel === 'facebook' ? 'bg-blue-500/15 text-blue-400' :
+                      'bg-emerald-500/15 text-emerald-400'
+                    }`}>{order.trafficChannel}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Main Table (md and up) */}
+      <div className="hidden md:flex bg-surface-lowest rounded border border-border-dark overflow-hidden flex-col mb-6">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse min-w-[900px] lg:min-w-[1100px]">
             <thead>

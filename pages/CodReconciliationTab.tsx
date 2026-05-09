@@ -184,7 +184,7 @@ const CodReconciliationTab: React.FC<CodReconciliationTabProps> = ({ onImportSuc
             )}
 
             {/* Sub-tabs */}
-            <div className="flex gap-1 p-1 bg-surface-lowest rounded-xl border border-border-dark w-fit">
+            <div className="flex gap-1 p-1 bg-surface-lowest rounded-xl border border-border-dark w-full sm:w-fit overflow-x-auto">
                 {([
                     { key: 'per_order' as const, label: '📦 Per-order Invoice' },
                     { key: 'monthly' as const, label: '📋 Monthly Invoice' },

@@ -29,16 +29,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="bg-surface-low font-display min-h-screen flex items-center justify-center p-6"
+    <div className="bg-surface-low font-display min-h-screen flex items-center justify-center p-4 sm:p-6"
       style={{ backgroundImage: 'radial-gradient(at 0% 0%, hsla(230,100%,96%,0.7) 0, transparent 55%), radial-gradient(at 100% 100%, hsla(217,91%,95%,0.5) 0, transparent 55%)' }}
     >
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <img src="/logo.svg" alt="JOT COD" className="h-16 w-auto mb-2" />
+          <img src="/logo.svg" alt="JOT COD" className="h-12 sm:h-16 w-auto mb-2" />
           <p className="text-on-surface-variant text-sm mt-1">Management Operations System</p>
         </div>
 
-        <div className="bg-surface-lowest border border-outline-variant rounded-2xl p-8" style={{ boxShadow: '0px 10px 32px rgba(0,0,0,0.08)' }}>
+        <div className="bg-surface-lowest border border-outline-variant rounded-2xl p-5 sm:p-8" style={{ boxShadow: '0px 10px 32px rgba(0,0,0,0.08)' }}>
           <div className="mb-8">
             <h2 className="text-xl font-bold text-on-surface">Sign In</h2>
             <p className="text-on-surface-variant text-sm mt-1">Enter your credentials to access the dashboard.</p>

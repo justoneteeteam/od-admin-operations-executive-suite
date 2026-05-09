@@ -112,7 +112,7 @@ const SupplierPage: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-black text-on-surface tracking-tight">Supplier Management</h1>
+        <h1 className="text-xl sm:text-3xl font-black text-on-surface tracking-tight">Supplier Management</h1>
 
         {/* Tabs */}
         <div className="flex border-b border-border-dark gap-8">
@@ -155,8 +155,8 @@ const SupplierPage: React.FC = () => {
 
           {/* Table Area */}
           <div className="bg-surface-lowest rounded-2xl border border-border-dark overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-border-dark flex flex-wrap justify-between items-center gap-4 bg-surface-low">
-              <div className="flex h-10 items-center rounded-lg bg-background-dark border border-border-dark w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
+            <div className="p-3 sm:p-4 border-b border-border-dark flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 sm:gap-4 bg-surface-low">
+              <div className="flex h-10 items-center rounded-lg bg-background-dark border border-border-dark w-full sm:w-[320px] focus-within:ring-2 focus-within:ring-primary/40 transition-all">
                 <div className="text-text-muted flex items-center justify-center pl-4">
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>search</span>
                 </div>
@@ -178,7 +178,38 @@ const SupplierPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="overflow-x-auto custom-scrollbar">
+            {/* Mobile Card View */}
+            <div className="md:hidden flex flex-col gap-2 p-2">
+              {isLoading ? (
+                <div className="py-12 text-center text-text-muted"><div className="animate-spin size-5 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>Loading suppliers...</div>
+              ) : filteredSuppliers.length === 0 ? (
+                <div className="py-12 text-center text-text-muted italic">No suppliers found</div>
+              ) : (
+                filteredSuppliers.map((s) => (
+                  <div key={s.id} className="bg-surface-lowest rounded-lg border border-border-dark p-3 active:bg-surface-high/60 transition-colors" onClick={() => handleEdit(s)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-bold text-on-surface leading-tight truncate">{s.name}</p>
+                        <p className="text-[10px] text-text-muted truncate">{s.companyName}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase shrink-0 ${s.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{s.status}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-dark/30 text-[10px] text-text-muted">
+                      <div className="flex items-center gap-1"><span className="material-symbols-outlined" style={{fontSize:'12px'}}>flag</span>{s.country}</div>
+                      <div className="flex items-center gap-3">
+                        <span>{s._count?.purchases ?? 0} purchases</span>
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => handleEdit(s)} className="p-1 text-text-muted"><span className="material-symbols-outlined" style={{fontSize:'14px'}}>edit</span></button>
+                          <button onClick={() => handleDelete(s.id)} className="p-1 text-text-muted"><span className="material-symbols-outlined" style={{fontSize:'14px'}}>delete</span></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse min-w-[1400px]">
                 <thead>
                   <tr className="bg-surface-container/50 border-b border-border-dark">
@@ -244,7 +275,7 @@ const SupplierPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto bg-surface-lowest rounded-2xl border border-border-dark p-8 shadow-2xl space-y-10">
+        <div className="max-w-4xl mx-auto bg-surface-lowest rounded-2xl border border-border-dark p-4 sm:p-8 shadow-2xl space-y-8 sm:space-y-10">
           {/* Section 1: Basic Info */}
           <div className="space-y-6">
             <h3 className="text-xs font-black text-primary uppercase tracking-widest flex items-center gap-2">

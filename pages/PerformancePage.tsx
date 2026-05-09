@@ -263,7 +263,7 @@ const PerformancePage: React.FC = () => {
           <div className="flex items-center gap-2 text-text-muted text-xs mb-2">
             <span>Home</span><span>/</span><span className="text-on-surface">Executive Performance</span>
           </div>
-          <h1 className="text-3xl font-black text-on-surface tracking-tight">Executive Performance</h1>
+          <h1 className="text-xl sm:text-3xl font-black text-on-surface tracking-tight">Executive Performance</h1>
           <p className="text-text-muted text-sm mt-1">Real-time COD pipeline intelligence and business metrics.</p>
         </div>
         <button onClick={fetchOrders} className="flex items-center gap-2 px-4 py-2.5 bg-surface-lowest border border-border-dark rounded-xl text-text-muted hover:text-on-surface hover:border-primary/40 transition-all text-sm font-bold">
@@ -301,14 +301,14 @@ const PerformancePage: React.FC = () => {
           </div>
 
           {/* Date range display */}
-          <div className="ml-auto text-[10px] text-text-muted font-bold uppercase tracking-widest bg-surface-high px-3 py-2 rounded-xl border border-border-dark">
+          <div className="ml-0 sm:ml-auto text-[10px] text-text-muted font-bold uppercase tracking-widest bg-surface-high px-3 py-2 rounded-xl border border-border-dark">
             {fmtDate(dateRange.from)} → {fmtDate(dateRange.to)}
           </div>
         </div>
 
         {/* Custom date picker */}
         {showCalendar && (
-          <div className="flex items-center gap-3 bg-surface-high border border-border-dark rounded-xl p-4">
+          <div className="flex flex-wrap items-center gap-3 bg-surface-high border border-border-dark rounded-xl p-4">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black text-text-muted uppercase">From</label>
               <input
